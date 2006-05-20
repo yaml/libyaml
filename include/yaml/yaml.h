@@ -1,25 +1,25 @@
 
-#ifndef _YAML_H
-#define _YAML_H
+#ifndef YAML_H
+#define YAML_H
 
 #ifdef __cplusplus
 extern "C" {
 #endif
 
-typedef enum {
-    YAML_READER_ERROR,
-    YAML_SCANNER_ERROR,
-    YAML_PARSER_ERROR,
-    YAML_EMITTER_ERROR
-} yaml_error_type_t;
+#include <stdlib.h>
+
+#include "yaml_version.h"
+#include "yaml_error.h"
 
 typedef enum {
+    YAML_DETECT_ENCODING,
     YAML_UTF8_ENCODING,
     YAML_UTF16LE_ENCODING,
     YAML_UTF16BE_ENCODING
 } yaml_encoding_t;
 
 typedef enum {
+    YAML_ANY_SCALAR_STYLE,
     YAML_PLAIN_SCALAR_STYLE,
     YAML_SINGLE_QUOTED_SCALAR_STYLE,
     YAML_DOUBLE_QUOTED_SCALAR_STYLE,
@@ -28,11 +28,13 @@ typedef enum {
 } yaml_scalar_style_t;
 
 typedef enum {
+    YAML_ANY_SEQUENCE_STYLE,
     YAML_BLOCK_SEQUENCE_STYLE,
     YAML_FLOW_SEQUENCE_STYLE
 } yaml_sequence_style_t;
 
 typedef enum {
+    YAML_ANY_MAPPING_STYLE,
     YAML_BLOCK_MAPPING_STYLE,
     YAML_FLOW_MAPPING_STYLE
 } yaml_mapping_style_t;
@@ -40,21 +42,26 @@ typedef enum {
 typedef enum {
     YAML_STREAM_START_TOKEN,
     YAML_STREAM_END_TOKEN,
+
     YAML_VERSION_DIRECTIVE_TOKEN,
     YAML_TAG_DIRECTIVE_TOKEN,
     YAML_DOCUMENT_START_TOKEN,
     YAML_DOCUMENT_END_TOKEN,
+
     YAML_BLOCK_SEQUENCE_START_TOKEN,
     YAML_BLOCK_MAPPING_START_TOKEN,
     YAML_BLOCK_END_TOKEN,
+
     YAML_FLOW_SEQUENCE_START_TOKEN,
     YAML_FLOW_SEQUENCE_END_TOKEN,
     YAML_FLOW_MAPPING_START_TOKEN,
     YAML_FLOW_MAPPING_END_TOKEN,
+
     YAML_BLOCK_ENTRY_TOKEN,
     YAML_FLOW_ENTRY_TOKEN,
     YAML_KEY_TOKEN,
     YAML_VALUE_TOKEN,
+
     YAML_ALIAS_TOKEN,
     YAML_ANCHOR_TOKEN,
     YAML_TAG_TOKEN,
@@ -64,22 +71,22 @@ typedef enum {
 typedef enum {
     YAML_STREAM_START_EVENT,
     YAML_STREAM_END_EVENT,
+
     YAML_DOCUMENT_START_EVENT,
     YAML_DOCUMENT_END_EVENT,
+
     YAML_ALIAS_EVENT,
+    YAML_SCALAR_EVENT,
+
     YAML_SEQUENCE_START_EVENT,
     YAML_SEQUENCE_END_EVENT,
+
     YAML_MAPPING_START_EVENT,
-    YAML_MAPPING_END_EVENT,
-    YAML_SCALAR_EVENT
+    YAML_MAPPING_END_EVENT
 } yaml_event_type_t;
 
 typedef struct {
-    char *value;
-    size_t length;
-} yaml_string_t;
-
-typedef struct {
+    size_t offset;
     size_t index;
     size_t line;
     size_t column;
@@ -97,10 +104,11 @@ typedef struct {
     yaml_token_type_t type;
     union {
         yaml_encoding_t encoding;
-        yaml_string_t anchor;
-        yaml_string_t tag;
+        char *anchor;
+        char *tag;
         struct {
-            yaml_string_t value;
+            char *value;
+            size_t length;
             yaml_scalar_style_t style;
         } scalar;
         struct {
@@ -108,8 +116,8 @@ typedef struct {
             int minor;
         } version;
         struct {
-          yaml_string_t handle;
-          yaml_string_t prefix;
+          char *handle;
+          char *prefix;
         } tag_pair;
     } data;
     yaml_mark_t start_mark;
@@ -128,8 +136,8 @@ typedef struct {
                 int minor;
             } version;
             struct {
-                yaml_string_t handle;
-                yaml_string_t prefix;
+                char *handle;
+                char *prefix;
             } **tag_pairs;
             int implicit;
         } document_start;
@@ -137,24 +145,26 @@ typedef struct {
             int implicit;
         } document_end;
         struct {
-            yaml_string_t anchor;
+            char *anchor;
         } alias;
         struct {
-            yaml_string_t anchor;
-            yaml_string_t tag;
+            char *anchor;
+            char *tag;
+            char *value;
+            size_t length;
             int plain_implicit;
             int quoted_implicit;
             yaml_scalar_style_t style;
         } scalar;
         struct {
-            yaml_string_t anchor;
-            yaml_string_t tag;
+            char *anchor;
+            char *tag;
             int implicit;
             yaml_sequence_style_t style;
         } sequence_start;
         struct {
-            yaml_string_t anchor;
-            yaml_string_t tag;
+            char *anchor;
+            char *tag;
             int implicit;
             yaml_mapping_style_t style;
         } mapping_start;
@@ -163,24 +173,17 @@ typedef struct {
     yaml_mark_t end_mark;
 } yaml_event_t;
 
-typedef struct {
-} yaml_scanner_t;
-
+/*
 typedef struct {
 } yaml_parser_t;
 
 typedef struct {
-} yaml_composer_t;
-
-typedef struct {
 } yaml_emitter_t;
-
-typedef struct {
-} yaml_serializer_t;
+*/
 
 #ifdef __cplusplus
 }
 #endif
 
-#endif /* #ifndef _YAML_H */
+#endif /* #ifndef YAML_H */
 
