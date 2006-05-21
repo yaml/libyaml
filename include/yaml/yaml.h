@@ -1,3 +1,12 @@
+/**
+ * @file yaml.h
+ * @brief Public interface for libyaml.
+ * 
+ * Include the header file with
+ * @code
+ * #include <yaml/yaml.h>
+ * @endcode
+ */
 
 #ifndef YAML_H
 #define YAML_H

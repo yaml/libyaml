@@ -55,6 +55,9 @@ AC_PROG_LN_S
 AC_PROG_MAKE_SET
 AC_PROG_LIBTOOL
 
+AC_CHECK_PROG(DOXYGEN, [doxygen], [true], [false])
+AM_CONDITIONAL(DOXYGEN, [test "$DOXYGEN" = true])
+
 # Checks for header files.
 AC_HEADER_STDC
 AC_CHECK_HEADERS([stdlib.h])

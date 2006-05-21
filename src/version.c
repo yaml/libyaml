@@ -19,11 +19,3 @@ yaml_get_version(int *major, int *minor, int *patch)
     *patch = YAML_VERSION_PATCH;
 }
 
-int
-yaml_check_version(int major, int minor, int patch)
-{
-    return (major == YAML_VERSION_MAJOR
-            && minor == YAML_VERSION_MINOR
-            && patch >= YAML_VERSION_PATCH);
-}
-
