@@ -1,4 +1,4 @@
-/**
+/*
  * @file yaml_version.h
  * @brief Version information.
  *
@@ -12,14 +12,14 @@
 extern "C" {
 #endif
 
-/**
+/*
  * @brief Get the library version.
  */
 
 const char *
 yaml_get_version_string(void);
 
-/**
+/*
  * @brief Get the library version numbers.
  */
 
