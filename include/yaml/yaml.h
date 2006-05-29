@@ -252,7 +252,7 @@ typedef struct {
  * source.  The handler should write not more than @a size bytes to the @a
  * buffer.  The number of written bytes should be set to the @a length variable.
  *
- * @param[in]   ext         A pointer to an application data specified by
+ * @param[in]   data        A pointer to an application data specified by
  *                          @c yaml_parser_set_read_handler.
  * @param[out]  buffer      The buffer to write the data from the source.
  * @param[in]   size        The size of the buffer.
@@ -262,8 +262,20 @@ typedef struct {
  * the returned value should be @c 0.  On EOF, the handler should set the
  * @a length to @c 0 and return @c 1.
  */
-typedef int yaml_read_handler_t(void *ext, unsigned char *buffer, size_t size,
+
+typedef int yaml_read_handler_t(void *data, unsigned char *buffer, size_t size,
         size_t *size_read);
+
+/**
+ * This structure holds a string input specified by
+ * @c yaml_parser_set_input_string.
+ */
+
+typedef struct {
+    unsigned char *start;
+    unsigned char *end;
+    unsigned char *current;
+} yaml_string_input_t;
 
 /**
  * The parser structure.
@@ -279,7 +291,7 @@ typedef struct {
      * @{
      */
 
-    error_type_t error;
+    yaml_error_type_t error;
 
     /**
      * @}
@@ -302,23 +314,23 @@ typedef struct {
     /** The pointer to the beginning of the working buffer. */
     yaml_char_t *buffer;
 
-    /** The size of the buffer (in bytes). */
-    size_t buffer_size;
+    /** The pointer to the end of the working buffer. */
+    yaml_char_t *buffer_end;
 
     /** The pointer to the current character in the working buffer. */
-    yaml_char_t *buffer_pointer;
+    yaml_char_t *pointer;
 
-    /** The number of unread characters in the buffer (in characters). */
-    size_t buffer_length;
+    /** The number of unread characters in the working buffer. */
+    size_t unread;
 
-    /** The remaining undecoded characters. */
+    /** The pointer to the beginning of the raw buffer. */
     unsigned char *raw_buffer;
 
-    /** The size of the raw buffer (in bytes). */
-    size_t raw_buffer_size;
+    /** The pointer to the current character in the raw buffer. */
+    unsigned char *raw_pointer;
 
-    /** Is the application responsible for freeing the raw buffer? */
-    int raw_buffer_foreign;
+    /** The number of unread bytes in the raw buffer. */
+    size_t raw_unread;
 
     /** The input encoding. */
     yaml_encoding_t encoding;
@@ -334,6 +346,9 @@ typedef struct {
 
     /** The column of the current position (starting from @c 0). */
     size_t column;
+
+    /* String input structure. */
+    yaml_string_input_t string_input;
 
     /**
      * @}
@@ -460,6 +475,18 @@ yaml_realloc(void *ptr, size_t size);
 
 void
 yaml_free(void *ptr);
+
+/** The size of the raw buffer. */
+
+#define YAML_RAW_BUFFER_SIZE 16384
+
+/**
+ * The size of the buffer.
+ *
+ * We allocate enough space for decoding the whole raw buffer.
+ */
+
+#define YAML_BUFFER_SIZE    (YAML_RAW_BUFFER_SIZE*3)
 
 /** @} */
 

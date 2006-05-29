@@ -46,10 +46,34 @@ yaml_parser_new(void)
 {
     yaml_parser_t *parser;
 
+    /* Allocate the parser structure. */
+
     parser = yaml_malloc(sizeof(yaml_parser_t));
     if (!parser) return NULL;
 
     memset(parser, 0, sizeof(yaml_parser_t));
+
+    /* Allocate the raw buffer. */
+
+    parser->raw_buffer = yaml_malloc(YAML_RAW_BUFFER_SIZE);
+    if (!parser->raw_buffer) {
+        yaml_free(parser);
+        return NULL;
+    }
+    parser->raw_pointer = parser->raw_buffer;
+    parser->raw_unread = 0;
+
+    /* Allocate the character buffer. */
+
+    parser->buffer = yaml_malloc(YAML_BUFFER_SIZE);
+    if (!parser->buffer) {
+        yaml_free(parser->raw_buffer);
+        yaml_free(parser);
+        return NULL;
+    }
+    parser->buffer_end = parser->buffer;
+    parser->pointer = parser->buffer;
+    parser->unread = 0;
 
     return parser;
 }
@@ -64,8 +88,7 @@ yaml_parser_delete(yaml_parser_t *parser)
     assert(parser); /* Non-NULL parser object expected. */
 
     yaml_free(parser->buffer);
-    if (!parser->raw_buffer_foreign)
-        yaml_free(parser->raw_buffer);
+    yaml_free(parser->raw_buffer);
 
     memset(parser, 0, sizeof(yaml_parser_t));
 
@@ -73,14 +96,27 @@ yaml_parser_delete(yaml_parser_t *parser)
 }
 
 /*
- * String read handler (always returns error).
+ * String read handler.
  */
 
 static int
 yaml_string_read_handler(void *data, unsigned char *buffer, size_t size,
         size_t *size_read)
 {
-    *size_read = 0;
+    yaml_string_input_t *input = data;
+
+    if (input->current == input->end) {
+        *size_read = 0;
+        return 1;
+    }
+
+    if (size > (input->end - input->current)) {
+        size = input->end - input->current;
+    }
+
+    memcpy(buffer, input->current, size);
+    input->current += size;
+    *size_read = size;
     return 1;
 }
 
@@ -92,8 +128,8 @@ static int
 yaml_file_read_handler(void *data, unsigned char *buffer, size_t size,
         size_t *size_read)
 {
-    *size_read = fread(buffer, 1, size, (FILE *)ext);
-    return !ferror((FILE *)ext);
+    *size_read = fread(buffer, 1, size, (FILE *)data);
+    return !ferror((FILE *)data);
 }
 
 /*
@@ -105,16 +141,15 @@ yaml_parser_set_input_string(yaml_parser_t *parser,
         unsigned char *input, size_t size)
 {
     assert(parser); /* Non-NULL parser object expected. */
-    assert(!parser->reader); /* You can set the source only once. */
+    assert(!parser->read_handler);  /* You can set the source only once. */
     assert(input);  /* Non-NULL input string expected. */
 
-    parser->read_handler = yaml_string_read_handler;
-    parser->read_handler_data = NULL;
+    parser->string_input.start = input;
+    parser->string_input.current = input;
+    parser->string_input.end = input+size;
 
-    /* We use the input string as a raw (undecoded) buffer. */
-    parser->raw_buffer = input; 
-    parser->raw_buffer_size = size;
-    parser->raw_buffer_foreign = 1;
+    parser->read_handler = yaml_string_read_handler;
+    parser->read_handler_data = &parser->string_input;
 }
 
 /*
@@ -125,7 +160,7 @@ void
 yaml_parser_set_input_file(yaml_parser_t *parser, FILE *file)
 {
     assert(parser); /* Non-NULL parser object expected. */
-    assert(!parser->reader); /* You can set the source only once. */
+    assert(!parser->read_handler);  /* You can set the source only once. */
     assert(file);   /* Non-NULL file object expected. */
 
     parser->read_handler = yaml_file_read_handler;
@@ -141,11 +176,11 @@ yaml_parser_set_input(yaml_parser_t *parser,
         yaml_read_handler_t *handler, void *data)
 {
     assert(parser); /* Non-NULL parser object expected. */
-    assert(!parser->reader); /* You can set the source only once. */
+    assert(!parser->read_handler);  /* You can set the source only once. */
     assert(handler);    /* Non-NULL read handler expected. */
 
     parser->read_handler = handler;
-    parser->read_handler_data = data
+    parser->read_handler_data = data;
 }
 
 /*
