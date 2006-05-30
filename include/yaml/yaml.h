@@ -291,7 +291,14 @@ typedef struct {
      * @{
      */
 
+    /** Error type. */
     yaml_error_type_t error;
+
+    /** Error description. */
+    const char *problem;
+
+    /** The byte about which the problem occured. */
+    size_t problem_offset;
 
     /**
      * @}
@@ -302,7 +309,7 @@ typedef struct {
      * @{
      */
 
-    /** Read handler */
+    /** Read handler. */
     yaml_read_handler_t *read_handler;
 
     /** A pointer for passing to the read handler. */
@@ -487,6 +494,18 @@ yaml_free(void *ptr);
  */
 
 #define YAML_BUFFER_SIZE    (YAML_RAW_BUFFER_SIZE*3)
+
+/**
+ * Ensure that the buffer contains at least @a length characters.
+ *
+ * @param[in]   parser  A parser object.
+ * @param[in]   length  The number of characters in the buffer.
+ *
+ * @returns @c 1 on success, @c 0 on error.
+ */
+
+int
+yaml_parser_update_buffer(yaml_parser_t *parser, size_t length);
 
 /** @} */
 
