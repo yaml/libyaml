@@ -300,6 +300,9 @@ typedef struct {
     /** The byte about which the problem occured. */
     size_t problem_offset;
 
+    /** The problematic value (@c -1 is none). */
+    int problem_value;
+
     /**
      * @}
      */

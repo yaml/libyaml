@@ -12,11 +12,13 @@
  */
 
 int
-yaml_parser_set_reader_error(yaml_parser_t *parser, const char *problem)
+yaml_parser_set_reader_error(yaml_parser_t *parser, const char *problem,
+        size_t offset, int value)
 {
     parser->error = YAML_READER_ERROR;
     parser->problem = problem;
-    parser->problem_offset = parser->offset;
+    parser->problem_offset = offset;
+    parser->problem_value = value;
 
     return 0;
 }
@@ -32,9 +34,9 @@ yaml_parser_set_reader_error(yaml_parser_t *parser, const char *problem)
 int
 yaml_parser_update_buffer(yaml_parser_t *parser, size_t length)
 {
-    /* If the EOF flag is set, do nothing. */
+    /* If the EOF flag is set and the raw buffer is empty, do nothing. */
 
-    if (parser->eof)
+    if (parser->eof && !parser->raw_unread)
         return 1;
 
     /* Return if the buffer contains enough characters. */
@@ -71,18 +73,14 @@ yaml_parser_update_buffer(yaml_parser_t *parser, size_t length)
 
         if (!yaml_parser_update_raw_buffer(parser)) return 0;
 
-        /* If the raw buffer is empty, it is EOF. */
-
-        if (!parser->raw_unread) return 1;
-
         /* Decode the raw buffer. */
 
         while (parser->raw_unread)
         {
             unsigned int value, value2;
             int incomplete = 0;
-            unsigned char utf8_octet;
-            unsigned int utf8_length;
+            unsigned char octet;
+            unsigned int width;
             int k, low, high;
 
             /* Decode the next character. */
@@ -113,25 +111,26 @@ yaml_parser_update_buffer(yaml_parser_t *parser, size_t length)
 
                     /* Determine the length of the UTF-8 sequence. */
 
-                    utf8_octet = parser->raw_pointer[0];
-                    utf8_length = (
-                            (utf8_octet & 0x80) == 0x00 ? 1 :
-                            (utf8_octet & 0xE0) == 0xC0 ? 2 :
-                            (utf8_octet & 0xF0) == 0xE0 ? 3 :
-                            (utf8_octet & 0xF8) == 0xF0 ? 4 : 0);
+                    octet = parser->raw_pointer[0];
+                    width = (octet & 0x80) == 0x00 ? 1 :
+                            (octet & 0xE0) == 0xC0 ? 2 :
+                            (octet & 0xF0) == 0xE0 ? 3 :
+                            (octet & 0xF8) == 0xF0 ? 4 : 0;
 
                     /* Check if the leading octet is valid. */
 
-                    if (!utf8_length)
+                    if (!width)
                         return yaml_parser_set_reader_error(parser,
-                                "Invalid leading UTF-8 octet");
+                                "Invalid leading UTF-8 octet",
+                                parser->offset, octet);
 
                     /* Check if the raw buffer contains an incomplete character. */
 
-                    if (utf8_length > parser->raw_unread) {
+                    if (width > parser->raw_unread) {
                         if (parser->eof) {
                             return yaml_parser_set_reader_error(parser,
-                                    "Incomplete UTF-8 octet sequence");
+                                    "Incomplete UTF-8 octet sequence",
+                                    parser->offset, -1);
                         }
                         incomplete = 1;
                         break;
@@ -139,47 +138,45 @@ yaml_parser_update_buffer(yaml_parser_t *parser, size_t length)
 
                     /* Decode the leading octet. */
 
-                    value = (
-                        (utf8_octet & 0x80) == 0x00 ? utf8_octet & 0x7F :
-                        (utf8_octet & 0xE0) == 0xC0 ? utf8_octet & 0x1F :
-                        (utf8_octet & 0xF0) == 0xE0 ? utf8_octet & 0x0F :
-                        (utf8_octet & 0xF8) == 0xF0 ? utf8_octet & 0x07 : 0);
+                    value = (octet & 0x80) == 0x00 ? octet & 0x7F :
+                            (octet & 0xE0) == 0xC0 ? octet & 0x1F :
+                            (octet & 0xF0) == 0xE0 ? octet & 0x0F :
+                            (octet & 0xF8) == 0xF0 ? octet & 0x07 : 0;
 
                     /* Check and decode the trailing octets. */
 
-                    for (k = 1; k < utf8_length; k ++)
+                    for (k = 1; k < width; k ++)
                     {
-                        utf8_octet = parser->raw_pointer[k];
+                        octet = parser->raw_pointer[k];
 
                         /* Check if the octet is valid. */
 
-                        if ((utf8_octet & 0xC0) != 0x80)
+                        if ((octet & 0xC0) != 0x80)
                             return yaml_parser_set_reader_error(parser,
-                                    "Invalid trailing UTF-8 octet");
+                                    "Invalid trailing UTF-8 octet",
+                                    parser->offset+k, octet);
 
                         /* Decode the octet. */
 
-                        value = (value << 6) + (utf8_octet & 0x3F);
+                        value = (value << 6) + (octet & 0x3F);
                     }
 
                     /* Check the length of the sequence against the value. */
 
-                    if (!((utf8_length == 1) ||
-                            (utf8_length == 2 && value >= 0x80) ||
-                            (utf8_length == 3 && value >= 0x800) ||
-                            (utf8_length == 4 && value >= 0x10000)))
+                    if (!((width == 1) ||
+                            (width == 2 && value >= 0x80) ||
+                            (width == 3 && value >= 0x800) ||
+                            (width == 4 && value >= 0x10000)))
                         return yaml_parser_set_reader_error(parser,
-                                "Invalid length of a UTF-8 sequence");
+                                "Invalid length of a UTF-8 sequence",
+                                parser->offset, -1);
 
                     /* Check the range of the value. */
 
                     if ((value >= 0xD800 && value <= 0xDFFF) || value > 0x10FFFF)
                         return yaml_parser_set_reader_error(parser,
-                                "Invalid Unicode character");
-
-                    parser->raw_pointer += utf8_length;
-                    parser->raw_unread -= utf8_length;
-                    parser->offset += utf8_length;
+                                "Invalid Unicode character",
+                                parser->offset, value);
 
                     break;
                 
@@ -220,7 +217,8 @@ yaml_parser_update_buffer(yaml_parser_t *parser, size_t length)
                     if (parser->raw_unread < 2) {
                         if (parser->eof) {
                             return yaml_parser_set_reader_error(parser,
-                                    "Incomplete UTF-16 character");
+                                    "Incomplete UTF-16 character",
+                                    parser->offset, -1);
                         }
                         incomplete = 1;
                         break;
@@ -235,18 +233,22 @@ yaml_parser_update_buffer(yaml_parser_t *parser, size_t length)
 
                     if ((value & 0xFC00) == 0xDC00)
                         return yaml_parser_set_reader_error(parser,
-                                "Unexpected low surrogate area");
+                                "Unexpected low surrogate area",
+                                parser->offset, value);
 
                     /* Check for a high surrogate area. */
 
                     if ((value & 0xFC00) == 0xD800) {
+
+                        width = 4;
 
                         /* Check for incomplete surrogate pair. */
 
                         if (parser->raw_unread < 4) {
                             if (parser->eof) {
                                 return yaml_parser_set_reader_error(parser,
-                                        "Incomplete UTF-16 surrogate pair");
+                                        "Incomplete UTF-16 surrogate pair",
+                                        parser->offset, -1);
                             }
                             incomplete = 1;
                             break;
@@ -261,21 +263,16 @@ yaml_parser_update_buffer(yaml_parser_t *parser, size_t length)
 
                         if ((value2 & 0xFC00) != 0xDC00)
                             return yaml_parser_set_reader_error(parser,
-                                    "Expected low surrogate area");
+                                    "Expected low surrogate area",
+                                    parser->offset+2, value2);
 
                         /* Generate the value of the surrogate pair. */
 
                         value = 0x10000 + ((value & 0x3FF) << 10) + (value2 & 0x3FF);
-
-                        parser->raw_pointer += 4;
-                        parser->raw_unread -= 4;
-                        parser->offset += 4;
                     }
 
                     else {
-                        parser->raw_pointer += 2;
-                        parser->raw_unread -= 2;
-                        parser->offset += 4;
+                        width = 2;
                     }
 
                     break;
@@ -298,7 +295,14 @@ yaml_parser_update_buffer(yaml_parser_t *parser, size_t length)
                         || (value >= 0xE000 && value <= 0xFFFD)
                         || (value >= 0x10000 && value <= 0x10FFFF)))
                 return yaml_parser_set_reader_error(parser,
-                        "Control characters are not allowed");
+                        "Control characters are not allowed",
+                        parser->offset, value);
+
+            /* Move the raw pointers. */
+
+            parser->raw_pointer += width;
+            parser->raw_unread -= width;
+            parser->offset += width;
 
             /* Finally put the character into the buffer. */
 
@@ -309,22 +313,33 @@ yaml_parser_update_buffer(yaml_parser_t *parser, size_t length)
             /* 0000 0080-0000 07FF -> 110xxxxx 10xxxxxx */
             else if (value <= 0x7FF) {
                 *(parser->buffer_end++) = 0xC0 + (value >> 6);
-                *(parser->buffer_end++) = 0x80 + value & 0x3F;
+                *(parser->buffer_end++) = 0x80 + (value & 0x3F);
             }
             /* 0000 0800-0000 FFFF -> 1110xxxx 10xxxxxx 10xxxxxx */
             else if (value <= 0xFFFF) {
                 *(parser->buffer_end++) = 0xE0 + (value >> 12);
-                *(parser->buffer_end++) = 0x80 + (value >> 6) & 0x3F;
-                *(parser->buffer_end++) = 0x80 + value & 0x3F;
+                *(parser->buffer_end++) = 0x80 + ((value >> 6) & 0x3F);
+                *(parser->buffer_end++) = 0x80 + (value & 0x3F);
             }
             /* 0001 0000-0010 FFFF -> 11110xxx 10xxxxxx 10xxxxxx 10xxxxxx */
             else {
                 *(parser->buffer_end++) = 0xF0 + (value >> 18);
-                *(parser->buffer_end++) = 0x80 + (value >> 12) & 0x3F;
-                *(parser->buffer_end++) = 0x80 + (value >> 6) & 0x3F;
-                *(parser->buffer_end++) = 0x80 + value & 0x3F;
+                *(parser->buffer_end++) = 0x80 + ((value >> 12) & 0x3F);
+                *(parser->buffer_end++) = 0x80 + ((value >> 6) & 0x3F);
+                *(parser->buffer_end++) = 0x80 + (value & 0x3F);
             }
+
+            parser->unread ++;
         }
+
+        /* On EOF, put NUL into the buffer and return. */
+
+        if (parser->eof) {
+            *(parser->buffer_end++) = '\0';
+            parser->unread ++;
+            return 1;
+        }
+
     }
 
     return 1;
@@ -357,18 +372,21 @@ yaml_parser_determine_encoding(yaml_parser_t *parser)
         parser->encoding = YAML_UTF16LE_ENCODING;
         parser->raw_pointer += 2;
         parser->raw_unread -= 2;
+        parser->offset += 2;
     }
     else if (parser->raw_unread >= 2
             && !memcmp(parser->raw_pointer, BOM_UTF16BE, 2)) {
         parser->encoding = YAML_UTF16BE_ENCODING;
         parser->raw_pointer += 2;
         parser->raw_unread -= 2;
+        parser->offset += 2;
     }
     else if (parser->raw_unread >= 3
             && !memcmp(parser->raw_pointer, BOM_UTF8, 3)) {
         parser->encoding = YAML_UTF8_ENCODING;
         parser->raw_pointer += 3;
         parser->raw_unread -= 3;
+        parser->offset += 3;
     }
     else {
         parser->encoding = YAML_UTF8_ENCODING;
@@ -407,7 +425,8 @@ yaml_parser_update_raw_buffer(yaml_parser_t *parser)
                 parser->raw_buffer + parser->raw_unread,
                 YAML_RAW_BUFFER_SIZE - parser->raw_unread,
                 &size_read)) {
-        return yaml_parser_set_reader_error(parser, "Input error");
+        return yaml_parser_set_reader_error(parser, "Input error",
+                parser->offset, -1);
     }
     parser->raw_unread += size_read;
     if (!size_read) {
