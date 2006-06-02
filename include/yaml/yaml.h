@@ -20,6 +20,27 @@ extern "C" {
 #include <string.h>
 
 /**
+ * @defgroup Export Definitions
+ * @{
+ */
+
+/** The public API declaration. */
+
+#ifdef WIN32
+#   if defined(YAML_DECLARE_STATIC)
+#       define  YAML_DECLARE(type)  type
+#   elif defined(YAML_DECLARE_EXPORT)
+#       define  YAML_DECLARE(type)  __declspec(dllexport) type
+#   else
+#       define  YAML_DECLARE(type)  __declspec(dllimport) type
+#   endif
+#else
+#   define  YAML_DECLARE(type)  type
+#endif
+
+/** @} */
+
+/**
  * @defgroup version Version Information
  * @{
  */
@@ -32,7 +53,7 @@ extern "C" {
  * number, and @c Z is the patch version number.
  */
 
-const char *
+YAML_DECLARE(const char *)
 yaml_get_version_string(void);
 
 /**
@@ -43,7 +64,7 @@ yaml_get_version_string(void);
  * @param[out]  patch   Patch version number.
  */
 
-void
+YAML_DECLARE(void)
 yaml_get_version(int *major, int *minor, int *patch);
 
 /** @} */
@@ -53,7 +74,7 @@ yaml_get_version(int *major, int *minor, int *patch);
  * @{
  */
 
-/** The character type. */
+/** The character type (UTF-8 octet). */
 typedef unsigned char yaml_char_t;
 
 /** The stream encoding. */
@@ -78,31 +99,63 @@ typedef enum {
     YAML_EMITTER_ERROR
 } yaml_error_type_t;
 
+/** The pointer position. */
+typedef struct {
+    /** The position index. */
+    size_t index;
+
+    /** The position line. */
+    size_t line;
+
+    /** The position column. */
+    size_t column;
+} yaml_mark_t;
+
 /** @} */
 
-/*
+/**
+ * @defgroup Node Styles
+ * @{
+ */
 
+/** Scalar styles. */
 typedef enum {
     YAML_ANY_SCALAR_STYLE,
+
     YAML_PLAIN_SCALAR_STYLE,
+
     YAML_SINGLE_QUOTED_SCALAR_STYLE,
     YAML_DOUBLE_QUOTED_SCALAR_STYLE,
+
     YAML_LITERAL_SCALAR_STYLE,
     YAML_FOLDED_SCALAR_STYLE
 } yaml_scalar_style_t;
 
+
+/** Sequence styles. */
 typedef enum {
     YAML_ANY_SEQUENCE_STYLE,
+
     YAML_BLOCK_SEQUENCE_STYLE,
     YAML_FLOW_SEQUENCE_STYLE
 } yaml_sequence_style_t;
 
+/** Mapping styles. */
 typedef enum {
     YAML_ANY_MAPPING_STYLE,
+
     YAML_BLOCK_MAPPING_STYLE,
     YAML_FLOW_MAPPING_STYLE
 } yaml_mapping_style_t;
 
+/** @} */
+
+/**
+ * @defgroup Tokens
+ * @{
+ */
+
+/** Token types. */
 typedef enum {
     YAML_STREAM_START_TOKEN,
     YAML_STREAM_END_TOKEN,
@@ -132,6 +185,242 @@ typedef enum {
     YAML_SCALAR_TOKEN
 } yaml_token_type_t;
 
+/** The token structure. */
+typedef struct {
+
+    /** The token type. */
+    yaml_token_type_t type;
+
+    /** The token data. */
+    union {
+
+        /** The stream encoding (for @c YAML_STREAM_START_TOKEN). */
+        yaml_encoding_t encoding;
+
+        /** The anchor (for @c YAML_ALIAS_TOKEN and @c YAML_ANCHOR_TOKEN). */
+        yaml_char_t *anchor;
+
+        /** The tag (for @c YAML_TAG_TOKEN). */
+        struct {
+            /** The tag handle. */
+            yaml_char_t *handle;
+
+            /** The tag suffix. */
+            yaml_char_t *suffix;
+        } tag;
+
+        /** The scalar value (for @c YAML_SCALAR_TOKEN). */
+        struct {
+
+            /** The scalar value. */
+            yaml_char_t *value;
+
+            /** The length of the scalar value. */
+            size_t length;
+
+            /** The scalar style. */
+            yaml_scalar_style_t style;
+        } scalar;
+
+        /** The version directive (for @c YAML_VERSION_DIRECTIVE_TOKEN). */
+        struct {
+            /** The major version number. */
+            int major;
+
+            /** The minor version number. */
+            int minor;
+        } version_directive;
+
+        /** The tag directive (for @c YAML_TAG_DIRECTIVE_TOKEN). */
+        struct {
+            /** The tag handle. */
+            yaml_char_t *handle;
+
+            /** The tag prefix. */
+            yaml_char_t *prefix;
+        } tag_directive;
+    } data;
+
+    /** The beginning of the token. */
+    yaml_mark_t start_mark;
+
+    /** The end of the token. */
+    yaml_mark_t end_mark;
+
+} yaml_token_t;
+
+/**
+ * Create a new token without assigning any data.
+ *
+ * This function can be used for constructing indicator tokens:
+ * @c YAML_DOCUMENT_START, @c YAML_DOCUMENT_END,
+ * @c YAML_BLOCK_SEQUENCE_START_TOKEN, @c YAML_BLOCK_MAPPING_START_TOKEN,
+ * @c YAML_BLOCK_END_TOKEN,
+ * @c YAML_FLOW_SEQUENCE_START_TOKEN, @c YAML_FLOW_SEQUENCE_END_TOKEN,
+ * @c YAML_FLOW_MAPPING_START_TOKEN, @c YAML_FLOW_MAPPING_END_TOKEN,
+ * @c YAML_BLOCK_ENTRY_TOKEN, @c YAML_FLOW_ENTRY_TOKEN,
+ * @c YAML_KEY_TOKEN, @c YAML_VALUE_TOKEN.
+ *
+ * @param[in]   type        The token type.
+ * @param[in]   start_mark  The beginning of the token.
+ * @param[in]   end_mark    The end of the token.
+ *
+ * @returns A new token object, or @c NULL on error.
+ */
+
+YAML_DECLARE(yaml_token_t *)
+yaml_token_new(yaml_token_type_t type,
+        yaml_mark_t start_mark, yaml_mark_t end_mark);
+
+/**
+ * Create a new @c YAML_STREAM_START_TOKEN token with the specified encoding.
+ *
+ * @param[in]   encoding    The stream encoding.
+ * @param[in]   start_mark  The beginning of the token.
+ * @param[in]   end_mark    The end of the token.
+ *
+ * @returns A new token object, or @c NULL on error.
+ */
+
+YAML_DECLARE(yaml_token_t *)
+yaml_stream_start_token_new(yaml_encoding_t encoding,
+        yaml_mark_t start_mark, yaml_mark_t end_mark);
+
+/**
+ * Create a new @c YAML_STREAM_END_TOKEN token.
+ *
+ * @param[in]   start_mark  The beginning of the token.
+ * @param[in]   end_mark    The end of the token.
+ *
+ * @returns A new token object, or @c NULL on error.
+ */
+
+YAML_DECLARE(yaml_token_t *)
+yaml_stream_end_token_new(yaml_mark_t start_mark, yaml_mark_t end_mark);
+
+/**
+ * Create a new @c YAML_VERSION_DIRECTIVE_TOKEN token with the specified
+ * version numbers.
+ *
+ * @param[in]   major       The major version number.
+ * @param[in]   minor       The minor version number.
+ * @param[in]   start_mark  The beginning of the token.
+ * @param[in]   end_mark    The end of the token.
+ *
+ * @returns A new token object, or @c NULL on error.
+ */
+
+YAML_DECLARE(yaml_token_t *)
+yaml_version_directive_token_new(int major, int minor,
+        yaml_mark_t start_mark, yaml_mark_t end_mark);
+
+/**
+ * Create a new @c YAML_TAG_DIRECTIVE_TOKEN token with the specified tag
+ * handle and prefix.
+ *
+ * Note that the @a handle and the @a prefix pointers will be freed by
+ * the token descructor.
+ *
+ * @param[in]   handle      The tag handle.
+ * @param[in]   prefix      The tag prefix.
+ * @param[in]   start_mark  The beginning of the token.
+ * @param[in]   end_mark    The end of the token.
+ *
+ * @returns A new token object, or @c NULL on error.
+ */
+
+YAML_DECLARE(yaml_token_t *)
+yaml_tag_directive_token_new(yaml_char_t *handle, yaml_char_t *prefix,
+        yaml_mark_t start_mark, yaml_mark_t end_mark);
+
+/**
+ * Create a new @c YAML_ALIAS_TOKEN token with the specified anchor.
+ *
+ * Note that the @a anchor pointer will be freed by the token descructor.
+ *
+ * @param[in]   anchor      The anchor.
+ * @param[in]   start_mark  The beginning of the token.
+ * @param[in]   end_mark    The end of the token.
+ *
+ * @returns A new token object, or @c NULL on error.
+ */
+
+YAML_DECLARE(yaml_token_t *)
+yaml_alias_token_new(yaml_char_t *anchor,
+        yaml_mark_t start_mark, yaml_mark_t end_mark);
+
+/**
+ * Create a new @c YAML_ANCHOR_TOKEN token with the specified anchor.
+ *
+ * Note that the @a anchor pointer will be freed by the token descructor.
+ *
+ * @param[in]   anchor      The anchor.
+ * @param[in]   start_mark  The beginning of the token.
+ * @param[in]   end_mark    The end of the token.
+ *
+ * @returns A new token object, or @c NULL on error.
+ */
+
+YAML_DECLARE(yaml_token_t *)
+yaml_anchor_token_new(yaml_char_t *anchor,
+        yaml_mark_t start_mark, yaml_mark_t end_mark);
+
+/**
+ * Create a new @c YAML_TAG_TOKEN token with the specified tag handle and
+ * suffix.
+ *
+ * Note that the @a handle and the @a suffix pointers will be freed by
+ * the token descructor.
+ *
+ * @param[in]   handle      The tag handle.
+ * @param[in]   suffix      The tag suffix.
+ * @param[in]   start_mark  The beginning of the token.
+ * @param[in]   end_mark    The end of the token.
+ *
+ * @returns A new token object, or @c NULL on error.
+ */
+
+YAML_DECLARE(yaml_token_t *)
+yaml_tag_token_new(yaml_char_t *handle, yaml_char_t *suffix,
+        yaml_mark_t start_mark, yaml_mark_t end_mark);
+
+/**
+ * Create a new @c YAML_SCALAR_TOKEN token with the specified scalar value,
+ * length, and style.
+ *
+ * Note that the scalar value may contain the @c NUL character, therefore
+ * the value length is also required.  The scalar value always ends with
+ * @c NUL.
+ *
+ * Note that the @a value pointer will be freed by the token descructor.
+ *
+ * @param[in]   value       The scalar value.
+ * @param[in]   length      The value length.
+ * @param[in]   style       The scalar style.
+ * @param[in]   start_mark  The beginning of the token.
+ * @param[in]   end_mark    The end of the token.
+ *
+ * @returns A new token object, or @c NULL on error.
+ */
+
+YAML_DECLARE(yaml_token_t *)
+yaml_scalar_token_new(yaml_char_t *value, size_t length,
+        yaml_scalar_style_t style,
+        yaml_mark_t start_mark, yaml_mark_t end_mark);
+
+/**
+ * Destroy a token object.
+ *
+ * @param[in]   token   A token object.
+ */
+
+YAML_DECLARE(void)
+yaml_token_delete(yaml_token_t *token);
+
+/** @} */
+
+/*
+
 typedef enum {
     YAML_STREAM_START_EVENT,
     YAML_STREAM_END_EVENT,
@@ -148,45 +437,6 @@ typedef enum {
     YAML_MAPPING_START_EVENT,
     YAML_MAPPING_END_EVENT
 } yaml_event_type_t;
-
-typedef struct {
-    size_t offset;
-    size_t index;
-    size_t line;
-    size_t column;
-} yaml_mark_t;
-
-typedef struct {
-    yaml_error_type_t type;
-    char *context;
-    yaml_mark_t context_mark;
-    char *problem;
-    yaml_mark_t problem_mark;
-} yaml_error_t;
-
-typedef struct {
-    yaml_token_type_t type;
-    union {
-        yaml_encoding_t encoding;
-        char *anchor;
-        char *tag;
-        struct {
-            char *value;
-            size_t length;
-            yaml_scalar_style_t style;
-        } scalar;
-        struct {
-            int major;
-            int minor;
-        } version;
-        struct {
-          char *handle;
-          char *prefix;
-        } tag_pair;
-    } data;
-    yaml_mark_t start_mark;
-    yaml_mark_t end_mark;
-} yaml_token_t;
 
 typedef struct {
     yaml_event_type_t type;
@@ -272,8 +522,13 @@ typedef int yaml_read_handler_t(void *data, unsigned char *buffer, size_t size,
  */
 
 typedef struct {
+    /** The string start pointer. */
     unsigned char *start;
+
+    /** The string end pointer. */
     unsigned char *end;
+
+    /** The string current position. */
     unsigned char *current;
 } yaml_string_input_t;
 
@@ -375,7 +630,7 @@ typedef struct {
  * @returns A new parser object; @c NULL on error.
  */
 
-yaml_parser_t *
+YAML_DECLARE(yaml_parser_t *)
 yaml_parser_new(void);
 
 /**
@@ -384,7 +639,7 @@ yaml_parser_new(void);
  * @param[in]   parser  A parser object.
  */
 
-void
+YAML_DECLARE(void)
 yaml_parser_delete(yaml_parser_t *parser);
 
 /**
@@ -396,10 +651,10 @@ yaml_parser_delete(yaml_parser_t *parser);
  *
  * @param[in]   parser  A parser object.
  * @param[in]   input   A source data.
- * @param[in]   length  The length of the source data in bytes.
+ * @param[in]   size    The length of the source data in bytes.
  */
 
-void
+YAML_DECLARE(void)
 yaml_parser_set_input_string(yaml_parser_t *parser,
         unsigned char *input, size_t size);
 
@@ -414,7 +669,7 @@ yaml_parser_set_input_string(yaml_parser_t *parser,
  * @param[in]   file    An open file.
  */
 
-void
+YAML_DECLARE(void)
 yaml_parser_set_input_file(yaml_parser_t *parser, FILE *file);
 
 /**
@@ -425,17 +680,18 @@ yaml_parser_set_input_file(yaml_parser_t *parser, FILE *file);
  * @param[in]   data    Any application data for passing to the read handler.
  */
 
-void
+YAML_DECLARE(void)
 yaml_parser_set_input(yaml_parser_t *parser,
         yaml_read_handler_t *handler, void *data);
 
 /**
  * Set the source encoding.
  *
+ * @param[in]   parser      A parser object.
  * @param[in]   encoding    The source encoding.
  */
 
-void
+YAML_DECLARE(void)
 yaml_parser_set_encoding(yaml_parser_t *parser, yaml_encoding_t encoding);
 
 /** @} */
@@ -459,7 +715,7 @@ typedef struct {
  * or @c NULL if it failed.
  */
 
-void *
+YAML_DECLARE(void *)
 yaml_malloc(size_t size);
 
 /**
@@ -473,7 +729,7 @@ yaml_malloc(size_t size);
  * or @c NULL if it failed.
  */
 
-void *
+YAML_DECLARE(void *)
 yaml_realloc(void *ptr, size_t size);
 
 /**
@@ -483,7 +739,7 @@ yaml_realloc(void *ptr, size_t size);
  *                      valid.
  */
 
-void
+YAML_DECLARE(void)
 yaml_free(void *ptr);
 
 /** The size of the raw buffer. */
@@ -507,7 +763,7 @@ yaml_free(void *ptr);
  * @returns @c 1 on success, @c 0 on error.
  */
 
-int
+YAML_DECLARE(int)
 yaml_parser_update_buffer(yaml_parser_t *parser, size_t length);
 
 /** @} */

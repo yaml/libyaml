@@ -11,7 +11,7 @@
  * Set the reader error and return 0.
  */
 
-int
+static int
 yaml_parser_set_reader_error(yaml_parser_t *parser, const char *problem,
         size_t offset, int value)
 {
@@ -23,6 +23,96 @@ yaml_parser_set_reader_error(yaml_parser_t *parser, const char *problem,
     return 0;
 }
 
+/*
+ * Update the raw buffer.
+ */
+
+static int
+yaml_parser_update_raw_buffer(yaml_parser_t *parser)
+{
+    size_t size_read = 0;
+
+    /* Return if the raw buffer is full. */
+
+    if (parser->raw_unread == YAML_RAW_BUFFER_SIZE) return 1;
+
+    /* Return on EOF. */
+
+    if (parser->eof) return 1;
+
+    /* Move the remaining bytes in the raw buffer to the beginning. */
+
+    if (parser->raw_unread && parser->raw_buffer < parser->raw_pointer) {
+        memmove(parser->raw_buffer, parser->raw_pointer, parser->raw_unread);
+    }
+    parser->raw_pointer = parser->raw_buffer;
+
+    /* Call the read handler to fill the buffer. */
+
+    if (!parser->read_handler(parser->read_handler_data,
+                parser->raw_buffer + parser->raw_unread,
+                YAML_RAW_BUFFER_SIZE - parser->raw_unread,
+                &size_read)) {
+        return yaml_parser_set_reader_error(parser, "Input error",
+                parser->offset, -1);
+    }
+    parser->raw_unread += size_read;
+    if (!size_read) {
+        parser->eof = 1;
+    }
+
+    return 1;
+}
+
+/*
+ * Determine the input stream encoding by checking the BOM symbol. If no BOM is
+ * found, the UTF-8 encoding is assumed. Return 1 on success, 0 on failure.
+ */
+
+#define BOM_UTF8    "\xef\xbb\xbf"
+#define BOM_UTF16LE "\xff\xfe"
+#define BOM_UTF16BE "\xfe\xff"
+
+static int
+yaml_parser_determine_encoding(yaml_parser_t *parser)
+{
+    /* Ensure that we had enough bytes in the raw buffer. */
+
+    while (!parser->eof && parser->raw_unread < 3) {
+        if (!yaml_parser_update_raw_buffer(parser)) {
+            return 0;
+        }
+    }
+
+    /* Determine the encoding. */
+
+    if (parser->raw_unread >= 2
+            && !memcmp(parser->raw_pointer, BOM_UTF16LE, 2)) {
+        parser->encoding = YAML_UTF16LE_ENCODING;
+        parser->raw_pointer += 2;
+        parser->raw_unread -= 2;
+        parser->offset += 2;
+    }
+    else if (parser->raw_unread >= 2
+            && !memcmp(parser->raw_pointer, BOM_UTF16BE, 2)) {
+        parser->encoding = YAML_UTF16BE_ENCODING;
+        parser->raw_pointer += 2;
+        parser->raw_unread -= 2;
+        parser->offset += 2;
+    }
+    else if (parser->raw_unread >= 3
+            && !memcmp(parser->raw_pointer, BOM_UTF8, 3)) {
+        parser->encoding = YAML_UTF8_ENCODING;
+        parser->raw_pointer += 3;
+        parser->raw_unread -= 3;
+        parser->offset += 3;
+    }
+    else {
+        parser->encoding = YAML_UTF8_ENCODING;
+    }
+
+    return 1;
+}
 
 /*
  * Ensure that the buffer contains at least length characters.
@@ -31,7 +121,7 @@ yaml_parser_set_reader_error(yaml_parser_t *parser, const char *problem,
  * The length is supposed to be significantly less that the buffer size.
  */
 
-int
+YAML_DECLARE(int)
 yaml_parser_update_buffer(yaml_parser_t *parser, size_t length)
 {
     /* If the EOF flag is set and the raw buffer is empty, do nothing. */
@@ -340,97 +430,6 @@ yaml_parser_update_buffer(yaml_parser_t *parser, size_t length)
             return 1;
         }
 
-    }
-
-    return 1;
-}
-
-/*
- * Determine the input stream encoding by checking the BOM symbol. If no BOM is
- * found, the UTF-8 encoding is assumed. Return 1 on success, 0 on failure.
- */
-
-#define BOM_UTF8    "\xef\xbb\xbf"
-#define BOM_UTF16LE "\xff\xfe"
-#define BOM_UTF16BE "\xfe\xff"
-
-int
-yaml_parser_determine_encoding(yaml_parser_t *parser)
-{
-    /* Ensure that we had enough bytes in the raw buffer. */
-
-    while (!parser->eof && parser->raw_unread < 3) {
-        if (!yaml_parser_update_raw_buffer(parser)) {
-            return 0;
-        }
-    }
-
-    /* Determine the encoding. */
-
-    if (parser->raw_unread >= 2
-            && !memcmp(parser->raw_pointer, BOM_UTF16LE, 2)) {
-        parser->encoding = YAML_UTF16LE_ENCODING;
-        parser->raw_pointer += 2;
-        parser->raw_unread -= 2;
-        parser->offset += 2;
-    }
-    else if (parser->raw_unread >= 2
-            && !memcmp(parser->raw_pointer, BOM_UTF16BE, 2)) {
-        parser->encoding = YAML_UTF16BE_ENCODING;
-        parser->raw_pointer += 2;
-        parser->raw_unread -= 2;
-        parser->offset += 2;
-    }
-    else if (parser->raw_unread >= 3
-            && !memcmp(parser->raw_pointer, BOM_UTF8, 3)) {
-        parser->encoding = YAML_UTF8_ENCODING;
-        parser->raw_pointer += 3;
-        parser->raw_unread -= 3;
-        parser->offset += 3;
-    }
-    else {
-        parser->encoding = YAML_UTF8_ENCODING;
-    }
-
-    return 1;
-}
-
-/*
- * Update the raw buffer.
- */
-
-int
-yaml_parser_update_raw_buffer(yaml_parser_t *parser)
-{
-    size_t size_read = 0;
-
-    /* Return if the raw buffer is full. */
-
-    if (parser->raw_unread == YAML_RAW_BUFFER_SIZE) return 1;
-
-    /* Return on EOF. */
-
-    if (parser->eof) return 1;
-
-    /* Move the remaining bytes in the raw buffer to the beginning. */
-
-    if (parser->raw_unread && parser->raw_buffer < parser->raw_pointer) {
-        memmove(parser->raw_buffer, parser->raw_pointer, parser->raw_unread);
-    }
-    parser->raw_pointer = parser->raw_buffer;
-
-    /* Call the read handler to fill the buffer. */
-
-    if (!parser->read_handler(parser->read_handler_data,
-                parser->raw_buffer + parser->raw_unread,
-                YAML_RAW_BUFFER_SIZE - parser->raw_unread,
-                &size_read)) {
-        return yaml_parser_set_reader_error(parser, "Input error",
-                parser->offset, -1);
-    }
-    parser->raw_unread += size_read;
-    if (!size_read) {
-        parser->eof = 1;
     }
 
     return 1;
