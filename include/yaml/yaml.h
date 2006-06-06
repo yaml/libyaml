@@ -20,7 +20,7 @@ extern "C" {
 #include <string.h>
 
 /**
- * @defgroup Export Definitions
+ * @defgroup export Export Definitions
  * @{
  */
 
@@ -114,7 +114,7 @@ typedef struct {
 /** @} */
 
 /**
- * @defgroup Node Styles
+ * @defgroup styles Node Styles
  * @{
  */
 
@@ -151,7 +151,7 @@ typedef enum {
 /** @} */
 
 /**
- * @defgroup Tokens
+ * @defgroup tokens Tokens
  * @{
  */
 
@@ -533,6 +533,33 @@ typedef struct {
 } yaml_string_input_t;
 
 /**
+ * This structure holds information about a potential simple key.
+ */
+
+typedef struct {
+    /** Is a simple key possible? */
+    int possible;
+
+    /** Is a simple key required? */
+    int required;
+
+    /** The number of the token. */
+    size_t token_number;
+
+    /** The position index. */
+    size_t index;
+
+    /** The position line. */
+    size_t line;
+
+    /** The position column. */
+    size_t column;
+
+    /** The position mark. */
+    yaml_mark_t mark;
+} yaml_simple_key_t;
+
+/**
  * The parser structure.
  *
  * All members are internal.  Manage the structure using the @c yaml_parser_
@@ -619,6 +646,60 @@ typedef struct {
      * @}
      */
 
+    /**
+     * @name Scanner stuff
+     * @{
+     */
+
+    /** Have we started to scan the input stream? */
+    int stream_start_produced;
+
+    /** Have we reached the end of the input stream? */
+    int stream_end_produced;
+
+    /** The number of unclosed '[' and '{' indicators. */
+    int flow_level;
+
+    /** The tokens queue, which contains the current produced tokens. */
+    yaml_token_t *tokens;
+
+    /** The size of the tokens queue. */
+    size_t tokens_size;
+
+    /** The head of the tokens queue. */
+    size_t tokens_head;
+
+    /** The tail of the tokens queue. */
+    size_t tokens_tail;
+
+    /** The number of tokens fetched from the tokens queue. */
+    size_t tokens_parsed;
+
+    /** The stack of indentation levels. */
+    int *indents;
+
+    /** The size of the indents stack. */
+    size_t indents_size;
+
+    /** The number of items in the indents stack. */
+    size_t indents_length;
+
+    /** The current indentation level. */
+    int indent;
+
+    /** May a simple key occur at the current position? */
+    int simple_key_allowed;
+
+    /** The stack of potential simple keys. */
+    yaml_simple_key_t *simple_keys;
+
+    /** The size of the simple keys stack. */
+    size_t simple_keys_size;
+
+    /**
+     * @}
+     */
+
 } yaml_parser_t;
 
 /**
@@ -693,6 +774,36 @@ yaml_parser_set_input(yaml_parser_t *parser,
 
 YAML_DECLARE(void)
 yaml_parser_set_encoding(yaml_parser_t *parser, yaml_encoding_t encoding);
+
+/**
+ * Get the next token.
+ *
+ * The token is removed from the internal token queue and the application is
+ * responsible for destroing the token object.
+ *
+ * @param[in]   parser      A parser object.
+ *
+ * @returns A token object, or @c NULL on error.
+ */
+
+YAML_DECLARE(yaml_token_t *)
+yaml_parser_get_token(yaml_parser_t *parser);
+
+/**
+ * Peek the next token.
+ *
+ * The token is not removed from the internal token queue and will be returned
+ * again on a subsequent call of @c yaml_parser_get_token or
+ * @c yaml_parser_peek_token. The application should not destroy the token
+ * object.
+ *
+ * @param[in]   parser      A parser object.
+ *
+ * @returns A token object, or @c NULL on error.
+ */
+
+YAML_DECLARE(yaml_token_t *)
+yaml_parser_peek_token(yaml_parser_t *parser);
 
 /** @} */
 
