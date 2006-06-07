@@ -49,33 +49,76 @@ yaml_parser_new(void)
     /* Allocate the parser structure. */
 
     parser = yaml_malloc(sizeof(yaml_parser_t));
-    if (!parser) return NULL;
+    if (!parser) goto error;
 
     memset(parser, 0, sizeof(yaml_parser_t));
 
     /* Allocate the raw buffer. */
 
     parser->raw_buffer = yaml_malloc(YAML_RAW_BUFFER_SIZE);
-    if (!parser->raw_buffer) {
-        yaml_free(parser);
-        return NULL;
-    }
+    if (!parser->raw_buffer) goto error;
+    memset(parser->raw_buffer, 0, YAML_RAW_BUFFER_SIZE);
+
     parser->raw_pointer = parser->raw_buffer;
     parser->raw_unread = 0;
 
     /* Allocate the character buffer. */
 
     parser->buffer = yaml_malloc(YAML_BUFFER_SIZE);
-    if (!parser->buffer) {
-        yaml_free(parser->raw_buffer);
-        yaml_free(parser);
-        return NULL;
-    }
+    if (!parser->buffer) goto error;
+    memset(parser->buffer, 0, YAML_BUFFER_SIZE);
+
     parser->buffer_end = parser->buffer;
     parser->pointer = parser->buffer;
     parser->unread = 0;
 
+    /* Allocate the tokens queue. */
+
+    parser->tokens = yaml_malloc(YAML_DEFAULT_SIZE*sizeof(yaml_token_t *));
+    if (!parser->tokens) goto error;
+    memset(parser->tokens, 0, YAML_DEFAULT_SIZE*sizeof(yaml_token_t *));
+
+    parser->tokens_size = YAML_DEFAULT_SIZE;
+    parser->tokens_head = 0;
+    parser->tokens_tail = 0;
+    parser->tokens_parsed = 0;
+
+    /* Allocate the indents stack. */
+
+    parser->indents = yaml_malloc(YAML_DEFAULT_SIZE*sizeof(int));
+    if (!parser->indents) goto error;
+    memset(parser->indents, 0, YAML_DEFAULT_SIZE*sizeof(int));
+
+    parser->indents_size = YAML_DEFAULT_SIZE;
+    parser->indents_length = 0;
+
+    /* Allocate the stack of potential simple keys. */
+
+    parser->simple_keys = yaml_malloc(YAML_DEFAULT_SIZE*sizeof(yaml_simple_key_t *));
+    if (!parser->simple_keys) goto error;
+    memset(parser->simple_keys, 0, YAML_DEFAULT_SIZE*sizeof(yaml_simple_key_t *));
+
+    parser->simple_keys_size = YAML_DEFAULT_SIZE;
+
+    /* Done. */
+
     return parser;
+
+    /* On error, free allocated buffers. */
+
+error:
+
+    if (!parser) return NULL;
+
+    yaml_free(parser->simple_keys);
+    yaml_free(parser->indents);
+    yaml_free(parser->tokens);
+    yaml_free(parser->buffer);
+    yaml_free(parser->raw_buffer);
+
+    yaml_free(parser);
+
+    return NULL;
 }
 
 /*
@@ -87,6 +130,9 @@ yaml_parser_delete(yaml_parser_t *parser)
 {
     assert(parser); /* Non-NULL parser object expected. */
 
+    yaml_free(parser->simple_keys);
+    yaml_free(parser->indents);
+    yaml_free(parser->tokens);
     yaml_free(parser->buffer);
     yaml_free(parser->raw_buffer);
 
