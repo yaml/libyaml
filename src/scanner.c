@@ -498,7 +498,7 @@
  */
 
 #define CHECK_AT(parser,octet,offset)   \
-    (parser->buffer[offset] == (yaml_char_t)(octet))
+    (parser->pointer[offset] == (yaml_char_t)(octet))
 
 /*
  * Check the current octet in the buffer.
@@ -557,6 +557,11 @@
 
 #define IS_BREAK(parser)    IS_BREAK_AT(parser,0)
 
+#define IS_CRLF_AT(parser,offset) \
+     (CHECK_AT(parser,'\r',(offset)) && CHECK_AT(parser,'\n',(offset)+1))
+
+#define IS_CRLF(parser) IS_CRLF_AT(parser,0)
+
 /*
  * Check if the character is a line break or NUL.
  */
@@ -583,6 +588,30 @@
     (IS_BLANK_AT(parser,(offset)) || IS_BREAKZ_AT(parser,(offset)))
 
 #define IS_BLANKZ(parser)   IS_BLANKZ_AT(parser,0)
+
+/*
+ * Determine the width of the character.
+ */
+
+#define WIDTH_AT(parser,offset)                         \
+     ((parser->pointer[(offset)] & 0x80) == 0x00 ? 1 :  \
+      (parser->pointer[(offset)] & 0xE0) == 0xC0 ? 2 :  \
+      (parser->pointer[(offset)] & 0xF0) == 0xE0 ? 3 :  \
+      (parser->pointer[(offset)] & 0xF8) == 0xF0 ? 4 : 0)
+
+#define WIDTH(parser)   WIDTH_AT(parser,0)
+
+/*
+ * Advance the buffer pointer.
+ */
+
+#define FORWARD(parser) \
+     (parser->index ++,                             \
+      ((IS_BREAK(parser) && !IS_CRLF(parser)) ?     \
+       (parser->line ++, parser->column = 0) :      \
+       (parser->column ++)),                        \
+      parser->unread --,                            \
+      parser->pointer += WIDTH(parser))
 
 /*
  * Public API declarations.
@@ -628,12 +657,30 @@ yaml_parser_save_simple_key(yaml_parser_t *parser);
 static int
 yaml_parser_remove_simple_key(yaml_parser_t *parser);
 
+static int
+yaml_parser_increase_flow_level(yaml_parser_t *parser);
+
+static int
+yaml_parser_decrease_flow_level(yaml_parser_t *parser);
+
+/*
+ * Token manipulation.
+ */
+
+static int
+yaml_parser_append_token(yaml_parser_t *parser, yaml_token_t *token);
+
+static int
+yaml_parser_insert_token(yaml_parser_t *parser,
+        int number, yaml_token_t *token);
+
 /*
  * Indentation treatment.
  */
 
 static int
-yaml_parser_roll_indent(yaml_parser_t *parser, int column);
+yaml_parser_roll_indent(yaml_parser_t *parser, int column,
+        int number, yaml_token_type_t type, yaml_mark_t mark);
 
 static int
 yaml_parser_unroll_indent(yaml_parser_t *parser, int column);
@@ -652,30 +699,12 @@ static int
 yaml_parser_fetch_directive(yaml_parser_t *parser);
 
 static int
-yaml_parser_fetch_document_start(yaml_parser_t *parser);
-
-static int
-yaml_parser_fetch_document_end(yaml_parser_t *parser);
-
-static int
 yaml_parser_fetch_document_indicator(yaml_parser_t *parser,
         yaml_token_type_t type);
 
 static int
-yaml_parser_fetch_flow_sequence_start(yaml_parser_t *parser);
-
-static int
-yaml_parser_fetch_flow_mapping_start(yaml_parser_t *parser);
-
-static int
 yaml_parser_fetch_flow_collection_start(yaml_parser_t *parser,
         yaml_token_type_t type);
-
-static int
-yaml_parser_fetch_flow_sequence_end(yaml_parser_t *parser);
-
-static int
-yaml_parser_fetch_flow_mapping_end(yaml_parser_t *parser);
 
 static int
 yaml_parser_fetch_flow_collection_end(yaml_parser_t *parser,
@@ -694,10 +723,7 @@ static int
 yaml_parser_fetch_value(yaml_parser_t *parser);
 
 static int
-yaml_parser_fetch_alias(yaml_parser_t *parser);
-
-static int
-yaml_parser_fetch_anchor(yaml_parser_t *parser);
+yaml_parser_fetch_anchor(yaml_parser_t *parser, yaml_token_type_t type);
 
 static int
 yaml_parser_fetch_tag(yaml_parser_t *parser);
@@ -950,7 +976,8 @@ yaml_parser_fetch_next_token(yaml_parser_t *parser)
             && CHECK_AT(parser, '-', 1)
             && CHECK_AT(parser, '-', 2)
             && IS_BLANKZ_AT(parser, 3))
-        return yaml_parser_fetch_document_start(parser);
+        return yaml_parser_fetch_document_indicator(parser,
+                YAML_DOCUMENT_START_TOKEN);
 
     /* Is it the document end indicator? */
 
@@ -959,27 +986,32 @@ yaml_parser_fetch_next_token(yaml_parser_t *parser)
             && CHECK_AT(parser, '.', 1)
             && CHECK_AT(parser, '.', 2)
             && IS_BLANKZ_AT(parser, 3))
-        return yaml_parser_fetch_document_start(parser);
+        return yaml_parser_fetch_document_indicator(parser,
+                YAML_DOCUMENT_END_TOKEN);
 
     /* Is it the flow sequence start indicator? */
 
     if (CHECK(parser, '['))
-        return yaml_parser_fetch_flow_sequence_start(parser);
+        return yaml_parser_fetch_flow_collection_start(parser,
+                YAML_FLOW_SEQUENCE_START_TOKEN);
 
     /* Is it the flow mapping start indicator? */
 
     if (CHECK(parser, '{'))
-        return yaml_parser_fetch_flow_mapping_start(parser);
+        return yaml_parser_fetch_flow_collection_start(parser,
+                YAML_FLOW_MAPPING_START_TOKEN);
 
     /* Is it the flow sequence end indicator? */
 
     if (CHECK(parser, ']'))
-        return yaml_parser_fetch_flow_sequence_end(parser);
+        return yaml_parser_fetch_flow_collection_end(parser,
+                YAML_FLOW_SEQUENCE_END_TOKEN);
 
     /* Is it the flow mapping end indicator? */
 
     if (CHECK(parser, '}'))
-        return yaml_parser_fetch_flow_mapping_end(parser);
+        return yaml_parser_fetch_flow_collection_end(parser,
+                YAML_FLOW_MAPPING_END_TOKEN);
 
     /* Is it the flow entry indicator? */
 
@@ -1004,12 +1036,12 @@ yaml_parser_fetch_next_token(yaml_parser_t *parser)
     /* Is it an alias? */
 
     if (CHECK(parser, '*'))
-        return yaml_parser_fetch_alias(parser);
+        return yaml_parser_fetch_anchor(parser, YAML_ALIAS_TOKEN);
 
     /* Is it an anchor? */
 
     if (CHECK(parser, '&'))
-        return yaml_parser_fetch_anchor(parser);
+        return yaml_parser_fetch_anchor(parser, YAML_ANCHOR_TOKEN);
 
     /* Is it a tag? */
 
@@ -1072,5 +1104,1066 @@ yaml_parser_fetch_next_token(yaml_parser_t *parser)
 
     return yaml_parser_set_scanner_error(parser, "while scanning for the next token",
             yaml_parser_get_mark(parser), "found character that cannot start any token");
+}
+
+/*
+ * Check the list of potential simple keys and remove the positions that
+ * cannot contain simple keys anymore.
+ */
+
+static int
+yaml_parser_stale_simple_keys(yaml_parser_t *parser)
+{
+    int level;
+
+    /* Check for a potential simple key for each flow level. */
+
+    for (level = 0; level <= parser->flow_level; level++)
+    {
+        yaml_simple_key_t *simple_key = parser->simple_keys[level];
+
+        /*
+         * The specification requires that a simple key
+         *
+         *  - is limited to a single line,
+         *  - is shorter than 1024 characters.
+         */
+
+        if (simple_key && (simple_key->line < parser->line ||
+                    simple_key->index < parser->index+1024)) {
+
+            /* Check if the potential simple key to be removed is required. */
+
+            if (simple_key->required) {
+                return yaml_parser_set_scanner_error(parser,
+                        "while scanning a simple key", simple_key->mark,
+                        "could not found expected ':'");
+            }
+
+            yaml_free(simple_key);
+            parser->simple_keys[level] = NULL;
+        }
+    }
+
+    return 1;
+}
+
+/*
+ * Check if a simple key may start at the current position and add it if
+ * needed.
+ */
+
+static int
+yaml_parser_save_simple_key(yaml_parser_t *parser)
+{
+    /*
+     * A simple key is required at the current position if the scanner is in
+     * the block context and the current column coincides with the indentation
+     * level.
+     */
+
+    int required = (!parser->flow_level && parser->indent == parser->column);
+
+    /*
+     * A simple key is required only when it is the first token in the current
+     * line.  Therefore it is always allowed.  But we add a check anyway.
+     */
+
+    assert(parser->simple_key_allowed || !required);    /* Impossible. */
+
+    /*
+     * If the current position may start a simple key, save it.
+     */
+
+    if (parser->simple_key_allowed)
+    {
+        yaml_simple_key_t simple_key = { required,
+            parser->tokens_parsed + parser->tokens_tail - parser->tokens_head,
+            parser->index, parser->line, parser->column,
+            yaml_parser_get_mark(parser) };
+
+        if (!yaml_parser_remove_simple_key(parser)) return 0;
+
+        parser->simple_keys[parser->flow_level] =
+            yaml_malloc(sizeof(yaml_simple_key_t));
+        if (!parser->simple_keys[parser->flow_level]) {
+            parser->error = YAML_MEMORY_ERROR;
+            return 0;
+        }
+
+        *(parser->simple_keys[parser->flow_level]) = simple_key;
+    }
+
+    return 1;
+}
+
+/*
+ * Remove a potential simple key at the current flow level.
+ */
+
+static int
+yaml_parser_remove_simple_key(yaml_parser_t *parser)
+{
+    yaml_simple_key_t *simple_key = parser->simple_keys[parser->flow_level];
+
+    if (simple_key)
+    {
+        /* If the key is required, it is an error. */
+
+        if (simple_key->required) {
+            return yaml_parser_set_scanner_error(parser,
+                    "while scanning a simple key", simple_key->mark,
+                    "could not found expected ':'");
+        }
+
+        /* Remove the key from the list. */
+
+        yaml_free(simple_key);
+        parser->simple_keys[parser->flow_level] = NULL;
+    }
+
+    return 1;
+}
+
+/*
+ * Increase the flow level and resize the simple key list if needed.
+ */
+
+static int
+yaml_parser_increase_flow_level(yaml_parser_t *parser)
+{
+    /* Check if we need to resize the list. */
+
+    if (parser->flow_level == parser->simple_keys_size-1)
+    {
+        yaml_simple_key_t **new_simple_keys =
+                yaml_realloc(parser->simple_keys,
+                    sizeof(yaml_simple_key_t *) * parser->simple_keys_size * 2);
+
+        if (!new_simple_keys) {
+            parser->error = YAML_MEMORY_ERROR;
+            return 0;
+        }
+
+        memset(new_simple_keys+parser->simple_keys_size, 0,
+                sizeof(yaml_simple_key_t *)*parser->simple_keys_size);
+
+        parser->simple_keys = new_simple_keys;
+        parser->simple_keys_size *= 2;
+    }
+
+    /* Increase the flow level and reset the simple key. */
+
+    parser->simple_keys[++parser->flow_level] = NULL;
+
+    return 1;
+}
+
+/*
+ * Decrease the flow level.
+ */
+
+static int
+yaml_parser_decrease_flow_level(yaml_parser_t *parser)
+{
+    assert(parser->flow_level);                         /* Greater than 0. */
+    assert(!parser->simple_keys[parser->flow_level]);   /* Must be removed. */
+
+    parser->flow_level --;
+
+    return 1;
+}
+
+/*
+ * Add a token to the tail of the tokens queue.
+ */
+
+static int
+yaml_parser_append_token(yaml_parser_t *parser, yaml_token_t *token)
+{
+    return yaml_parser_insert_token(parser, -1, token);
+}
+
+/*
+ * Insert the token into the tokens queue.  The number parameter is the
+ * ordinal number of the token.  If the number is equal to -1, add the token
+ * to the tail of the queue.
+ */
+
+static int
+yaml_parser_insert_token(yaml_parser_t *parser,
+        int number, yaml_token_t *token)
+{
+    /* The index of the token in the queue. */
+
+    int index = (number == -1)
+            ? parser->tokens_tail - parser->tokens_head
+            : number - parser->tokens_parsed;
+
+    assert(index >= 0 && index <= (parser->tokens_tail-parser->tokens_head));
+
+    /* Check if we need to resize the queue. */
+
+    if (parser->tokens_head == 0 && parser->tokens_tail == parser->tokens_size)
+    {
+        yaml_token_t **new_tokens = yaml_realloc(parser->tokens,
+                sizeof(yaml_token_t *) * parser->tokens_size * 2);
+
+        if (!new_tokens) {
+            parser->error = YAML_MEMORY_ERROR;
+            return 0;
+        }
+
+        memset(new_tokens+parser->tokens_size, 0,
+                sizeof(yaml_token_t *)*parser->tokens_size);
+
+        parser->tokens = new_tokens;
+        parser->tokens_size *= 2;
+    }
+
+    /* Check if we need to move the queue to the beginning of the buffer. */
+
+    if (parser->tokens_tail == parser->tokens_size)
+    {
+        if (parser->tokens_head < parser->tokens_tail) {
+            memmove(parser->tokens, parser->tokens+parser->tokens_head,
+                    sizeof(yaml_token_t *)*(parser->tokens_tail-parser->tokens_head));
+        }
+        parser->tokens_tail -= parser->tokens_head;
+        parser->tokens_head = 0;
+    }
+
+    /* Check if we need to free space within the queue. */
+
+    if (index < (parser->tokens_tail-parser->tokens_head)) {
+        memmove(parser->tokens+parser->tokens_head+index+1,
+                parser->tokens+parser->tokens_head+index,
+                sizeof(yaml_token_t *)*(parser->tokens_tail-parser->tokens_head-index));
+    }
+
+    /* Insert the token. */
+
+    parser->tokens[parser->tokens_head+index] = token;
+    parser->tokens_tail ++;
+
+    return 1;
+}
+
+/*
+ * Push the current indentation level to the stack and set the new level
+ * the current column is greater than the indentation level.  In this case,
+ * append or insert the specified token into the token queue.
+ * 
+ */
+
+static int
+yaml_parser_roll_indent(yaml_parser_t *parser, int column,
+        int number, yaml_token_type_t type, yaml_mark_t mark)
+{
+    yaml_token_t *token;
+
+    /* In the flow context, do nothing. */
+
+    if (parser->flow_level)
+        return 1;
+
+    if (parser->indent < column)
+    {
+        /* Check if we need to expand the indents stack. */
+
+        if (parser->indents_length == parser->indents_size)
+        {
+            int *new_indents = yaml_realloc(parser->indents,
+                    sizeof(int) * parser->indents_size * 2);
+
+            if (!new_indents) {
+                parser->error = YAML_MEMORY_ERROR;
+                return 0;
+            }
+
+            memset(new_indents+parser->indents_size, 0,
+                    sizeof(int)*parser->indents_size);
+
+            parser->indents = new_indents;
+            parser->indents_size *= 2;
+        }
+
+        /*
+         * Push the current indentation level to the stack and set the new
+         * indentation level.
+         */
+
+        parser->indents[parser->indents_length++] = parser->indent;
+        parser->indent = column;
+
+        /* Create a token. */
+
+        token = yaml_token_new(type, mark, mark);
+        if (!token) {
+            parser->error = YAML_MEMORY_ERROR;
+            return 0;
+        }
+
+        /* Insert the token into the queue. */
+
+        if (!yaml_parser_insert_token(parser, number, token)) {
+            yaml_token_delete(token);
+            return 0;
+        }
+    }
+
+    return 1;
+}
+
+/*
+ * Pop indentation levels from the indents stack until the current level
+ * becomes less or equal to the column.  For each intendation level, append
+ * the BLOCK-END token.
+ */
+
+
+static int
+yaml_parser_unroll_indent(yaml_parser_t *parser, int column)
+{
+    yaml_token_t *token;
+
+    /* In the flow context, do nothing. */
+
+    if (parser->flow_level)
+        return 1;
+
+    /* Loop through the intendation levels in the stack. */
+
+    while (parser->indent > column)
+    {
+        yaml_mark_t mark = yaml_parser_get_mark(parser);
+
+        /* Create a token. */
+
+        token = yaml_token_new(YAML_BLOCK_END_TOKEN, mark, mark);
+        if (!token) {
+            parser->error = YAML_MEMORY_ERROR;
+            return 0;
+        }
+
+        /* Append the token to the queue. */
+
+        if (!yaml_parser_append_token(parser, token)) {
+            yaml_token_delete(token);
+            return 0;
+        }
+
+        /* Pop the indentation level. */
+
+        assert(parser->indents_length);     /* Non-empty stack expected. */
+
+        parser->indent = parser->indents[--parser->indents_length];
+    }
+
+    return 1;
+}
+
+/*
+ * Initialize the scanner and produce the STREAM-START token.
+ */
+
+static int
+yaml_parser_fetch_stream_start(yaml_parser_t *parser)
+{
+    yaml_mark_t mark = yaml_parser_get_mark(parser);
+    yaml_token_t *token;
+
+    /* Set the initial indentation. */
+
+    parser->indent = -1;
+
+    /* A simple key is allowed at the beginning of the stream. */
+
+    parser->simple_key_allowed = 1;
+
+    /* We have started. */
+
+    parser->stream_start_produced = 1;
+
+    /* Create the STREAM-START token. */
+
+    token = yaml_stream_start_token_new(parser->encoding, mark, mark);
+    if (!token) {
+        parser->error = YAML_MEMORY_ERROR;
+        return 0;
+    }
+
+    /* Append the token to the queue. */
+
+    if (!yaml_parser_append_token(parser, token)) {
+        yaml_token_delete(token);
+        return 0;
+    }
+
+    return 1;
+}
+
+/*
+ * Produce the STREAM-END token and shut down the scanner.
+ */
+
+static int
+yaml_parser_fetch_stream_end(yaml_parser_t *parser)
+{
+    yaml_mark_t mark = yaml_parser_get_mark(parser);
+    yaml_token_t *token;
+
+    /* Reset the indentation level. */
+
+    if (!yaml_parser_unroll_indent(parser, -1))
+        return 0;
+
+    /* We have finished. */
+
+    parser->stream_end_produced = 1;
+
+    /* Create the STREAM-END token. */
+
+    token = yaml_stream_end_token_new(mark, mark);
+    if (!token) {
+        parser->error = YAML_MEMORY_ERROR;
+        return 0;
+    }
+
+    /* Append the token to the queue. */
+
+    if (!yaml_parser_append_token(parser, token)) {
+        yaml_token_delete(token);
+        return 0;
+    }
+
+    return 1;
+}
+
+/*
+ * Produce the YAML-DIRECTIVE or TAG-DIRECTIVE token.
+ */
+
+static int
+yaml_parser_fetch_directive(yaml_parser_t *parser)
+{
+    yaml_token_t *token;
+
+    /* Reset the indentation level. */
+
+    if (!yaml_parser_unroll_indent(parser, -1))
+        return 0;
+
+    /* Reset simple keys. */
+
+    if (!yaml_parser_remove_simple_key(parser))
+        return 0;
+
+    parser->simple_key_allowed = 0;
+
+    /* Create the YAML-DIRECTIVE or TAG-DIRECTIVE token. */
+
+    token = yaml_parser_scan_directive(parser);
+    if (!token) return 0;
+
+    /* Append the token to the queue. */
+
+    if (!yaml_parser_append_token(parser, token)) {
+        yaml_token_delete(token);
+        return 0;
+    }
+
+    return 1;
+}
+
+/*
+ * Produce the DOCUMENT-START or DOCUMENT-END token.
+ */
+
+static int
+yaml_parser_fetch_document_indicator(yaml_parser_t *parser,
+        yaml_token_type_t type)
+{
+    yaml_mark_t start_mark, end_mark;
+    yaml_token_t *token;
+
+    /* Reset the indentation level. */
+
+    if (!yaml_parser_unroll_indent(parser, -1))
+        return 0;
+
+    /* Reset simple keys. */
+
+    if (!yaml_parser_remove_simple_key(parser))
+        return 0;
+
+    parser->simple_key_allowed = 0;
+
+    /* Consume the token. */
+
+    start_mark = yaml_parser_get_mark(parser);
+
+    FORWARD(parser);
+    FORWARD(parser);
+    FORWARD(parser);
+
+    end_mark = yaml_parser_get_mark(parser);
+
+    /* Create the DOCUMENT-START or DOCUMENT-END token. */
+
+    token = yaml_token_new(type, start_mark, end_mark);
+    if (!token) {
+        parser->error = YAML_MEMORY_ERROR;
+        return 0;
+    }
+
+    /* Append the token to the queue. */
+
+    if (!yaml_parser_append_token(parser, token)) {
+        yaml_token_delete(token);
+        return 0;
+    }
+
+    return 1;
+}
+
+/*
+ * Produce the FLOW-SEQUENCE-START or FLOW-MAPPING-START token.
+ */
+
+static int
+yaml_parser_fetch_flow_collection_start(yaml_parser_t *parser,
+        yaml_token_type_t type)
+{
+    yaml_mark_t start_mark, end_mark;
+    yaml_token_t *token;
+
+    /* The indicators '[' and '{' may start a simple key. */
+
+    if (!yaml_parser_save_simple_key(parser))
+        return 0;
+
+    /* Increase the flow level. */
+
+    if (!yaml_parser_increase_flow_level(parser))
+        return 0;
+
+    /* A simple key may follow the indicators '[' and '{'. */
+
+    parser->simple_key_allowed = 1;
+
+    /* Consume the token. */
+
+    start_mark = yaml_parser_get_mark(parser);
+    FORWARD(parser);
+    end_mark = yaml_parser_get_mark(parser);
+
+    /* Create the FLOW-SEQUENCE-START of FLOW-MAPPING-START token. */
+
+    token = yaml_token_new(type, start_mark, end_mark);
+    if (!token) {
+        parser->error = YAML_MEMORY_ERROR;
+        return 0;
+    }
+
+    /* Append the token to the queue. */
+
+    if (!yaml_parser_append_token(parser, token)) {
+        yaml_token_delete(token);
+        return 0;
+    }
+
+    return 1;
+}
+
+/*
+ * Produce the FLOW-SEQUENCE-END or FLOW-MAPPING-END token.
+ */
+
+static int
+yaml_parser_fetch_flow_collection_end(yaml_parser_t *parser,
+        yaml_token_type_t type)
+{
+    yaml_mark_t start_mark, end_mark;
+    yaml_token_t *token;
+
+    /* Reset any potential simple key on the current flow level. */
+
+    if (!yaml_parser_remove_simple_key(parser))
+        return 0;
+
+    /* Decrease the flow level. */
+
+    if (!yaml_parser_decrease_flow_level(parser))
+        return 0;
+
+    /* No simple keys after the indicators ']' and '}'. */
+
+    parser->simple_key_allowed = 0;
+
+    /* Consume the token. */
+
+    start_mark = yaml_parser_get_mark(parser);
+    FORWARD(parser);
+    end_mark = yaml_parser_get_mark(parser);
+
+    /* Create the FLOW-SEQUENCE-END of FLOW-MAPPING-END token. */
+
+    token = yaml_token_new(type, start_mark, end_mark);
+    if (!token) {
+        parser->error = YAML_MEMORY_ERROR;
+        return 0;
+    }
+
+    /* Append the token to the queue. */
+
+    if (!yaml_parser_append_token(parser, token)) {
+        yaml_token_delete(token);
+        return 0;
+    }
+
+    return 1;
+}
+
+/*
+ * Produce the FLOW-ENTRY token.
+ */
+
+static int
+yaml_parser_fetch_flow_entry(yaml_parser_t *parser)
+{
+    yaml_mark_t start_mark, end_mark;
+    yaml_token_t *token;
+
+    /* Reset any potential simple keys on the current flow level. */
+
+    if (!yaml_parser_remove_simple_key(parser))
+        return 0;
+
+    /* Simple keys are allowed after ','. */
+
+    parser->simple_key_allowed = 1;
+
+    /* Consume the token. */
+
+    start_mark = yaml_parser_get_mark(parser);
+    FORWARD(parser);
+    end_mark = yaml_parser_get_mark(parser);
+
+    /* Create the FLOW-ENTRY token. */
+
+    token = yaml_token_new(YAML_FLOW_ENTRY_TOKEN, start_mark, end_mark);
+    if (!token) {
+        parser->error = YAML_MEMORY_ERROR;
+        return 0;
+    }
+
+    /* Append the token to the queue. */
+
+    if (!yaml_parser_append_token(parser, token)) {
+        yaml_token_delete(token);
+        return 0;
+    }
+
+    return 1;
+}
+
+/*
+ * Produce the BLOCK-ENTRY token.
+ */
+
+static int
+yaml_parser_fetch_block_entry(yaml_parser_t *parser)
+{
+    yaml_mark_t start_mark, end_mark;
+    yaml_token_t *token;
+
+    /* Check if the scanner is in the block context. */
+
+    if (!parser->flow_level)
+    {
+        /* Check if we are allowed to start a new entry. */
+
+        if (!parser->simple_key_allowed) {
+            return yaml_parser_set_scanner_error(parser, NULL,
+                    yaml_parser_get_mark(parser),
+                    "block sequence entries are not allowed in this context");
+        }
+
+        /* Add the BLOCK-SEQUENCE-START token if needed. */
+
+        if (!yaml_parser_roll_indent(parser, parser->column, -1,
+                    YAML_BLOCK_SEQUENCE_START_TOKEN, yaml_parser_get_mark(parser)))
+            return 0;
+    }
+    else
+    {
+        /*
+         * It is an error for the '-' indicator to occur in the flow context,
+         * but we let the Parser detect and report about it because the Parser
+         * is able to point to the context.
+         */
+    }
+
+    /* Reset any potential simple keys on the current flow level. */
+
+    if (!yaml_parser_remove_simple_key(parser))
+        return 0;
+
+    /* Simple keys are allowed after '-'. */
+
+    parser->simple_key_allowed = 1;
+
+    /* Consume the token. */
+
+    start_mark = yaml_parser_get_mark(parser);
+    FORWARD(parser);
+    end_mark = yaml_parser_get_mark(parser);
+
+    /* Create the BLOCK-ENTRY token. */
+
+    token = yaml_token_new(YAML_BLOCK_ENTRY_TOKEN, start_mark, end_mark);
+    if (!token) {
+        parser->error = YAML_MEMORY_ERROR;
+        return 0;
+    }
+
+    /* Append the token to the queue. */
+
+    if (!yaml_parser_append_token(parser, token)) {
+        yaml_token_delete(token);
+        return 0;
+    }
+
+    return 1;
+}
+
+/*
+ * Produce the KEY token.
+ */
+
+static int
+yaml_parser_fetch_key(yaml_parser_t *parser)
+{
+    yaml_mark_t start_mark, end_mark;
+    yaml_token_t *token;
+
+    /* In the block context, additional checks are required. */
+
+    if (!parser->flow_level)
+    {
+        /* Check if we are allowed to start a new key (not nessesary simple). */
+
+        if (!parser->simple_key_allowed) {
+            return yaml_parser_set_scanner_error(parser, NULL,
+                    yaml_parser_get_mark(parser),
+                    "mapping keys are not allowed in this context");
+        }
+
+        /* Add the BLOCK-MAPPING-START token if needed. */
+
+        if (!yaml_parser_roll_indent(parser, parser->column, -1,
+                    YAML_BLOCK_MAPPING_START_TOKEN, yaml_parser_get_mark(parser)))
+            return 0;
+    }
+
+    /* Reset any potential simple keys on the current flow level. */
+
+    if (!yaml_parser_remove_simple_key(parser))
+        return 0;
+
+    /* Simple keys are allowed after '?' in the block context. */
+
+    parser->simple_key_allowed = (!parser->flow_level);
+
+    /* Consume the token. */
+
+    start_mark = yaml_parser_get_mark(parser);
+    FORWARD(parser);
+    end_mark = yaml_parser_get_mark(parser);
+
+    /* Create the KEY token. */
+
+    token = yaml_token_new(YAML_KEY_TOKEN, start_mark, end_mark);
+    if (!token) {
+        parser->error = YAML_MEMORY_ERROR;
+        return 0;
+    }
+
+    /* Append the token to the queue. */
+
+    if (!yaml_parser_append_token(parser, token)) {
+        yaml_token_delete(token);
+        return 0;
+    }
+
+    return 1;
+}
+
+/*
+ * Produce the VALUE token.
+ */
+
+static int
+yaml_parser_fetch_value(yaml_parser_t *parser)
+{
+    yaml_mark_t start_mark, end_mark;
+    yaml_token_t *token;
+
+    /* Have we found a simple key? */
+
+    if (parser->simple_keys[parser->flow_level])
+    {
+        yaml_simple_key_t *simple_key = parser->simple_keys[parser->flow_level];
+
+        /* Create the KEY token. */
+
+        token = yaml_token_new(YAML_KEY_TOKEN, simple_key->mark, simple_key->mark);
+        if (!token) {
+            parser->error = YAML_MEMORY_ERROR;
+            return 0;
+        }
+
+        /* Insert the token into the queue. */
+
+        if (!yaml_parser_insert_token(parser, simple_key->token_number, token)) {
+            yaml_token_delete(token);
+            return 0;
+        }
+
+        /* In the block context, we may need to add the BLOCK-MAPPING-START token. */
+
+        if (!yaml_parser_roll_indent(parser, parser->column,
+                    simple_key->token_number,
+                    YAML_BLOCK_MAPPING_START_TOKEN, simple_key->mark))
+            return 0;
+
+        /* Remove the simple key from the list. */
+
+        if (!yaml_parser_remove_simple_key(parser)) return 0;
+
+        /* A simple key cannot follow another simple key. */
+
+        parser->simple_key_allowed = 0;
+    }
+    else
+    {
+        /* The ':' indicator follows a complex key. */
+
+        /* In the block context, extra checks are required. */
+
+        if (!parser->flow_level)
+        {
+            /* Check if we are allowed to start a complex value. */
+
+            if (!parser->simple_key_allowed) {
+                return yaml_parser_set_scanner_error(parser, NULL,
+                        yaml_parser_get_mark(parser),
+                        "mapping values are not allowed in this context");
+            }
+
+            /* Add the BLOCK-MAPPING-START token if needed. */
+
+            if (!yaml_parser_roll_indent(parser, parser->column, -1,
+                        YAML_BLOCK_MAPPING_START_TOKEN, yaml_parser_get_mark(parser)))
+                return 0;
+        }
+
+        /* Remove a potential simple key from the list. */
+
+        if (!yaml_parser_remove_simple_key(parser)) return 0;
+
+        /* Simple keys after ':' are allowed in the block context. */
+
+        parser->simple_key_allowed = (!parser->flow_level);
+    }
+
+    /* Consume the token. */
+
+    start_mark = yaml_parser_get_mark(parser);
+    FORWARD(parser);
+    end_mark = yaml_parser_get_mark(parser);
+
+    /* Create the VALUE token. */
+
+    token = yaml_token_new(YAML_VALUE_TOKEN, start_mark, end_mark);
+    if (!token) {
+        parser->error = YAML_MEMORY_ERROR;
+        return 0;
+    }
+
+    /* Append the token to the queue. */
+
+    if (!yaml_parser_append_token(parser, token)) {
+        yaml_token_delete(token);
+        return 0;
+    }
+
+    return 1;
+}
+
+/*
+ * Produce the ALIAS or ANCHOR token.
+ */
+
+static int
+yaml_parser_fetch_anchor(yaml_parser_t *parser, yaml_token_type_t type)
+{
+    yaml_token_t *token;
+
+    /* An anchor or an alias could be a simple key. */
+
+    if (!yaml_parser_save_simple_key(parser))
+        return 0;
+
+    /* A simple key cannot follow an anchor or an alias. */
+
+    parser->simple_key_allowed = 0;
+
+    /* Create the ALIAS or ANCHOR token. */
+
+    token = yaml_parser_scan_anchor(parser, type);
+    if (!token) return 0;
+
+    /* Append the token to the queue. */
+
+    if (!yaml_parser_append_token(parser, token)) {
+        yaml_token_delete(token);
+        return 0;
+    }
+
+    return 1;
+}
+
+/*
+ * Produce the TAG token.
+ */
+
+static int
+yaml_parser_fetch_tag(yaml_parser_t *parser)
+{
+    yaml_token_t *token;
+
+    /* A tag could be a simple key. */
+
+    if (!yaml_parser_save_simple_key(parser))
+        return 0;
+
+    /* A simple key cannot follow a tag. */
+
+    parser->simple_key_allowed = 0;
+
+    /* Create the TAG token. */
+
+    token = yaml_parser_scan_tag(parser);
+    if (!token) return 0;
+
+    /* Append the token to the queue. */
+
+    if (!yaml_parser_append_token(parser, token)) {
+        yaml_token_delete(token);
+        return 0;
+    }
+
+    return 1;
+}
+
+/*
+ * Produce the SCALAR(...,literal) or SCALAR(...,folded) tokens.
+ */
+
+static int
+yaml_parser_fetch_block_scalar(yaml_parser_t *parser, int literal)
+{
+    yaml_token_t *token;
+
+    /* Remove any potential simple keys. */
+
+    if (!yaml_parser_remove_simple_key(parser))
+        return 0;
+
+    /* A simple key may follow a block scalar. */
+
+    parser->simple_key_allowed = 1;
+
+    /* Create the SCALAR token. */
+
+    token = yaml_parser_scan_block_scalar(parser, literal);
+    if (!token) return 0;
+
+    /* Append the token to the queue. */
+
+    if (!yaml_parser_append_token(parser, token)) {
+        yaml_token_delete(token);
+        return 0;
+    }
+
+    return 1;
+}
+
+/*
+ * Produce the SCALAR(...,single-quoted) or SCALAR(...,double-quoted) tokens.
+ */
+
+static int
+yaml_parser_fetch_flow_scalar(yaml_parser_t *parser, int single)
+{
+    yaml_token_t *token;
+
+    /* A plain scalar could be a simple key. */
+
+    if (!yaml_parser_save_simple_key(parser))
+        return 0;
+
+    /* A simple key cannot follow a flow scalar. */
+
+    parser->simple_key_allowed = 0;
+
+    /* Create the SCALAR token. */
+
+    token = yaml_parser_scan_flow_scalar(parser, single);
+    if (!token) return 0;
+
+    /* Append the token to the queue. */
+
+    if (!yaml_parser_append_token(parser, token)) {
+        yaml_token_delete(token);
+        return 0;
+    }
+
+    return 1;
+}
+
+/*
+ * Produce the SCALAR(...,plain) token.
+ */
+
+static int
+yaml_parser_fetch_plain_scalar(yaml_parser_t *parser)
+{
+    yaml_token_t *token;
+
+    /* A plain scalar could be a simple key. */
+
+    if (!yaml_parser_save_simple_key(parser))
+        return 0;
+
+    /* A simple key cannot follow a flow scalar. */
+
+    parser->simple_key_allowed = 0;
+
+    /* Create the SCALAR token. */
+
+    token = yaml_parser_scan_plain_scalar(parser);
+    if (!token) return 0;
+
+    /* Append the token to the queue. */
+
+    if (!yaml_parser_append_token(parser, token)) {
+        yaml_token_delete(token);
+        return 0;
+    }
+
+    return 1;
 }
 
