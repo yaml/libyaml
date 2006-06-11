@@ -507,12 +507,88 @@
 #define CHECK(parser,octet) CHECK_AT(parser,(octet),0)
 
 /*
+ * Check if the character at the specified position is an alphabetical
+ * character, a digit, '_', or '-'.
+ */
+
+#define IS_ALPHA_AT(parser,offset)  \
+     ((parser->pointer[offset] >= (yaml_char_t) '0' &&      \
+       parser->pointer[offset] <= (yaml_char_t) '9') ||     \
+      (parser->pointer[offset] >= (yaml_char_t) 'A' &&      \
+       parser->pointer[offset] <= (yaml_char_t) 'Z') ||     \
+      (parser->pointer[offset] >= (yaml_char_t) 'a' &&      \
+       parser->pointer[offset] <= (yaml_char_t) 'z') ||     \
+      parser->pointer[offset] == '_' ||                     \
+      parser->pointer[offset] == '-')
+
+#define IS_ALPHA(parser)    IS_ALPHA_AT(parser,0)
+
+/*
+ * Check if the character at the specified position is a digit.
+ */
+
+#define IS_DIGIT_AT(parser,offset)  \
+     ((parser->pointer[offset] >= (yaml_char_t) '0' &&      \
+       parser->pointer[offset] <= (yaml_char_t) '9'))
+
+#define IS_DIGIT(parser)    IS_DIGIT_AT(parser,0)
+
+/*
+ * Get the value of a digit.
+ */
+
+#define AS_DIGIT_AT(parser,offset)  \
+     (parser->pointer[offset] - (yaml_char_t) '0')
+
+#define AS_DIGIT(parser)    AS_DIGIT_AT(parser,0)
+
+/*
+ * Check if the character at the specified position is a hex-digit.
+ */
+
+#define IS_HEX_AT(parser,offset)    \
+     ((parser->pointer[offset] >= (yaml_char_t) '0' &&      \
+       parser->pointer[offset] <= (yaml_char_t) '9') ||     \
+      (parser->pointer[offset] >= (yaml_char_t) 'A' &&      \
+       parser->pointer[offset] <= (yaml_char_t) 'F') ||     \
+      (parser->pointer[offset] >= (yaml_char_t) 'a' &&      \
+       parser->pointer[offset] <= (yaml_char_t) 'f'))
+
+#define IS_HEX(parser)    IS_HEX_AT(parser,0)
+
+/*
+ * Get the value of a hex-digit.
+ */
+
+#define AS_HEX_AT(parser,offset)    \
+      ((parser->pointer[offset] >= (yaml_char_t) 'A' &&     \
+        parser->pointer[offset] <= (yaml_char_t) 'F') ?     \
+       (parser->pointer[offset] - (yaml_char_t) 'A' + 10) : \
+       (parser->pointer[offset] >= (yaml_char_t) 'a' &&     \
+        parser->pointer[offset] <= (yaml_char_t) 'f') ?     \
+       (parser->pointer[offset] - (yaml_char_t) 'a' + 10) : \
+       (parser->pointer[offset] - (yaml_char_t) '0'))
+ 
+#define AS_HEX(parser)  AS_HEX_AT(parser,0)
+ 
+/*
  * Check if the character at the specified position is NUL.
  */
 
 #define IS_Z_AT(parser,offset)    CHECK_AT(parser,'\0',(offset))
 
 #define IS_Z(parser)    IS_Z_AT(parser,0)
+
+/*
+ * Check if the character at the specified position is BOM.
+ */
+
+#define IS_BOM_AT(parser,offset)                                    \
+     (CHECK_AT(parser,'\xEF',(offset))                              \
+      && CHECK_AT(parser,'\xBB',(offset)+1)                         \
+      && CHECK_AT(parser,'\xBF',(offset)+1))    /* BOM (#xFEFF) */
+
+#define IS_BOM(parser)  IS_BOM_AT(parser,0)
 
 /*
  * Check if the character at the specified position is space.
@@ -547,13 +623,13 @@
     (CHECK_AT(parser,'\r',(offset))                 /* CR (#xD)*/       \
      || CHECK_AT(parser,'\n',(offset))              /* LF (#xA) */      \
      || (CHECK_AT(parser,'\xC2',(offset))                               \
-         && CHECK_AT(parser,'\x85',(offset+1)))     /* NEL (#x85) */    \
+         && CHECK_AT(parser,'\x85',(offset)+1))     /* NEL (#x85) */    \
      || (CHECK_AT(parser,'\xE2',(offset))                               \
-         && CHECK_AT(parser,'\x80',(offset+1))                          \
-         && CHECK_AT(parser,'\xA8',(offset+2)))     /* LS (#x2028) */   \
+         && CHECK_AT(parser,'\x80',(offset)+1)                          \
+         && CHECK_AT(parser,'\xA8',(offset)+2))     /* LS (#x2028) */   \
      || (CHECK_AT(parser,'\xE2',(offset))                               \
-         && CHECK_AT(parser,'\x80',(offset+1))                          \
-         && CHECK_AT(parser,'\xA9',(offset+2))))    /* LS (#x2029) */
+         && CHECK_AT(parser,'\x80',(offset)+1)                          \
+         && CHECK_AT(parser,'\xA9',(offset)+2)))    /* LS (#x2029) */
 
 #define IS_BREAK(parser)    IS_BREAK_AT(parser,0)
 
@@ -605,13 +681,55 @@
  * Advance the buffer pointer.
  */
 
-#define FORWARD(parser) \
+#define FORWARD(parser)                             \
      (parser->index ++,                             \
-      ((IS_BREAK(parser) && !IS_CRLF(parser)) ?     \
-       (parser->line ++, parser->column = 0) :      \
-       (parser->column ++)),                        \
+      parser->column ++,                            \
       parser->unread --,                            \
       parser->pointer += WIDTH(parser))
+
+#define FORWARD_LINE(parser)                        \
+     (IS_CRLF(parser) ?                             \
+      (parser->index += 2,                          \
+       parser->column = 0,                          \
+       parser->unread -= 2,                         \
+       parser->pointer += 2) :                      \
+      IS_BREAK(parser) ?                            \
+      (parser->index ++,                            \
+       parser->column = 0,                          \
+       parser->unread --,                           \
+       parser->pointer += WIDTH(parser)) : 0)
+
+/*
+ * Resize a string if needed.
+ */
+
+#define RESIZE(parser,string)   \
+    (string.pointer-string.buffer+5 < string.size ? 1 :  \
+     yaml_parser_resize_string(parser, &string))
+
+/*
+ * Copy a character to a string buffer and advance pointers.
+ */
+
+#define COPY(parser,string)     \
+     (((*parser->pointer & 0x80) == 0x00 ?                  \
+       (*(string.pointer++) = *(parser->pointer++)) :       \
+       (*parser->pointer & 0xE0) == 0xC0 ?                  \
+       (*(string.pointer++) = *(parser->pointer++),         \
+        *(string.pointer++) = *(parser->pointer++)) :       \
+       (*parser->pointer & 0xF0) == 0xE0 ?                  \
+       (*(string.pointer++) = *(parser->pointer++),         \
+        *(string.pointer++) = *(parser->pointer++),         \
+        *(string.pointer++) = *(parser->pointer++)) :       \
+       (*parser->pointer & 0xF8) == 0xF0 ?                  \
+       (*(string.pointer++) = *(parser->pointer++),         \
+        *(string.pointer++) = *(parser->pointer++),         \
+        *(string.pointer++) = *(parser->pointer++),         \
+        *(string.pointer++) = *(parser->pointer++)) : 0),   \
+      parser->index ++,                                     \
+      parser->column ++,                                    \
+      parser->unread --)
+    
 
 /*
  * Public API declarations.
@@ -633,6 +751,26 @@ yaml_parser_set_scanner_error(yaml_parser_t *parser, const char *context,
 
 static yaml_mark_t
 yaml_parser_get_mark(yaml_parser_t *parser);
+
+/*
+ * Buffers and lists.
+ */
+
+typedef struct {
+    yaml_char_t *buffer;
+    yaml_char_t *pointer;
+    size_t size;
+} yaml_string_t;
+
+static yaml_string_t
+yaml_parser_new_string(yaml_parser_t *parser);
+
+static int
+yaml_parser_resize_string(yaml_parser_t *parser, yaml_string_t *string);
+
+static int
+yaml_parser_resize_list(yaml_parser_t *parser, void **buffer, size_t *size,
+        size_t item_size);
 
 /*
  * High-level token API.
@@ -752,16 +890,16 @@ yaml_parser_scan_directive_name(yaml_parser_t *parser,
         yaml_mark_t start_mark, yaml_char_t **name);
 
 static int
-yaml_parser_scan_yaml_directive_value(yaml_parser_t *parser,
+yaml_parser_scan_version_directive_value(yaml_parser_t *parser,
         yaml_mark_t start_mark, int *major, int *minor);
 
 static int
-yaml_parser_scan_yaml_directive_number(yaml_parser_t *parser,
+yaml_parser_scan_version_directive_number(yaml_parser_t *parser,
         yaml_mark_t start_mark, int *number);
 
 static int
 yaml_parser_scan_tag_directive_value(yaml_parser_t *parser,
-        yaml_char_t **handle, yaml_char_t **prefix);
+        yaml_mark_t mark, yaml_char_t **handle, yaml_char_t **prefix);
 
 static yaml_token_t *
 yaml_parser_scan_anchor(yaml_parser_t *parser,
@@ -776,7 +914,11 @@ yaml_parser_scan_tag_handle(yaml_parser_t *parser, int directive,
 
 static int
 yaml_parser_scan_tag_uri(yaml_parser_t *parser, int directive,
-        yaml_mark_t start_mark, yaml_char_t **url);
+        yaml_char_t *head, yaml_mark_t start_mark, yaml_char_t **uri);
+
+static int
+yaml_parser_scan_uri_escapes(yaml_parser_t *parser, int directive,
+        yaml_mark_t start_mark, yaml_string_t *string);
 
 static yaml_token_t *
 yaml_parser_scan_block_scalar(yaml_parser_t *parser, int literal);
@@ -839,6 +981,78 @@ yaml_parser_peek_token(yaml_parser_t *parser)
     /* Fetch the next token from the queue. */
 
     return parser->tokens[parser->tokens_head];
+}
+
+/*
+ * Create a new string.
+ */
+
+static yaml_string_t
+yaml_parser_new_string(yaml_parser_t *parser)
+{
+    yaml_string_t string = { NULL, NULL, 0 };
+
+    string.buffer = yaml_malloc(YAML_DEFAULT_SIZE);
+    if (!string.buffer) {
+        parser->error = YAML_MEMORY_ERROR;
+        return string;
+    }
+
+    memset(string.buffer, 0, YAML_DEFAULT_SIZE);
+    string.pointer = string.buffer;
+    string.size = YAML_DEFAULT_SIZE;
+
+    return string;
+}
+
+/*
+ * Double the size of a string.
+ */
+
+static int
+yaml_parser_resize_string(yaml_parser_t *parser, yaml_string_t *string)
+{
+    yaml_char_t *new_buffer = yaml_realloc(string->buffer, string->size*2);
+
+    if (!new_buffer) {
+        yaml_free(string->buffer);
+        string->buffer = NULL;
+        string->pointer = NULL;
+        string->size = 0;
+        parser->error = YAML_MEMORY_ERROR;
+        return 0;
+    }
+
+    memset(new_buffer+string->size, 0, string->size);
+
+    string->pointer = new_buffer + (string->buffer-string->pointer);
+    string->buffer = new_buffer;
+    string->size *= 2;
+
+    return 1;
+}
+
+/*
+ * Double a list.
+ */
+
+static int
+yaml_parser_resize_list(yaml_parser_t *parser, void **buffer, size_t *size,
+        size_t item_size)
+{
+    void *new_buffer = yaml_realloc(*buffer, item_size*(*size)*2);
+
+    if (!new_buffer) {
+        parser->error = YAML_MEMORY_ERROR;
+        return 0;
+    }
+
+    memset(new_buffer+(*size), 0, item_size*(*size));
+
+    *buffer = new_buffer;
+    *size *= 2;
+
+    return 1;
 }
 
 /*
@@ -1234,22 +1448,10 @@ yaml_parser_increase_flow_level(yaml_parser_t *parser)
 {
     /* Check if we need to resize the list. */
 
-    if (parser->flow_level == parser->simple_keys_size-1)
-    {
-        yaml_simple_key_t **new_simple_keys =
-                yaml_realloc(parser->simple_keys,
-                    sizeof(yaml_simple_key_t *) * parser->simple_keys_size * 2);
-
-        if (!new_simple_keys) {
-            parser->error = YAML_MEMORY_ERROR;
+    if (parser->flow_level == parser->simple_keys_size-1) {
+        if (!yaml_parser_resize_list(parser, (void **)&parser->simple_keys,
+                    &parser->simple_keys_size, sizeof(yaml_simple_key_t *)))
             return 0;
-        }
-
-        memset(new_simple_keys+parser->simple_keys_size, 0,
-                sizeof(yaml_simple_key_t *)*parser->simple_keys_size);
-
-        parser->simple_keys = new_simple_keys;
-        parser->simple_keys_size *= 2;
     }
 
     /* Increase the flow level and reset the simple key. */
@@ -1304,21 +1506,10 @@ yaml_parser_insert_token(yaml_parser_t *parser,
 
     /* Check if we need to resize the queue. */
 
-    if (parser->tokens_head == 0 && parser->tokens_tail == parser->tokens_size)
-    {
-        yaml_token_t **new_tokens = yaml_realloc(parser->tokens,
-                sizeof(yaml_token_t *) * parser->tokens_size * 2);
-
-        if (!new_tokens) {
-            parser->error = YAML_MEMORY_ERROR;
+    if (parser->tokens_head == 0 && parser->tokens_tail == parser->tokens_size) {
+        if (!yaml_parser_resize_list(parser, (void **)&parser->tokens,
+                    &parser->tokens_size, sizeof(yaml_token_t *)))
             return 0;
-        }
-
-        memset(new_tokens+parser->tokens_size, 0,
-                sizeof(yaml_token_t *)*parser->tokens_size);
-
-        parser->tokens = new_tokens;
-        parser->tokens_size *= 2;
     }
 
     /* Check if we need to move the queue to the beginning of the buffer. */
@@ -1371,21 +1562,10 @@ yaml_parser_roll_indent(yaml_parser_t *parser, int column,
     {
         /* Check if we need to expand the indents stack. */
 
-        if (parser->indents_length == parser->indents_size)
-        {
-            int *new_indents = yaml_realloc(parser->indents,
-                    sizeof(int) * parser->indents_size * 2);
-
-            if (!new_indents) {
-                parser->error = YAML_MEMORY_ERROR;
+        if (parser->indents_length == parser->indents_size) {
+            if (!yaml_parser_resize_list(parser, (void **)&parser->indents,
+                        &parser->indents_size, sizeof(int)))
                 return 0;
-            }
-
-            memset(new_indents+parser->indents_size, 0,
-                    sizeof(int)*parser->indents_size);
-
-            parser->indents = new_indents;
-            parser->indents_size *= 2;
         }
 
         /*
@@ -1940,7 +2120,8 @@ yaml_parser_fetch_value(yaml_parser_t *parser)
 
         /* Remove the simple key from the list. */
 
-        if (!yaml_parser_remove_simple_key(parser)) return 0;
+        yaml_free(simple_key);
+        parser->simple_keys[parser->flow_level] = NULL;
 
         /* A simple key cannot follow another simple key. */
 
@@ -1968,10 +2149,6 @@ yaml_parser_fetch_value(yaml_parser_t *parser)
                         YAML_BLOCK_MAPPING_START_TOKEN, yaml_parser_get_mark(parser)))
                 return 0;
         }
-
-        /* Remove a potential simple key from the list. */
-
-        if (!yaml_parser_remove_simple_key(parser)) return 0;
 
         /* Simple keys after ':' are allowed in the block context. */
 
@@ -2163,6 +2340,794 @@ yaml_parser_fetch_plain_scalar(yaml_parser_t *parser)
         yaml_token_delete(token);
         return 0;
     }
+
+    return 1;
+}
+
+/*
+ * Eat whitespaces and comments until the next token is found.
+ */
+
+static int
+yaml_parser_scan_to_next_token(yaml_parser_t *parser)
+{
+    /* Until the next token is not found. */
+
+    while (1)
+    {
+        /* Allow the BOM mark to start a line. */
+
+        if (!UPDATE(parser, 1)) return 0;
+
+        if (parser->column == 0 && IS_BOM(parser))
+            FORWARD(parser);
+
+        /*
+         * Eat whitespaces.
+         *
+         * Tabs are allowed:
+         *
+         *  - in the flow context;
+         *  - in the block context, but not at the beginning of the line or
+         *  after '-', '?', or ':' (complex value).  
+         */
+
+        if (!UPDATE(parser, 1)) return 0;
+
+        while (CHECK(parser,' ') ||
+                ((parser->flow_level || !parser->simple_key_allowed) &&
+                 CHECK(parser, '\t'))) {
+            FORWARD(parser);
+            if (!UPDATE(parser, 1)) return 0;
+        }
+
+        /* Eat a comment until a line break. */
+
+        if (CHECK(parser, '#')) {
+            while (!IS_BREAKZ(parser)) {
+                FORWARD(parser);
+                if (!UPDATE(parser, 1)) return 0;
+            }
+        }
+
+        /* If it is a line break, eat it. */
+
+        if (IS_BREAK(parser))
+        {
+            if (!UPDATE(parser, 2)) return 0;
+            FORWARD_LINE(parser);
+
+            /* In the block context, a new line may start a simple key. */
+
+            if (!parser->flow_level) {
+                parser->simple_key_allowed = 1;
+            }
+        }
+        else
+        {
+            /* We have found a token. */
+
+            break;
+        }
+    }
+
+    return 1;
+}
+
+/*
+ * Scan a YAML-DIRECTIVE or TAG-DIRECTIVE token.
+ *
+ * Scope:
+ *      %YAML    1.1    # a comment \n
+ *      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+ *      %TAG    !yaml!  tag:yaml.org,2002:  \n
+ *      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+ */
+
+static yaml_token_t *
+yaml_parser_scan_directive(yaml_parser_t *parser)
+{
+    yaml_mark_t start_mark, end_mark;
+    yaml_char_t *name = NULL;
+    int major, minor;
+    yaml_char_t *handle = NULL, *prefix = NULL;
+    yaml_token_t *token = NULL;
+
+    /* Eat '%'. */
+
+    start_mark = yaml_parser_get_mark(parser);
+
+    FORWARD(parser);
+
+    /* Scan the directive name. */
+
+    if (!yaml_parser_scan_directive_name(parser, start_mark, &name))
+        goto error;
+
+    /* Is it a YAML directive? */
+
+    if (strcmp((char *)name, "YAML") == 0)
+    {
+        /* Scan the VERSION directive value. */
+
+        if (!yaml_parser_scan_version_directive_value(parser, start_mark,
+                    &major, &minor))
+            goto error;
+
+        end_mark = yaml_parser_get_mark(parser);
+
+        /* Create a VERSION-DIRECTIVE token. */
+
+        token = yaml_version_directive_token_new(major, minor,
+                start_mark, end_mark);
+        if (!token) goto error;
+    }
+
+    /* Is it a TAG directive? */
+
+    else if (strcmp((char *)name, "TAG") == 0)
+    {
+        /* Scan the TAG directive value. */
+
+        if (!yaml_parser_scan_tag_directive_value(parser, start_mark,
+                    &handle, &prefix))
+            goto error;
+
+        end_mark = yaml_parser_get_mark(parser);
+
+        /* Create a TAG-DIRECTIVE token. */
+
+        token = yaml_tag_directive_token_new(handle, prefix,
+                start_mark, end_mark);
+        if (!token) goto error;
+    }
+
+    /* Unknown directive. */
+
+    else
+    {
+        yaml_parser_set_scanner_error(parser, "While scanning a directive",
+                start_mark, "found uknown directive name");
+        goto error;
+    }
+
+    /* Eat the rest of the line including any comments. */
+
+    while (IS_BLANK(parser)) {
+        FORWARD(parser);
+        if (!UPDATE(parser, 1)) goto error;
+    }
+
+    if (CHECK(parser, '#')) {
+        while (!IS_BREAKZ(parser)) {
+            FORWARD(parser);
+            if (!UPDATE(parser, 1)) goto error;
+        }
+    }
+
+    /* Check if we are at the end of the line. */
+
+    if (!IS_BREAKZ(parser)) {
+        yaml_parser_set_scanner_error(parser, "While scanning a directive",
+                start_mark, "did not found expected comment or line break");
+        goto error;
+    }
+
+    /* Eat a line break. */
+
+    if (IS_BREAK(parser)) {
+        if (!UPDATE(parser, 2)) goto error;
+        FORWARD_LINE(parser);
+    }
+
+    yaml_free(name);
+
+    return token;
+
+error:
+    yaml_free(token);
+    yaml_free(prefix);
+    yaml_free(handle);
+    yaml_free(name);
+    return NULL;
+}
+
+/*
+ * Scan the directive name.
+ *
+ * Scope:
+ *      %YAML   1.1     # a comment \n
+ *       ^^^^
+ *      %TAG    !yaml!  tag:yaml.org,2002:  \n
+ *       ^^^
+ */
+
+static int
+yaml_parser_scan_directive_name(yaml_parser_t *parser,
+        yaml_mark_t start_mark, yaml_char_t **name)
+{
+    yaml_string_t string = yaml_parser_new_string(parser);
+
+    if (!string.buffer) goto error;
+
+    /* Consume the directive name. */
+
+    if (!UPDATE(parser, 1)) goto error;
+
+    while (IS_ALPHA(parser))
+    {
+        if (!RESIZE(parser, string)) goto error;
+        COPY(parser, string);
+        if (!UPDATE(parser, 1)) goto error;
+    }
+
+    /* Check if the name is empty. */
+
+    if (string.buffer == string.pointer) {
+        yaml_parser_set_scanner_error(parser, "while scanning a directive",
+                start_mark, "cannot found expected directive name");
+        goto error;
+    }
+
+    /* Check for an blank character after the name. */
+
+    if (!IS_BLANKZ(parser)) {
+        yaml_parser_set_scanner_error(parser, "while scanning a directive",
+                start_mark, "found unexpected non-alphabetical character");
+        goto error;
+    }
+
+    *name = string.buffer;
+
+    return 1;
+
+error:
+    yaml_free(string.buffer);
+    return 0;
+}
+
+/*
+ * Scan the value of VERSION-DIRECTIVE.
+ *
+ * Scope:
+ *      %YAML   1.1     # a comment \n
+ *           ^^^^^^
+ */
+
+static int
+yaml_parser_scan_version_directive_value(yaml_parser_t *parser,
+        yaml_mark_t start_mark, int *major, int *minor)
+{
+    /* Eat whitespaces. */
+
+    if (!UPDATE(parser, 1)) return 0;
+
+    while (IS_BLANK(parser)) {
+        FORWARD(parser);
+        if (!UPDATE(parser, 1)) return 0;
+    }
+
+    /* Consume the major version number. */
+
+    if (!yaml_parser_scan_version_directive_number(parser, start_mark, major))
+        return 0;
+
+    /* Eat '.'. */
+
+    if (!CHECK(parser, '.')) {
+        return yaml_parser_set_scanner_error(parser, "while scanning a %YAML directive",
+                start_mark, "did not find expected digit or '.' character");
+    }
+
+    FORWARD(parser);
+
+    /* Consume the minor version number. */
+
+    if (!yaml_parser_scan_version_directive_number(parser, start_mark, minor))
+        return 0;
+}
+
+#define MAX_NUMBER_LENGTH   9
+
+/*
+ * Scan the version number of VERSION-DIRECTIVE.
+ *
+ * Scope:
+ *      %YAML   1.1     # a comment \n
+ *              ^
+ *      %YAML   1.1     # a comment \n
+ *                ^
+ */
+
+static int
+yaml_parser_scan_version_directive_number(yaml_parser_t *parser,
+        yaml_mark_t start_mark, int *number)
+{
+    int value = 0;
+    size_t length = 0;
+
+    /* Repeat while the next character is digit. */
+
+    if (!UPDATE(parser, 1)) return 0;
+
+    while (IS_DIGIT(parser))
+    {
+        /* Check if the number is too long. */
+
+        if (++length > MAX_NUMBER_LENGTH) {
+            return yaml_parser_set_scanner_error(parser, "while scanning a %YAML directive",
+                    start_mark, "found extremely long version number");
+        }
+
+        value = value*10 + AS_DIGIT(parser);
+
+        FORWARD(parser);
+
+        if (!UPDATE(parser, 1)) return 0;
+    }
+
+    /* Check if the number was present. */
+
+    if (!length) {
+        return yaml_parser_set_scanner_error(parser, "while scanning a %YAML directive",
+                start_mark, "did not find expected version number");
+    }
+
+    *number = value;
+
+    return 1;
+}
+
+/*
+ * Scan the value of a TAG-DIRECTIVE token.
+ *
+ * Scope:
+ *      %TAG    !yaml!  tag:yaml.org,2002:  \n
+ *          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+ */
+
+static int
+yaml_parser_scan_tag_directive_value(yaml_parser_t *parser,
+        yaml_mark_t start_mark, yaml_char_t **handle, yaml_char_t **prefix)
+{
+    yaml_char_t *handle_value = NULL;
+    yaml_char_t *prefix_value = NULL;
+
+    /* Eat whitespaces. */
+
+    if (!UPDATE(parser, 1)) goto error;
+
+    while (IS_BLANK(parser)) {
+        FORWARD(parser);
+        if (!UPDATE(parser, 1)) goto error;
+    }
+
+    /* Scan a handle. */
+
+    if (!yaml_parser_scan_tag_handle(parser, 1, start_mark, &handle_value))
+        goto error;
+
+    /* Expect a whitespace. */
+
+    if (!UPDATE(parser, 1)) goto error;
+
+    if (!IS_BLANK(parser)) {
+        yaml_parser_set_scanner_error(parser, "while scanning a %TAG directive",
+                start_mark, "did not find expected whitespace");
+        goto error;
+    }
+
+    /* Eat whitespaces. */
+
+    while (IS_BLANK(parser)) {
+        FORWARD(parser);
+        if (!UPDATE(parser, 1)) goto error;
+    }
+
+    /* Scan a prefix. */
+
+    if (!yaml_parser_scan_tag_uri(parser, 1, NULL, start_mark, &prefix_value))
+        goto error;
+
+    /* Expect a whitespace or line break. */
+
+    if (!UPDATE(parser, 1)) goto error;
+
+    if (!IS_BLANKZ(parser)) {
+        yaml_parser_set_scanner_error(parser, "while scanning a %TAG directive",
+                start_mark, "did not find expected whitespace or line break");
+        goto error;
+    }
+
+    *handle = handle_value;
+    *prefix = prefix_value;
+
+    return 1;
+
+error:
+    yaml_free(handle_value);
+    yaml_free(prefix_value);
+    return 0;
+}
+
+static yaml_token_t *
+yaml_parser_scan_anchor(yaml_parser_t *parser,
+        yaml_token_type_t type)
+{
+    int length = 0;
+    yaml_mark_t start_mark, end_mark;
+    yaml_token_t *token = NULL;
+    yaml_string_t string = yaml_parser_new_string(parser);
+
+    if (!string.buffer) goto error;
+
+    /* Eat the indicator character. */
+
+    start_mark = yaml_parser_get_mark(parser);
+
+    FORWARD(parser);
+
+    /* Consume the value. */
+
+    if (!UPDATE(parser, 1)) goto error;
+
+    while (IS_ALPHA(parser)) {
+        if (!RESIZE(parser, string)) goto error;
+        COPY(parser, string);
+        if (!UPDATE(parser, 1)) goto error;
+        length ++;
+    }
+
+    end_mark = yaml_parser_get_mark(parser);
+
+    /*
+     * Check if length of the anchor is greater than 0 and it is followed by
+     * a whitespace character or one of the indicators:
+     *
+     *      '?', ':', ',', ']', '}', '%', '@', '`'.
+     */
+
+    if (!length || !(IS_BLANKZ(parser) || CHECK(parser, '?') || CHECK(parser, ':') ||
+                CHECK(parser, ',') || CHECK(parser, ']') || CHECK(parser, '}') ||
+                CHECK(parser, '%') || CHECK(parser, '@') || CHECK(parser, '`'))) {
+        yaml_parser_set_scanner_error(parser, type == YAML_ANCHOR_TOKEN ?
+                "while scanning an anchor" : "while scanning an alias", start_mark,
+                "did not find expected alphabetic or numeric character");
+        goto error;
+    }
+
+    /* Create a token. */
+
+    token = type == YAML_ANCHOR_TOKEN ?
+        yaml_anchor_token_new(string.buffer, start_mark, end_mark) :
+        yaml_alias_token_new(string.buffer, start_mark, end_mark);
+    if (!token) goto error;
+
+    return token;
+
+error:
+    yaml_free(string.buffer);
+    yaml_free(token);
+    return 0;
+}
+
+/*
+ * Scan a TAG token.
+ */
+
+static yaml_token_t *
+yaml_parser_scan_tag(yaml_parser_t *parser)
+{
+    yaml_char_t *handle = NULL;
+    yaml_char_t *suffix = NULL;
+    yaml_token_t *token = NULL;
+    yaml_mark_t start_mark, end_mark;
+
+    start_mark = yaml_parser_get_mark(parser);
+
+    /* Check if the tag is in the canonical form. */
+
+    if (!UPDATE(parser, 2)) goto error;
+
+    if (CHECK_AT(parser, '<', 1))
+    {
+        /* Set the handle to '' */
+
+        handle = yaml_malloc(1);
+        if (!handle) goto error;
+        handle[0] = '\0';
+
+        /* Eat '!<' */
+
+        FORWARD(parser);
+        FORWARD(parser);
+
+        /* Consume the tag value. */
+
+        if (!yaml_parser_scan_tag_uri(parser, 0, NULL, start_mark, &suffix))
+            goto error;
+
+        /* Check for '>' and eat it. */
+
+        if (!CHECK(parser, '>')) {
+            yaml_parser_set_scanner_error(parser, "while scanning a tag",
+                    start_mark, "did not find the expected '>'");
+            goto error;
+        }
+
+        FORWARD(parser);
+    }
+    else
+    {
+        /* The tag has either the '!suffix' or the '!handle!suffix' form. */
+
+        /* First, try to scan a handle. */
+
+        if (!yaml_parser_scan_tag_handle(parser, 0, start_mark, &handle))
+            goto error;
+
+        /* Check if it is, indeed, handle. */
+
+        if (handle[0] == '!' && handle[1] != '\0' && handle[strlen((char *)handle)-1] == '!')
+        {
+            /* Scan the suffix now. */
+
+            if (!yaml_parser_scan_tag_uri(parser, 0, NULL, start_mark, &suffix))
+                goto error;
+        }
+        else
+        {
+            /* It wasn't a handle after all.  Scan the rest of the tag. */
+
+            if (!yaml_parser_scan_tag_uri(parser, 0, handle, start_mark, &suffix))
+                goto error;
+
+            /* Set the handle to '!'. */
+
+            yaml_free(handle);
+            handle = yaml_malloc(2);
+            if (!handle) goto error;
+            handle[0] = '!';
+            handle[1] = '\0';
+        }
+    }
+
+    /* Check the character which ends the tag. */
+
+    if (!UPDATE(parser, 1)) goto error;
+
+    if (!IS_BLANKZ(parser)) {
+        yaml_parser_set_scanner_error(parser, "while scanning a tag",
+                start_mark, "did not found expected whitespace or line break");
+        goto error;
+    }
+
+    end_mark = yaml_parser_get_mark(parser);
+
+    /* Create a token. */
+
+    token = yaml_tag_token_new(handle, suffix, start_mark, end_mark);
+    if (!token) goto error;
+
+    return token;
+
+error:
+    yaml_free(handle);
+    yaml_free(suffix);
+    return NULL;
+}
+
+/*
+ * Scan a tag handle.
+ */
+
+static int
+yaml_parser_scan_tag_handle(yaml_parser_t *parser, int directive,
+        yaml_mark_t start_mark, yaml_char_t **handle)
+{
+    yaml_string_t string = yaml_parser_new_string(parser);
+
+    if (!string.buffer) goto error;
+
+    /* Check the initial '!' character. */
+
+    if (!UPDATE(parser, 1)) goto error;
+
+    if (!CHECK(parser, '!')) {
+        yaml_parser_set_scanner_error(parser, directive ?
+                "while scanning a tag directive" : "while scanning a tag",
+                start_mark, "did not find expected '!'");
+        goto error;
+    }
+
+    /* Copy the '!' character. */
+
+    COPY(parser, string);
+
+    /* Copy all subsequent alphabetical and numerical characters. */
+
+    if (!UPDATE(parser, 1)) goto error;
+
+    while (IS_ALPHA(parser))
+    {
+        if (!RESIZE(parser, string)) goto error;
+        COPY(parser, string);
+        if (!UPDATE(parser, 1)) goto error;
+    }
+
+    /* Check if the trailing character is '!' and copy it. */
+
+    if (CHECK(parser, '!'))
+    {
+        if (!RESIZE(parser, string)) goto error;
+        COPY(parser, string);
+    }
+    else
+    {
+        /*
+         * It's not really a tag handle.  If it's a %TAG directive, it's an
+         * error.  If it's a tag token, it must be a part of URI.
+         */
+
+        if (directive) {
+            yaml_parser_set_scanner_error(parser, "while parsing a directive",
+                    start_mark, "did not find expected '!'");
+            goto error;
+        }
+    }
+
+    *handle = string.buffer;
+
+    return 1;
+
+error:
+    yaml_free(string.buffer);
+    return 0;
+}
+
+/*
+ * Scan a tag.
+ */
+
+static int
+yaml_parser_scan_tag_uri(yaml_parser_t *parser, int directive,
+        yaml_char_t *head, yaml_mark_t start_mark, yaml_char_t **uri)
+{
+    size_t length = head ? strlen((char *)head) : 0;
+    yaml_string_t string = yaml_parser_new_string(parser);
+
+    if (!string.buffer) goto error;
+
+    /* Resize the string to include the head. */
+
+    while (string.size <= length) {
+        if (!yaml_parser_resize_string(parser, &string)) goto error;
+    }
+
+    /* Copy the head if needed. */
+
+    if (length) {
+        memcpy(string.buffer, head, length);
+        string.pointer += length;
+    }
+
+    /* Scan the tag. */
+
+    if (!UPDATE(parser, 1)) goto error;
+
+    /*
+     * The set of characters that may appear in URI is as follows:
+     *
+     *      '0'-'9', 'A'-'Z', 'a'-'z', '_', '-', ';', '/', '?', ':', '@', '&',
+     *      '=', '+', '$', ',', '.', '!', '~', '*', '\'', '(', ')', '[', ']',
+     *      '%'.
+     */
+
+    while (IS_ALPHA(parser) || CHECK(parser, ';') || CHECK(parser, '/') ||
+            CHECK(parser, '?') || CHECK(parser, ':') || CHECK(parser, '@') ||
+            CHECK(parser, '&') || CHECK(parser, '=') || CHECK(parser, '+') ||
+            CHECK(parser, '$') || CHECK(parser, ',') || CHECK(parser, '.') ||
+            CHECK(parser, '!') || CHECK(parser, '~') || CHECK(parser, '*') ||
+            CHECK(parser, '\'') || CHECK(parser, '(') || CHECK(parser, ')') ||
+            CHECK(parser, '[') || CHECK(parser, ']') || CHECK(parser, '%'))
+    {
+        if (!RESIZE(parser, string)) goto error;
+
+        /* Check if it is a URI-escape sequence. */
+
+        if (CHECK(parser, '%')) {
+            if (!yaml_parser_scan_uri_escapes(parser,
+                        directive, start_mark, &string)) goto error;
+        }
+        else {
+            COPY(parser, string);
+        }
+
+        length ++;
+        if (!UPDATE(parser, 1)) goto error;
+    }
+
+    /* Check if the tag is non-empty. */
+
+    if (!length) {
+        yaml_parser_set_scanner_error(parser, directive ?
+                "while parsing a %TAG directive" : "while parsing a tag",
+                start_mark, "did not find expected tag URI");
+        goto error;
+    }
+
+    *uri = string.buffer;
+
+    return 1;
+
+error:
+    yaml_free(string.buffer);
+    return 0;
+}
+
+/*
+ * Decode an URI-escape sequence corresponding to a single UTF-8 character.
+ */
+
+static int
+yaml_parser_scan_uri_escapes(yaml_parser_t *parser, int directive,
+        yaml_mark_t start_mark, yaml_string_t *string)
+{
+    int width = 0;
+
+    /* Decode the required number of characters. */
+
+    do {
+
+        unsigned char octet = 0;
+
+        /* Check for a URI-escaped octet. */
+
+        if (!UPDATE(parser, 3)) return 0;
+
+        if (!(CHECK(parser, '%') && IS_HEX_AT(parser, 1) && IS_HEX_AT(parser, 2))) {
+            return yaml_parser_set_scanner_error(parser, directive ?
+                    "while parsing a %TAG directive" : "while parsing a tag",
+                    start_mark, "did not find URI escaped octet");
+        }
+
+        /* Get the octet. */
+
+        octet = (AS_HEX_AT(parser, 1) << 4) + AS_HEX_AT(parser, 2);
+
+        /* If it is the leading octet, determine the length of the UTF-8 sequence. */
+
+        if (!width)
+        {
+            width = (octet & 0x80) == 0x00 ? 1 :
+                    (octet & 0xE0) == 0xC0 ? 2 :
+                    (octet & 0xF0) == 0xE0 ? 3 :
+                    (octet & 0xF8) == 0xF0 ? 4 : 0;
+            if (!width) {
+                return yaml_parser_set_scanner_error(parser, directive ?
+                        "while parsing a %TAG directive" : "while parsing a tag",
+                        start_mark, "found an incorrect leading UTF-8 octet");
+            }
+        }
+        else
+        {
+            /* Check if the trailing octet is correct. */
+
+            if ((octet & 0xC0) != 0x80) {
+                return yaml_parser_set_scanner_error(parser, directive ?
+                        "while parsing a %TAG directive" : "while parsing a tag",
+                        start_mark, "found an incorrect trailing UTF-8 octet");
+            }
+        }
+
+        /* Copy the octet and move the pointers. */
+
+        *(string->pointer++) = octet;
+        FORWARD(parser);
+        FORWARD(parser);
+        FORWARD(parser);
+
+    } while (--width);
 
     return 1;
 }
