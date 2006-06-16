@@ -629,7 +629,7 @@
          && CHECK_AT(parser,'\xA8',(offset)+2))     /* LS (#x2028) */   \
      || (CHECK_AT(parser,'\xE2',(offset))                               \
          && CHECK_AT(parser,'\x80',(offset)+1)                          \
-         && CHECK_AT(parser,'\xA9',(offset)+2)))    /* LS (#x2029) */
+         && CHECK_AT(parser,'\xA9',(offset)+2)))    /* PS (#x2029) */
 
 #define IS_BREAK(parser)    IS_BREAK_AT(parser,0)
 
@@ -691,11 +691,13 @@
      (IS_CRLF(parser) ?                             \
       (parser->index += 2,                          \
        parser->column = 0,                          \
+       parser->line ++,                             \
        parser->unread -= 2,                         \
        parser->pointer += 2) :                      \
       IS_BREAK(parser) ?                            \
       (parser->index ++,                            \
        parser->column = 0,                          \
+       parser->line ++,                             \
        parser->unread --,                           \
        parser->pointer += WIDTH(parser)) : 0)
 
@@ -704,8 +706,8 @@
  */
 
 #define RESIZE(parser,string)   \
-    (string.pointer-string.buffer+5 < string.size ? 1 :  \
-     yaml_parser_resize_string(parser, &string))
+    ((string).pointer-(string).buffer+5 < (string).size ? 1 :   \
+     yaml_parser_resize_string(parser, &(string)))
 
 /*
  * Copy a character to a string buffer and advance pointers.
@@ -713,23 +715,68 @@
 
 #define COPY(parser,string)     \
      (((*parser->pointer & 0x80) == 0x00 ?                  \
-       (*(string.pointer++) = *(parser->pointer++)) :       \
+       (*((string).pointer++) = *(parser->pointer++)) :     \
        (*parser->pointer & 0xE0) == 0xC0 ?                  \
-       (*(string.pointer++) = *(parser->pointer++),         \
-        *(string.pointer++) = *(parser->pointer++)) :       \
+       (*((string).pointer++) = *(parser->pointer++),       \
+        *((string).pointer++) = *(parser->pointer++)) :     \
        (*parser->pointer & 0xF0) == 0xE0 ?                  \
-       (*(string.pointer++) = *(parser->pointer++),         \
-        *(string.pointer++) = *(parser->pointer++),         \
-        *(string.pointer++) = *(parser->pointer++)) :       \
+       (*((string).pointer++) = *(parser->pointer++),       \
+        *((string).pointer++) = *(parser->pointer++),       \
+        *((string).pointer++) = *(parser->pointer++)) :     \
        (*parser->pointer & 0xF8) == 0xF0 ?                  \
-       (*(string.pointer++) = *(parser->pointer++),         \
-        *(string.pointer++) = *(parser->pointer++),         \
-        *(string.pointer++) = *(parser->pointer++),         \
-        *(string.pointer++) = *(parser->pointer++)) : 0),   \
+       (*((string).pointer++) = *(parser->pointer++),       \
+        *((string).pointer++) = *(parser->pointer++),       \
+        *((string).pointer++) = *(parser->pointer++),       \
+        *((string).pointer++) = *(parser->pointer++)) : 0), \
       parser->index ++,                                     \
       parser->column ++,                                    \
       parser->unread --)
-    
+
+/*
+ * Copy a line break character to a string buffer and advance pointers.
+ */
+
+#define COPY_LINE(parser,string)    \
+    ((CHECK_AT(parser,'\r',0) && CHECK_AT(parser,'\n',1)) ? /* CR LF -> LF */   \
+     (*((string).pointer++) = (yaml_char_t) '\n',                               \
+      parser->pointer += 2,                                                     \
+      parser->index += 2,                                                       \
+      parser->column = 0,                                                       \
+      parser->line ++,                                                          \
+      parser->unread -= 2) :                                                    \
+     (CHECK_AT(parser,'\r',0) || CHECK_AT(parser,'\n',0)) ? /* CR|LF -> LF */   \
+     (*((string).pointer++) = (yaml_char_t) '\n',                               \
+      parser->pointer ++,                                                       \
+      parser->index ++,                                                         \
+      parser->column = 0,                                                       \
+      parser->line ++,                                                          \
+      parser->unread --) :                                                      \
+     (CHECK_AT(parser,'\xC2',0) && CHECK_AT(parser,'\x85',1)) ? /* NEL -> LF */ \
+     (*((string).pointer++) = (yaml_char_t) '\n',                               \
+      parser->pointer += 2,                                                     \
+      parser->index ++,                                                         \
+      parser->column = 0,                                                       \
+      parser->line ++,                                                          \
+      parser->unread --) :                                                      \
+     (CHECK_AT(parser,'\xE2',0) &&                                              \
+      CHECK_AT(parser,'\x80',1) &&                                              \
+      (CHECK_AT(parser,'\xA8',2) ||                                             \
+       CHECK_AT(parser,'\xA9',2))) ?                    /* LS|PS -> LS|PS */    \
+     (*((string).pointer++) = *(parser->pointer++),                             \
+      *((string).pointer++) = *(parser->pointer++),                             \
+      *((string).pointer++) = *(parser->pointer++),                             \
+      parser->index ++,                                                         \
+      parser->column = 0,                                                       \
+      parser->line ++,                                                          \
+      parser->unread --) : 0)
+
+/*
+ * Append a string to another string and clear the former string.
+ */
+
+#define JOIN(parser,head_string,tail_string)    \
+    (yaml_parser_join_string(parser, &(head_string), &(tail_string)) && \
+     yaml_parser_clear_string(parser, &(tail_string)))
 
 /*
  * Public API declarations.
@@ -767,6 +814,13 @@ yaml_parser_new_string(yaml_parser_t *parser);
 
 static int
 yaml_parser_resize_string(yaml_parser_t *parser, yaml_string_t *string);
+
+static int
+yaml_parser_join_string(yaml_parser_t *parser,
+        yaml_string_t *string1, yaml_string_t *string2);
+
+static int
+yaml_parser_clear_string(yaml_parser_t *parser, yaml_string_t *string);
 
 static int
 yaml_parser_resize_list(yaml_parser_t *parser, void **buffer, size_t *size,
@@ -924,6 +978,11 @@ static yaml_token_t *
 yaml_parser_scan_block_scalar(yaml_parser_t *parser, int literal);
 
 static int
+yaml_parser_scan_block_scalar_breaks(yaml_parser_t *parser,
+        int *indent, yaml_string_t *breaks,
+        yaml_mark_t start_mark, yaml_mark_t *end_mark);
+
+static int
 yaml_parser_scan_block_scalar_indicators(yaml_parser_t *parser,
         yaml_mark_t start_mark, int *chomping, int *increment);
 
@@ -1028,6 +1087,42 @@ yaml_parser_resize_string(yaml_parser_t *parser, yaml_string_t *string)
     string->pointer = new_buffer + (string->buffer-string->pointer);
     string->buffer = new_buffer;
     string->size *= 2;
+
+    return 1;
+}
+
+/*
+ * Append a string to another string.
+ */
+
+static int
+yaml_parser_join_string(yaml_parser_t *parser,
+        yaml_string_t *string1, yaml_string_t *string2)
+{
+    if (string2->buffer == string2->pointer) return 1;
+
+    while (string1->pointer - string1->buffer + string2->pointer - string2->buffer + 1
+            > string1->size) {
+        if (!yaml_parser_resize_string(parser, string1)) return 0;
+    }
+
+    memcpy(string1->pointer, string2->buffer, string2->pointer-string2->buffer);
+
+    return 1;
+}
+
+/*
+ * Fill the string with NULs and move the pointer to the beginning.
+ */
+
+static int
+yaml_parser_clear_string(yaml_parser_t *parser, yaml_string_t *string)
+{
+    if (string->buffer == string->pointer) return 1;
+
+    memset(string->buffer, 0, string->pointer-string->buffer);
+
+    string->pointer = string->buffer;
 
     return 1;
 }
@@ -2460,7 +2555,10 @@ yaml_parser_scan_directive(yaml_parser_t *parser)
 
         token = yaml_version_directive_token_new(major, minor,
                 start_mark, end_mark);
-        if (!token) goto error;
+        if (!token) {
+            parser->error = YAML_MEMORY_ERROR;
+            return 0;
+        }
     }
 
     /* Is it a TAG directive? */
@@ -2479,14 +2577,17 @@ yaml_parser_scan_directive(yaml_parser_t *parser)
 
         token = yaml_tag_directive_token_new(handle, prefix,
                 start_mark, end_mark);
-        if (!token) goto error;
+        if (!token) {
+            parser->error = YAML_MEMORY_ERROR;
+            return 0;
+        }
     }
 
     /* Unknown directive. */
 
     else
     {
-        yaml_parser_set_scanner_error(parser, "While scanning a directive",
+        yaml_parser_set_scanner_error(parser, "while scanning a directive",
                 start_mark, "found uknown directive name");
         goto error;
     }
@@ -2508,7 +2609,7 @@ yaml_parser_scan_directive(yaml_parser_t *parser)
     /* Check if we are at the end of the line. */
 
     if (!IS_BREAKZ(parser)) {
-        yaml_parser_set_scanner_error(parser, "While scanning a directive",
+        yaml_parser_set_scanner_error(parser, "while scanning a directive",
                 start_mark, "did not found expected comment or line break");
         goto error;
     }
@@ -2801,7 +2902,10 @@ yaml_parser_scan_anchor(yaml_parser_t *parser,
     token = type == YAML_ANCHOR_TOKEN ?
         yaml_anchor_token_new(string.buffer, start_mark, end_mark) :
         yaml_alias_token_new(string.buffer, start_mark, end_mark);
-    if (!token) goto error;
+    if (!token) {
+        parser->error = YAML_MEMORY_ERROR;
+        return 0;
+    }
 
     return token;
 
@@ -2907,7 +3011,10 @@ yaml_parser_scan_tag(yaml_parser_t *parser)
     /* Create a token. */
 
     token = yaml_tag_token_new(handle, suffix, start_mark, end_mark);
-    if (!token) goto error;
+    if (!token) {
+        parser->error = YAML_MEMORY_ERROR;
+        return 0;
+    }
 
     return token;
 
@@ -3130,5 +3237,290 @@ yaml_parser_scan_uri_escapes(yaml_parser_t *parser, int directive,
     } while (--width);
 
     return 1;
+}
+
+/*
+ * Scan a block scalar.
+ */
+
+static yaml_token_t *
+yaml_parser_scan_block_scalar(yaml_parser_t *parser, int literal)
+{
+    yaml_mark_t start_mark;
+    yaml_mark_t end_mark;
+    yaml_string_t string = yaml_parser_new_string(parser);
+    yaml_string_t line_break = yaml_parser_new_string(parser);
+    yaml_string_t breaks = yaml_parser_new_string(parser);
+    yaml_token_t *token = NULL;
+    int chomping = 0;
+    int increment = 0;
+    int indent = 0;
+    int leading_blank = 0;
+    int trailing_blank = 0;
+
+    if (!string.buffer) goto error;
+    if (!line_break.buffer) goto error;
+    if (!breaks.buffer) goto error;
+
+    /* Eat the indicator '|' or '>'. */
+
+    start_mark = yaml_parser_get_mark(parser);
+
+    FORWARD(parser);
+
+    /* Scan the additional block scalar indicators. */
+
+    if (!UPDATE(parser, 1)) goto error;
+
+    /* Check for a chomping indicator. */
+
+    if (CHECK(parser, '+') || CHECK(parser, '-'))
+    {
+        /* Set the chomping method and eat the indicator. */
+
+        chomping = CHECK(parser, '+') ? +1 : -1;
+
+        FORWARD(parser);
+
+        /* Check for an indentation indicator. */
+
+        if (!UPDATE(parser, 1)) goto error;
+
+        if (IS_DIGIT(parser))
+        {
+            /* Check that the intendation is greater than 0. */
+
+            if (CHECK(parser, '0')) {
+                yaml_parser_set_scanner_error(parser, "while scanning a block scalar",
+                        start_mark, "found an intendation indicator equal to 0");
+                goto error;
+            }
+
+            /* Get the intendation level and eat the indicator. */
+
+            increment = AS_DIGIT(parser);
+
+            FORWARD(parser);
+        }
+    }
+
+    /* Do the same as above, but in the opposite order. */
+
+    else if (IS_DIGIT(parser))
+    {
+        if (CHECK(parser, '0')) {
+            yaml_parser_set_scanner_error(parser, "while scanning a block scalar",
+                    start_mark, "found an intendation indicator equal to 0");
+            goto error;
+        }
+
+        increment = AS_DIGIT(parser);
+
+        FORWARD(parser);
+
+        if (!UPDATE(parser, 1)) goto error;
+
+        if (CHECK(parser, '+') || CHECK(parser, '-')) {
+            chomping = CHECK(parser, '+') ? +1 : -1;
+            FORWARD(parser);
+        }
+    }
+
+    /* Eat whitespaces and comments to the end of the line. */
+
+    if (!UPDATE(parser, 1)) goto error;
+
+    while (IS_BLANK(parser)) {
+        FORWARD(parser);
+        if (!UPDATE(parser, 1)) goto error;
+    }
+
+    if (CHECK(parser, '#')) {
+        while (!IS_BREAKZ(parser)) {
+            FORWARD(parser);
+            if (!UPDATE(parser, 1)) goto error;
+        }
+    }
+
+    /* Check if we are at the end of the line. */
+
+    if (!IS_BREAKZ(parser)) {
+        yaml_parser_set_scanner_error(parser, "while scanning a block scalar",
+                start_mark, "did not found expected comment or line break");
+        goto error;
+    }
+
+    /* Eat a line break. */
+
+    if (IS_BREAK(parser)) {
+        if (!UPDATE(parser, 2)) goto error;
+        FORWARD_LINE(parser);
+    }
+
+    end_mark = yaml_parser_get_mark(parser);
+
+    /* Set the intendation level if it was specified. */
+
+    if (increment) {
+        indent = parser->indent >= 0 ? parser->indent+increment : increment;
+    }
+
+    /* Scan the leading line breaks and determine the indentation level if needed. */
+
+    if (!yaml_parser_scan_block_scalar_breaks(parser, &indent, &breaks,
+                start_mark, &end_mark)) goto error;
+
+    /* Scan the block scalar content. */
+
+    if (!UPDATE(parser, 1)) goto error;
+
+    while (parser->column == indent && !IS_Z(parser))
+    {
+        /*
+         * We are at the beginning of a non-empty line.
+         */
+
+        /* Is it a trailing whitespace? */
+
+        trailing_blank = IS_BLANK(parser);
+
+        /* Check if we need to fold the leading line break. */
+
+        if (!literal && (*line_break.buffer == '\n')
+                && !leading_blank && !trailing_blank)
+        {
+            /* Do we need to join the lines by space? */
+
+            if (*breaks.buffer == '\0') {
+                if (!RESIZE(parser, string)) goto error;
+                *(string.pointer ++) = ' ';
+            }
+
+            yaml_parser_clear_string(parser, &line_break);
+        }
+        else {
+            if (!JOIN(parser, string, line_break)) goto error;
+        }
+
+        /* Append the remaining line breaks. */
+
+        if (!JOIN(parser, string, breaks)) goto error;
+
+        /* Is it a leading whitespace? */
+
+        leading_blank = IS_BLANK(parser);
+
+        /* Consume the current line. */
+
+        while (!IS_BREAKZ(parser)) {
+            if (!RESIZE(parser, string)) goto error;
+            COPY(parser, string);
+            if (!UPDATE(parser, 1)) goto error;
+        }
+
+        /* Consume the line break. */
+
+        if (!UPDATE(parser, 2)) goto error;
+
+        COPY_LINE(parser, line_break);
+
+        /* Eat the following intendation spaces and line breaks. */
+
+        if (!yaml_parser_scan_block_scalar_breaks(parser,
+                    &indent, &breaks, start_mark, &end_mark)) goto error;
+    }
+
+    /* Chomp the tail. */
+
+    if (chomping != -1) {
+        if (!JOIN(parser, string, line_break)) goto error;
+    }
+    if (chomping == 1) {
+        if (!JOIN(parser, string, breaks)) goto error;
+    }
+
+    /* Create a token. */
+
+    token = yaml_scalar_token_new(string.buffer, string.pointer-string.buffer,
+            literal ? YAML_LITERAL_SCALAR_STYLE : YAML_FOLDED_SCALAR_STYLE,
+            start_mark, end_mark);
+    if (!token) {
+        parser->error = YAML_MEMORY_ERROR;
+        return 0;
+    }
+
+    yaml_free(line_break.buffer);
+    yaml_free(breaks.buffer);
+
+    return token;
+
+error:
+    yaml_free(string.buffer);
+    yaml_free(line_break.buffer);
+    yaml_free(breaks.buffer);
+
+    return NULL;
+}
+
+/*
+ * Scan intendation spaces and line breaks for a block scalar.  Determine the
+ * intendation level if needed.
+ */
+
+static int
+yaml_parser_scan_block_scalar_breaks(yaml_parser_t *parser,
+        int *indent, yaml_string_t *breaks,
+        yaml_mark_t start_mark, yaml_mark_t *end_mark)
+{
+    int max_indent = 0;
+
+    *end_mark = yaml_parser_get_mark(parser);
+
+    /* Eat the intendation spaces and line breaks. */
+
+    while (1)
+    {
+        /* Eat the intendation spaces. */
+
+        if (!UPDATE(parser, 1)) return 0;
+
+        while ((!*indent || parser->column < *indent) && IS_SPACE(parser)) {
+            FORWARD(parser);
+            if (!UPDATE(parser, 1)) return 0;
+        }
+
+        if (parser->column > max_indent)
+            max_indent = parser->column;
+
+        /* Check for a tab character messing the intendation. */
+
+        if ((!*indent || parser->column < *indent) && IS_TAB(parser)) {
+            return yaml_parser_set_scanner_error(parser, "while scanning a block scalar",
+                    start_mark, "found a tab character where an intendation space is expected");
+        }
+
+        /* Have we found a non-empty line? */
+
+        if (!IS_BREAK(parser)) break;
+
+        /* Consume the line break. */
+
+        if (!UPDATE(parser, 2)) return 0;
+        if (!RESIZE(parser, *breaks)) return 0;
+        COPY_LINE(parser, *breaks);
+        *end_mark = yaml_parser_get_mark(parser);
+    }
+
+    /* Determine the indentation level if needed. */
+
+    if (!*indent) {
+        *indent = max_indent;
+        if (*indent < parser->indent + 1)
+            *indent = parser->indent + 1;
+        if (*indent < 1)
+            *indent = 1;
+    }
+
+   return 1; 
 }
 
