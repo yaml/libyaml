@@ -982,10 +982,6 @@ yaml_parser_scan_block_scalar_breaks(yaml_parser_t *parser,
         int *indent, yaml_string_t *breaks,
         yaml_mark_t start_mark, yaml_mark_t *end_mark);
 
-static int
-yaml_parser_scan_block_scalar_indicators(yaml_parser_t *parser,
-        yaml_mark_t start_mark, int *chomping, int *increment);
-
 static yaml_token_t *
 yaml_parser_scan_flow_scalar(yaml_parser_t *parser, int single);
 
@@ -3249,8 +3245,8 @@ yaml_parser_scan_block_scalar(yaml_parser_t *parser, int literal)
     yaml_mark_t start_mark;
     yaml_mark_t end_mark;
     yaml_string_t string = yaml_parser_new_string(parser);
-    yaml_string_t line_break = yaml_parser_new_string(parser);
-    yaml_string_t breaks = yaml_parser_new_string(parser);
+    yaml_string_t leading_break = yaml_parser_new_string(parser);
+    yaml_string_t trailing_breaks = yaml_parser_new_string(parser);
     yaml_token_t *token = NULL;
     int chomping = 0;
     int increment = 0;
@@ -3259,8 +3255,8 @@ yaml_parser_scan_block_scalar(yaml_parser_t *parser, int literal)
     int trailing_blank = 0;
 
     if (!string.buffer) goto error;
-    if (!line_break.buffer) goto error;
-    if (!breaks.buffer) goto error;
+    if (!leading_break.buffer) goto error;
+    if (!trailing_breaks.buffer) goto error;
 
     /* Eat the indicator '|' or '>'. */
 
@@ -3367,7 +3363,7 @@ yaml_parser_scan_block_scalar(yaml_parser_t *parser, int literal)
 
     /* Scan the leading line breaks and determine the indentation level if needed. */
 
-    if (!yaml_parser_scan_block_scalar_breaks(parser, &indent, &breaks,
+    if (!yaml_parser_scan_block_scalar_breaks(parser, &indent, &trailing_breaks,
                 start_mark, &end_mark)) goto error;
 
     /* Scan the block scalar content. */
@@ -3386,25 +3382,25 @@ yaml_parser_scan_block_scalar(yaml_parser_t *parser, int literal)
 
         /* Check if we need to fold the leading line break. */
 
-        if (!literal && (*line_break.buffer == '\n')
+        if (!literal && (*leading_break.buffer == '\n')
                 && !leading_blank && !trailing_blank)
         {
             /* Do we need to join the lines by space? */
 
-            if (*breaks.buffer == '\0') {
+            if (*trailing_breaks.buffer == '\0') {
                 if (!RESIZE(parser, string)) goto error;
                 *(string.pointer ++) = ' ';
             }
 
-            yaml_parser_clear_string(parser, &line_break);
+            yaml_parser_clear_string(parser, &leading_break);
         }
         else {
-            if (!JOIN(parser, string, line_break)) goto error;
+            if (!JOIN(parser, string, leading_break)) goto error;
         }
 
         /* Append the remaining line breaks. */
 
-        if (!JOIN(parser, string, breaks)) goto error;
+        if (!JOIN(parser, string, trailing_breaks)) goto error;
 
         /* Is it a leading whitespace? */
 
@@ -3422,21 +3418,21 @@ yaml_parser_scan_block_scalar(yaml_parser_t *parser, int literal)
 
         if (!UPDATE(parser, 2)) goto error;
 
-        COPY_LINE(parser, line_break);
+        COPY_LINE(parser, leading_break);
 
         /* Eat the following intendation spaces and line breaks. */
 
         if (!yaml_parser_scan_block_scalar_breaks(parser,
-                    &indent, &breaks, start_mark, &end_mark)) goto error;
+                    &indent, &trailing_breaks, start_mark, &end_mark)) goto error;
     }
 
     /* Chomp the tail. */
 
     if (chomping != -1) {
-        if (!JOIN(parser, string, line_break)) goto error;
+        if (!JOIN(parser, string, leading_break)) goto error;
     }
     if (chomping == 1) {
-        if (!JOIN(parser, string, breaks)) goto error;
+        if (!JOIN(parser, string, trailing_breaks)) goto error;
     }
 
     /* Create a token. */
@@ -3449,15 +3445,15 @@ yaml_parser_scan_block_scalar(yaml_parser_t *parser, int literal)
         return 0;
     }
 
-    yaml_free(line_break.buffer);
-    yaml_free(breaks.buffer);
+    yaml_free(leading_break.buffer);
+    yaml_free(trailing_breaks.buffer);
 
     return token;
 
 error:
     yaml_free(string.buffer);
-    yaml_free(line_break.buffer);
-    yaml_free(breaks.buffer);
+    yaml_free(leading_break.buffer);
+    yaml_free(trailing_breaks.buffer);
 
     return NULL;
 }
@@ -3522,5 +3518,562 @@ yaml_parser_scan_block_scalar_breaks(yaml_parser_t *parser,
     }
 
    return 1; 
+}
+
+/*
+ * Scan a quoted scalar.
+ */
+
+static yaml_token_t *
+yaml_parser_scan_flow_scalar(yaml_parser_t *parser, int single)
+{
+    yaml_mark_t start_mark;
+    yaml_mark_t end_mark;
+    yaml_string_t string = yaml_parser_new_string(parser);
+    yaml_string_t leading_break = yaml_parser_new_string(parser);
+    yaml_string_t trailing_breaks = yaml_parser_new_string(parser);
+    yaml_string_t whitespaces = yaml_parser_new_string(parser);
+    yaml_token_t *token = NULL;
+    int leading_blanks;
+
+    if (!string.buffer) goto error;
+    if (!leading_break.buffer) goto error;
+    if (!trailing_breaks.buffer) goto error;
+    if (!whitespaces.buffer) goto error;
+
+    /* Eat the left quote. */
+
+    start_mark = yaml_parser_get_mark(parser);
+
+    FORWARD(parser);
+
+    /* Consume the content of the quoted scalar. */
+
+    while (1)
+    {
+        /* Check that there are no document indicators at the beginning of the line. */
+
+        if (!UPDATE(parser, 4)) goto error;
+
+        if (parser->column == 0 &&
+            ((CHECK_AT(parser, '-', 0) &&
+              CHECK_AT(parser, '-', 1) &&
+              CHECK_AT(parser, '-', 2)) ||
+             (CHECK_AT(parser, '.', 0) &&
+              CHECK_AT(parser, '.', 1) &&
+              CHECK_AT(parser, '.', 2))) &&
+            IS_BLANKZ_AT(parser, 3))
+        {
+            yaml_parser_set_scanner_error(parser, "while scanning a quoted scalar",
+                    start_mark, "found unexpected document indicator");
+            goto error;
+        }
+
+        /* Check for EOF. */
+
+        if (IS_Z(parser)) {
+            yaml_parser_set_scanner_error(parser, "while scanning a quoted scalar",
+                    start_mark, "found unexpected end of stream");
+            goto error;
+        }
+
+        /* Consume non-blank characters. */
+
+        if (!UPDATE(parser, 2)) goto error;
+        if (!RESIZE(parser, string)) goto error;
+
+        leading_blanks = 0;
+
+        while (!IS_BLANKZ(parser))
+        {
+            /* Check for an escaped single quote. */
+
+            if (single && CHECK_AT(parser, '\'', 0) && CHECK_AT(parser, '\'', 1))
+            {
+                *(string.pointer++) = '\'';
+                FORWARD(parser);
+                FORWARD(parser);
+            }
+
+            /* Check for the right quote. */
+
+            else if (CHECK(parser, single ? '\'' : '"'))
+            {
+                break;
+            }
+
+            /* Check for an escaped line break. */
+
+            else if (!single && CHECK(parser, '\\') && IS_BREAK_AT(parser, 1))
+            {
+                if (!UPDATE(parser, 3)) goto error;
+                FORWARD(parser);
+                FORWARD_LINE(parser);
+                leading_blanks = 1;
+                break;
+            }
+
+            /* Check for an escape sequence. */
+
+            else if (!single && CHECK(parser, '\\'))
+            {
+                int code_length = 0;
+
+                /* Check the escape character. */
+
+                switch (parser->pointer[1])
+                {
+                    case '0':
+                        *(string.pointer++) = '\0';
+                        break;
+
+                    case 'a':
+                        *(string.pointer++) = '\x07';
+                        break;
+
+                    case 'b':
+                        *(string.pointer++) = '\x08';
+                        break;
+
+                    case 't':
+                    case '\t':
+                        *(string.pointer++) = '\x09';
+                        break;
+
+                    case 'n':
+                        *(string.pointer++) = '\x0A';
+                        break;
+
+                    case 'v':
+                        *(string.pointer++) = '\x0B';
+                        break;
+
+                    case 'f':
+                        *(string.pointer++) = '\x0C';
+                        break;
+
+                    case 'r':
+                        *(string.pointer++) = '\x0D';
+                        break;
+
+                    case 'e':
+                        *(string.pointer++) = '\x1B';
+                        break;
+
+                    case ' ':
+                        *(string.pointer++) = '\x20';
+                        break;
+
+                    case '"':
+                        *(string.pointer++) = '"';
+                        break;
+
+                    case '\'':
+                        *(string.pointer++) = '\'';
+                        break;
+
+                    case 'N':   /* NEL (#x85) */
+                        *(string.pointer++) = '\xC2';
+                        *(string.pointer++) = '\x85';
+                        break;
+
+                    case '_':   /* #xA0 */
+                        *(string.pointer++) = '\xC2';
+                        *(string.pointer++) = '\xA0';
+                        break;
+
+                    case 'L':   /* LS (#x2028) */
+                        *(string.pointer++) = '\xE2';
+                        *(string.pointer++) = '\x80';
+                        *(string.pointer++) = '\xA8';
+                        break;
+
+                    case 'P':   /* PS (#x2029) */
+                        *(string.pointer++) = '\xE2';
+                        *(string.pointer++) = '\x80';
+                        *(string.pointer++) = '\xA8';
+                        break;
+
+                    case 'x':
+                        code_length = 2;
+                        break;
+
+                    case 'u':
+                        code_length = 4;
+                        break;
+
+                    case 'U':
+                        code_length = 8;
+                        break;
+
+                    default:
+                        yaml_parser_set_scanner_error(parser, "while parsing a quoted scalar",
+                                start_mark, "found unknown escape character");
+                        goto error;
+                }
+
+                FORWARD(parser);
+                FORWARD(parser);
+
+                /* Consume an arbitrary escape code. */
+
+                if (code_length)
+                {
+                    unsigned int value = 0;
+                    int k;
+
+                    /* Scan the character value. */
+
+                    if (!UPDATE(parser, code_length)) goto error;
+
+                    for (k = 0; k < code_length; k ++) {
+                        if (!IS_HEX_AT(parser, k)) {
+                            yaml_parser_set_scanner_error(parser, "while parsing a quoted scalar",
+                                    start_mark, "did not find expected hexdecimal number");
+                            goto error;
+                        }
+                        value = (value << 4) + AS_HEX_AT(parser, k);
+                    }
+
+                    /* Check the value and write the character. */
+
+                    if ((value >= 0xD800 && value <= 0xDFFF) || value > 0x10FFFF) {
+                        yaml_parser_set_scanner_error(parser, "while parsing a quoted scalar",
+                                start_mark, "found invalid Unicode character escape code");
+                        goto error;
+                    }
+
+                    if (value <= 0x7F) {
+                        *(string.pointer++) = value;
+                    }
+                    else if (value <= 0x7FF) {
+                        *(string.pointer++) = 0xC0 + (value >> 6);
+                        *(string.pointer++) = 0x80 + (value & 0x3F);
+                    }
+                    else if (value <= 0xFFFF) {
+                        *(string.pointer++) = 0xE0 + (value >> 12);
+                        *(string.pointer++) = 0x80 + ((value >> 6) & 0x3F);
+                        *(string.pointer++) = 0x80 + (value & 0x3F);
+                    }
+                    else {
+                        *(string.pointer++) = 0xF0 + (value >> 18);
+                        *(string.pointer++) = 0x80 + ((value >> 12) & 0x3F);
+                        *(string.pointer++) = 0x80 + ((value >> 6) & 0x3F);
+                        *(string.pointer++) = 0x80 + (value & 0x3F);
+                    }
+
+                    /* Advance the pointer. */
+
+                    for (k = 0; k < code_length; k ++) {
+                        FORWARD(parser);
+                    }
+                }
+            }
+
+            else
+            {
+                /* It is a non-escaped non-blank character. */
+
+                COPY(parser, string);
+            }
+
+            if (!UPDATE(parser, 2)) goto error;
+            if (!RESIZE(parser, string)) goto error;
+        }
+
+        /* Check if we are at the end of the scalar. */
+
+        if (CHECK(parser, single ? '\'' : '"'))
+            break;
+
+        /* Consume blank characters. */
+
+        if (!UPDATE(parser, 1)) goto error;
+
+        while (IS_BLANK(parser) || IS_BREAK(parser))
+        {
+            if (IS_BLANK(parser))
+            {
+                /* Consume a space or a tab character. */
+
+                if (!leading_blanks) {
+                    if (!RESIZE(parser, whitespaces)) goto error;
+                    COPY(parser, whitespaces);
+                }
+            }
+            else
+            {
+                if (!UPDATE(parser, 2)) goto error;
+
+                /* Check if it is a first line break. */
+
+                if (!leading_blanks)
+                {
+                    yaml_parser_clear_string(parser, &whitespaces);
+                    COPY_LINE(parser, leading_break);
+                    leading_blanks = 1;
+                }
+                else
+                {
+                    if (!RESIZE(parser, trailing_breaks)) goto error;
+                    COPY_LINE(parser, trailing_breaks);
+                }
+            }
+            if (!UPDATE(parser, 1)) goto error;
+        }
+
+        /* Join the whitespaces or fold line breaks. */
+
+        if (!RESIZE(parser, string)) goto error;
+
+        if (leading_blanks)
+        {
+            /* Do we need to fold line breaks? */
+
+            if (leading_break.buffer[0] == '\n') {
+                if (trailing_breaks.buffer[0] == '\0') {
+                    *(string.pointer++) = ' ';
+                }
+                else {
+                    if (!JOIN(parser, string, trailing_breaks)) goto error;
+                }
+                yaml_parser_clear_string(parser, &leading_break);
+            }
+            else {
+                if (!JOIN(parser, string, leading_break)) goto error;
+                if (!JOIN(parser, string, trailing_breaks)) goto error;
+            }
+        }
+        else
+        {
+            if (!JOIN(parser, string, whitespaces)) goto error;
+        }
+    }
+
+    /* Eat the right quote. */
+
+    FORWARD(parser);
+
+    end_mark = yaml_parser_get_mark(parser);
+
+    /* Create a token. */
+
+    token = yaml_scalar_token_new(string.buffer, string.pointer-string.buffer,
+            single ? YAML_SINGLE_QUOTED_SCALAR_STYLE : YAML_DOUBLE_QUOTED_SCALAR_STYLE,
+            start_mark, end_mark);
+    if (!token) {
+        parser->error = YAML_MEMORY_ERROR;
+        return 0;
+    }
+
+    yaml_free(leading_break.buffer);
+    yaml_free(trailing_breaks.buffer);
+    yaml_free(whitespaces.buffer);
+
+    return token;
+
+error:
+    yaml_free(string.buffer);
+    yaml_free(leading_break.buffer);
+    yaml_free(trailing_breaks.buffer);
+    yaml_free(whitespaces.buffer);
+
+    return NULL;
+}
+
+/*
+ * Scan a plain scalar.
+ */
+
+static yaml_token_t *
+yaml_parser_scan_plain_scalar(yaml_parser_t *parser)
+{
+    yaml_mark_t start_mark;
+    yaml_mark_t end_mark;
+    yaml_string_t string = yaml_parser_new_string(parser);
+    yaml_string_t leading_break = yaml_parser_new_string(parser);
+    yaml_string_t trailing_breaks = yaml_parser_new_string(parser);
+    yaml_string_t whitespaces = yaml_parser_new_string(parser);
+    yaml_token_t *token = NULL;
+    int leading_blanks = 0;
+    int indent = parser->indent+1;
+
+    if (!string.buffer) goto error;
+    if (!leading_break.buffer) goto error;
+    if (!trailing_breaks.buffer) goto error;
+    if (!whitespaces.buffer) goto error;
+
+    start_mark = yaml_parser_get_mark(parser);
+
+    /* Consume the content of the plain scalar. */
+
+    while (1)
+    {
+        /* Check for a document indicator. */
+
+        if (!UPDATE(parser, 4)) goto error;
+
+        if (parser->column == 0 &&
+            ((CHECK_AT(parser, '-', 0) &&
+              CHECK_AT(parser, '-', 1) &&
+              CHECK_AT(parser, '-', 2)) ||
+             (CHECK_AT(parser, '.', 0) &&
+              CHECK_AT(parser, '.', 1) &&
+              CHECK_AT(parser, '.', 2))) &&
+            IS_BLANKZ_AT(parser, 3)) break;
+
+        /* Check for a comment. */
+
+        if (CHECK(parser, '#'))
+            break;
+
+        /* Consume non-blank characters. */
+
+        while (!IS_BLANKZ(parser))
+        {
+            /* Check for 'x:x' in the flow context. */
+
+            if (parser->flow_level && CHECK(parser, ':') && !IS_BLANKZ_AT(parser, 1)) {
+                yaml_parser_set_scanner_error(parser, "while scanning a plain scalar",
+                        start_mark, "found unexpected ':'");
+                goto error;
+            }
+
+            /* Check for indicators that may end a plain scalar. */
+
+            if ((CHECK(parser, ':') && IS_BLANKZ_AT(parser, 1)) ||
+                    (parser->flow_level &&
+                     (CHECK(parser, ',') || CHECK(parser, ':') ||
+                      CHECK(parser, '?') || CHECK(parser, '[') ||
+                      CHECK(parser, ']') || CHECK(parser, '{') ||
+                      CHECK(parser, '}'))))
+                break;
+
+            /* Check if we need to join whitespaces and breaks. */
+
+            if (leading_blanks || whitespaces.buffer != whitespaces.pointer)
+            {
+                if (!RESIZE(parser, string)) goto error;
+
+                if (leading_blanks)
+                {
+                    /* Do we need to fold line breaks? */
+
+                    if (leading_break.buffer[0] == '\n') {
+                        if (trailing_breaks.buffer[0] == '\0') {
+                            *(string.pointer++) = ' ';
+                        }
+                        else {
+                            if (!JOIN(parser, string, trailing_breaks)) goto error;
+                        }
+                        yaml_parser_clear_string(parser, &leading_break);
+                    }
+                    else {
+                        if (!JOIN(parser, string, leading_break)) goto error;
+                        if (!JOIN(parser, string, trailing_breaks)) goto error;
+                    }
+
+                    leading_blanks = 0;
+                }
+                else
+                {
+                    if (!JOIN(parser, string, whitespaces)) goto error;
+                }
+            }
+
+            /* Copy the character. */
+
+            if (!RESIZE(parser, string)) goto error;
+
+            COPY(parser, string);
+
+            end_mark = yaml_parser_get_mark(parser);
+
+            if (!UPDATE(parser, 2)) goto error;
+        }
+
+        /* Is it the end? */
+
+        if (!(IS_BLANK(parser) || IS_BREAK(parser)))
+            break;
+
+        /* Consume blank characters. */
+
+        if (!UPDATE(parser, 1)) goto error;
+
+        while (IS_BLANK(parser) || IS_BREAK(parser))
+        {
+            if (IS_BLANK(parser))
+            {
+                /* Check for tab character that abuse intendation. */
+
+                if (leading_blanks && parser->column < indent && IS_TAB(parser)) {
+                    yaml_parser_set_scanner_error(parser, "while scanning a plain scalar",
+                            start_mark, "found a tab character that violate intendation");
+                    break;
+                }
+
+                /* Consume a space or a tab character. */
+
+                if (!leading_blanks) {
+                    if (!RESIZE(parser, whitespaces)) goto error;
+                    COPY(parser, whitespaces);
+                }
+            }
+            else
+            {
+                if (!UPDATE(parser, 2)) goto error;
+
+                /* Check if it is a first line break. */
+
+                if (!leading_blanks)
+                {
+                    yaml_parser_clear_string(parser, &whitespaces);
+                    COPY_LINE(parser, leading_break);
+                    leading_blanks = 1;
+                }
+                else
+                {
+                    if (!RESIZE(parser, trailing_breaks)) goto error;
+                    COPY_LINE(parser, trailing_breaks);
+                }
+            }
+            if (!UPDATE(parser, 1)) goto error;
+        }
+
+        /* Check intendation level. */
+
+        if (parser->column < indent)
+            break;
+    }
+
+    /* Create a token. */
+
+    token = yaml_scalar_token_new(string.buffer, string.pointer-string.buffer,
+            YAML_PLAIN_SCALAR_STYLE, start_mark, end_mark);
+    if (!token) {
+        parser->error = YAML_MEMORY_ERROR;
+        return 0;
+    }
+
+    /* Note that we change the 'simple_key_allowed' flag. */
+
+    if (leading_blanks) {
+        parser->simple_key_allowed = 1;
+    }
+
+    yaml_free(leading_break.buffer);
+    yaml_free(trailing_breaks.buffer);
+    yaml_free(whitespaces.buffer);
+
+    return token;
+
+error:
+    yaml_free(string.buffer);
+    yaml_free(leading_break.buffer);
+    yaml_free(trailing_breaks.buffer);
+    yaml_free(whitespaces.buffer);
+
+    return NULL;
 }
 

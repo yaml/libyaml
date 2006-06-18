@@ -268,7 +268,7 @@ yaml_token_new(yaml_token_type_t type,
  */
 
 YAML_DECLARE(yaml_token_t *)
-yaml_stream_start_token(yaml_encoding_t encoding,
+yaml_stream_start_token_new(yaml_encoding_t encoding,
         yaml_mark_t start_mark, yaml_mark_t end_mark)
 {
     yaml_token_t *token = yaml_token_new(YAML_STREAM_START_TOKEN,
@@ -286,7 +286,7 @@ yaml_stream_start_token(yaml_encoding_t encoding,
  */
 
 YAML_DECLARE(yaml_token_t *)
-yaml_stream_end_token(yaml_mark_t start_mark, yaml_mark_t end_mark)
+yaml_stream_end_token_new(yaml_mark_t start_mark, yaml_mark_t end_mark)
 {
     yaml_token_t *token = yaml_token_new(YAML_STREAM_END_TOKEN,
             start_mark, end_mark);
