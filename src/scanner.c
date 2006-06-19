@@ -1011,10 +1011,12 @@ yaml_parser_get_token(yaml_parser_t *parser)
     /* Move the queue head. */
 
     parser->tokens[parser->tokens_head++] = NULL;
-    if (parser->tokens_head == parser->tokens_size)
-        parser->tokens_head = 0;
 
     parser->tokens_parsed++;
+
+    if (token->type == YAML_STREAM_END_TOKEN) {
+        parser->stream_end_produced = 1;
+    }
 
     return token;
 }
@@ -1080,7 +1082,7 @@ yaml_parser_resize_string(yaml_parser_t *parser, yaml_string_t *string)
 
     memset(new_buffer+string->size, 0, string->size);
 
-    string->pointer = new_buffer + (string->buffer-string->pointer);
+    string->pointer = new_buffer + (string->pointer-string->buffer);
     string->buffer = new_buffer;
     string->size *= 2;
 
@@ -1103,6 +1105,7 @@ yaml_parser_join_string(yaml_parser_t *parser,
     }
 
     memcpy(string1->pointer, string2->buffer, string2->pointer-string2->buffer);
+    string1->pointer += string2->pointer-string2->buffer;
 
     return 1;
 }
@@ -1138,7 +1141,7 @@ yaml_parser_resize_list(yaml_parser_t *parser, void **buffer, size_t *size,
         return 0;
     }
 
-    memset(new_buffer+(*size), 0, item_size*(*size));
+    memset(new_buffer+item_size*(*size), 0, item_size*(*size));
 
     *buffer = new_buffer;
     *size *= 2;
@@ -1159,6 +1162,8 @@ yaml_parser_set_scanner_error(yaml_parser_t *parser, const char *context,
     parser->context_mark = context_mark;
     parser->problem = problem;
     parser->problem_mark = yaml_parser_get_mark(parser);
+
+    return 0;
 }
 
 /*
@@ -1205,6 +1210,9 @@ yaml_parser_fetch_more_tokens(yaml_parser_t *parser)
         {
             /* Check if any potential simple key may occupy the head position. */
 
+            if (!yaml_parser_stale_simple_keys(parser))
+                return 0;
+
             for (k = 0; k <= parser->flow_level; k++) {
                 yaml_simple_key_t *simple_key = parser->simple_keys[k];
                 if (simple_key
@@ -1249,6 +1257,11 @@ yaml_parser_fetch_next_token(yaml_parser_t *parser)
     /* Eat whitespaces and comments until we reach the next token. */
 
     if (!yaml_parser_scan_to_next_token(parser))
+        return 0;
+
+    /* Remove obsolete potential simple keys. */
+
+    if (!yaml_parser_stale_simple_keys(parser))
         return 0;
 
     /* Check the indentation level against the current column. */
@@ -1330,12 +1343,12 @@ yaml_parser_fetch_next_token(yaml_parser_t *parser)
 
     /* Is it the key indicator? */
 
-    if (CHECK(parser, '?') && (!parser->flow_level || IS_BLANKZ_AT(parser, 1)))
+    if (CHECK(parser, '?') && (parser->flow_level || IS_BLANKZ_AT(parser, 1)))
         return yaml_parser_fetch_key(parser);
 
     /* Is it the value indicator? */
 
-    if (CHECK(parser, ':') && (!parser->flow_level || IS_BLANKZ_AT(parser, 1)))
+    if (CHECK(parser, ':') && (parser->flow_level || IS_BLANKZ_AT(parser, 1)))
         return yaml_parser_fetch_value(parser);
 
     /* Is it an alias? */
@@ -1382,7 +1395,8 @@ yaml_parser_fetch_next_token(yaml_parser_t *parser)
      *      '#', '&', '*', '!', '|', '>', '\'', '\"',
      *      '%', '@', '`'.
      *
-     * In the block context, it may also start with the characters
+     * In the block context (and, for the '-' indicator, in the flow context
+     * too), it may also start with the characters
      *
      *      '-', '?', ':'
      *
@@ -1398,9 +1412,9 @@ yaml_parser_fetch_next_token(yaml_parser_t *parser)
                 || CHECK(parser, '!') || CHECK(parser, '|') || CHECK(parser, '>')
                 || CHECK(parser, '\'') || CHECK(parser, '"') || CHECK(parser, '%')
                 || CHECK(parser, '@') || CHECK(parser, '`')) ||
+            (CHECK(parser, '-') && !IS_BLANK_AT(parser, 1)) ||
             (!parser->flow_level &&
-             (CHECK(parser, '-') || CHECK(parser, '?') || CHECK(parser, ':')) &&
-             IS_BLANKZ_AT(parser, 1)))
+             (CHECK(parser, '?') || CHECK(parser, ':')) && !IS_BLANKZ_AT(parser, 1)))
         return yaml_parser_fetch_plain_scalar(parser);
 
     /*
@@ -1435,7 +1449,7 @@ yaml_parser_stale_simple_keys(yaml_parser_t *parser)
          */
 
         if (simple_key && (simple_key->line < parser->line ||
-                    simple_key->index < parser->index+1024)) {
+                    simple_key->index+1024 < parser->index)) {
 
             /* Check if the potential simple key to be removed is required. */
 
@@ -1789,9 +1803,12 @@ yaml_parser_fetch_stream_end(yaml_parser_t *parser)
     if (!yaml_parser_unroll_indent(parser, -1))
         return 0;
 
-    /* We have finished. */
+    /* Reset simple keys. */
 
-    parser->stream_end_produced = 1;
+    if (!yaml_parser_remove_simple_key(parser))
+        return 0;
+
+    parser->simple_key_allowed = 0;
 
     /* Create the STREAM-END token. */
 
@@ -2204,7 +2221,7 @@ yaml_parser_fetch_value(yaml_parser_t *parser)
 
         /* In the block context, we may need to add the BLOCK-MAPPING-START token. */
 
-        if (!yaml_parser_roll_indent(parser, parser->column,
+        if (!yaml_parser_roll_indent(parser, simple_key->column,
                     simple_key->token_number,
                     YAML_BLOCK_MAPPING_START_TOKEN, simple_key->mark))
             return 0;
@@ -2989,6 +3006,16 @@ yaml_parser_scan_tag(yaml_parser_t *parser)
             if (!handle) goto error;
             handle[0] = '!';
             handle[1] = '\0';
+
+            /*
+             * A special case: the '!' tag.
+             */
+
+            if (suffix[0] == '\0') {
+                yaml_char_t *tmp = handle;
+                handle = suffix;
+                suffix = tmp;
+            }
         }
     }
 
@@ -3068,12 +3095,13 @@ yaml_parser_scan_tag_handle(yaml_parser_t *parser, int directive,
     else
     {
         /*
-         * It's not really a tag handle.  If it's a %TAG directive, it's an
-         * error.  If it's a tag token, it must be a part of URI.
+         * It's either the '!' tag or not really a tag handle.  If it's a %TAG
+         * directive, it's an error.  If it's a tag token, it must be a part of
+         * URI.
          */
 
-        if (directive) {
-            yaml_parser_set_scanner_error(parser, "while parsing a directive",
+        if (directive && !(string.buffer[0] == '!' && string.buffer[1] == '\0')) {
+            yaml_parser_set_scanner_error(parser, "while parsing a tag directive",
                     start_mark, "did not find expected '!'");
             goto error;
         }
@@ -3107,11 +3135,15 @@ yaml_parser_scan_tag_uri(yaml_parser_t *parser, int directive,
         if (!yaml_parser_resize_string(parser, &string)) goto error;
     }
 
-    /* Copy the head if needed. */
+    /*
+     * Copy the head if needed.
+     *
+     * Note that we don't copy the leading '!' character.
+     */
 
-    if (length) {
-        memcpy(string.buffer, head, length);
-        string.pointer += length;
+    if (length > 1) {
+        memcpy(string.buffer, head+1, length-1);
+        string.pointer += length-1;
     }
 
     /* Scan the tag. */
@@ -3672,6 +3704,10 @@ yaml_parser_scan_flow_scalar(yaml_parser_t *parser, int single)
                         *(string.pointer++) = '\'';
                         break;
 
+                    case '\\':
+                        *(string.pointer++) = '\\';
+                        break;
+
                     case 'N':   /* NEL (#x85) */
                         *(string.pointer++) = '\xC2';
                         *(string.pointer++) = '\x85';
@@ -3691,7 +3727,7 @@ yaml_parser_scan_flow_scalar(yaml_parser_t *parser, int single)
                     case 'P':   /* PS (#x2029) */
                         *(string.pointer++) = '\xE2';
                         *(string.pointer++) = '\x80';
-                        *(string.pointer++) = '\xA8';
+                        *(string.pointer++) = '\xA9';
                         break;
 
                     case 'x':
@@ -3799,6 +3835,9 @@ yaml_parser_scan_flow_scalar(yaml_parser_t *parser, int single)
                 if (!leading_blanks) {
                     if (!RESIZE(parser, whitespaces)) goto error;
                     COPY(parser, whitespaces);
+                }
+                else {
+                    FORWARD(parser);
                 }
             }
             else
@@ -3931,7 +3970,7 @@ yaml_parser_scan_plain_scalar(yaml_parser_t *parser)
 
         while (!IS_BLANKZ(parser))
         {
-            /* Check for 'x:x' in the flow context. */
+            /* Check for 'x:x' in the flow context. TODO: Fix the test "spec-08-13". */
 
             if (parser->flow_level && CHECK(parser, ':') && !IS_BLANKZ_AT(parser, 1)) {
                 yaml_parser_set_scanner_error(parser, "while scanning a plain scalar",
@@ -4010,7 +4049,7 @@ yaml_parser_scan_plain_scalar(yaml_parser_t *parser)
                 if (leading_blanks && parser->column < indent && IS_TAB(parser)) {
                     yaml_parser_set_scanner_error(parser, "while scanning a plain scalar",
                             start_mark, "found a tab character that violate intendation");
-                    break;
+                    goto error;
                 }
 
                 /* Consume a space or a tab character. */
@@ -4018,6 +4057,9 @@ yaml_parser_scan_plain_scalar(yaml_parser_t *parser)
                 if (!leading_blanks) {
                     if (!RESIZE(parser, whitespaces)) goto error;
                     COPY(parser, whitespaces);
+                }
+                else {
+                    FORWARD(parser);
                 }
             }
             else
@@ -4043,7 +4085,7 @@ yaml_parser_scan_plain_scalar(yaml_parser_t *parser)
 
         /* Check intendation level. */
 
-        if (parser->column < indent)
+        if (!parser->flow_level && parser->column < indent)
             break;
     }
 
