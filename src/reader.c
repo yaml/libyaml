@@ -148,7 +148,7 @@ yaml_parser_update_buffer(yaml_parser_t *parser, size_t length)
         size_t size = parser->buffer_end - parser->pointer;
         memmove(parser->buffer, parser->pointer, size);
         parser->pointer = parser->buffer;
-        parser->buffer_end -= size;
+        parser->buffer_end = parser->buffer + size;
     }
     else if (parser->pointer == parser->buffer_end) {
         parser->pointer = parser->buffer;

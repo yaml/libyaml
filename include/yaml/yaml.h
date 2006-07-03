@@ -77,6 +77,22 @@ yaml_get_version(int *major, int *minor, int *patch);
 /** The character type (UTF-8 octet). */
 typedef unsigned char yaml_char_t;
 
+/** The version directive data. */
+typedef struct {
+    /** The major version number. */
+    int major;
+    /** The minor version number. */
+    int minor;
+} yaml_version_directive_t;
+
+/** The tag directive data. */
+typedef struct {
+    /** The tag handle. */
+    yaml_char_t *handle;
+    /** The tag prefix. */
+    yaml_char_t *prefix;
+} yaml_tag_directive_t;
+
 /** The stream encoding. */
 typedef enum {
     YAML_ANY_ENCODING,
@@ -194,11 +210,23 @@ typedef struct {
     /** The token data. */
     union {
 
-        /** The stream encoding (for @c YAML_STREAM_START_TOKEN). */
-        yaml_encoding_t encoding;
+        /** The stream start (for @c YAML_STREAM_START_TOKEN). */
+        struct {
+            /** The stream encoding. */
+            yaml_encoding_t encoding;
+        } stream_start;
 
-        /** The anchor (for @c YAML_ALIAS_TOKEN and @c YAML_ANCHOR_TOKEN). */
-        yaml_char_t *anchor;
+        /** The alias (for @c YAML_ALIAS_TOKEN). */
+        struct {
+            /** The alias value. */
+            yaml_char_t *value;
+        } alias;
+
+        /** The anchor (for @c YAML_ANCHOR_TOKEN). */
+        struct {
+            /** The anchor value. */
+            yaml_char_t *value;
+        } anchor;
 
         /** The tag (for @c YAML_TAG_TOKEN). */
         struct {
@@ -419,8 +447,12 @@ yaml_token_delete(yaml_token_t *token);
 
 /** @} */
 
-/*
+/**
+ * @defgroup events Events
+ * @{
+ */
 
+/** Event types. */
 typedef enum {
     YAML_STREAM_START_EVENT,
     YAML_STREAM_END_EVENT,
@@ -438,57 +470,258 @@ typedef enum {
     YAML_MAPPING_END_EVENT
 } yaml_event_type_t;
 
+/** The event structure. */
 typedef struct {
+
+    /** The event type. */
     yaml_event_type_t type;
+
+    /** The event data. */
     union {
+        
+        /** The stream parameters (for @c YAML_STREAM_START_EVENT). */
         struct {
+            /** The document encoding. */
             yaml_encoding_t encoding;
         } stream_start;
+
+        /** The document parameters (for @c YAML_DOCUMENT_START_EVENT). */
         struct {
-            struct {
-                int major;
-                int minor;
-            } version;
-            struct {
-                char *handle;
-                char *prefix;
-            } **tag_pairs;
+            /** The version directive. */
+            yaml_version_directive_t *version_directive;
+            /** The list of tag directives. */
+            yaml_tag_directive_t **tag_directives;
+            /** Is the document indicator implicit? */
             int implicit;
         } document_start;
+
+        /** The document end parameters (for @c YAML_DOCUMENT_END_EVENT). */
         struct {
+            /** Is the document end indicator implicit? */
             int implicit;
         } document_end;
+
+        /** The alias parameters (for @c YAML_ALIAS_EVENT). */
         struct {
-            char *anchor;
+            /** The anchor. */
+            yaml_char_t *anchor;
         } alias;
+
+        /** The scalar parameters (for @c YAML_SCALAR_EVENT). */
         struct {
-            char *anchor;
-            char *tag;
-            char *value;
+            /** The anchor. */
+            yaml_char_t *anchor;
+            /** The tag. */
+            yaml_char_t *tag;
+            /** The scalar value. */
+            yaml_char_t *value;
+            /** The length of the scalar value. */
             size_t length;
+            /** Is the tag optional for the plain style? */
             int plain_implicit;
+            /** Is the tag optional for any non-plain style? */
             int quoted_implicit;
+            /** The scalar style. */
             yaml_scalar_style_t style;
         } scalar;
+
+        /** The sequence parameters (for @c YAML_SEQUENCE_START_EVENT). */
         struct {
-            char *anchor;
-            char *tag;
+            /** The anchor. */
+            yaml_char_t *anchor;
+            /** The tag. */
+            yaml_char_t *tag;
+            /** Is the tag optional? */
             int implicit;
+            /** The sequence style. */
             yaml_sequence_style_t style;
         } sequence_start;
+
+        /** The mapping parameters (for @c YAML_MAPPING_START_EVENT). */
         struct {
-            char *anchor;
-            char *tag;
+            /** The anchor. */
+            yaml_char_t *anchor;
+            /** The tag. */
+            yaml_char_t *tag;
+            /** Is the tag optional? */
             int implicit;
+            /** The mapping style. */
             yaml_mapping_style_t style;
         } mapping_start;
+
     } data;
+
+    /** The beginning of the token. */
     yaml_mark_t start_mark;
+
+    /** The end of the token. */
     yaml_mark_t end_mark;
 } yaml_event_t;
 
-*/
+/**
+ * Create a new @c YAML_STREAM_START_EVENT event.
+ *
+ * @param[in]   encoding    The stream encoding.
+ * @param[in]   start_mark  The beginning of the event.
+ * @param[in]   end_mark    The end of the event.
+ *
+ * @returns A new event object, or @c NULL on error.
+ */
 
+YAML_DECLARE(yaml_event_t *)
+yaml_stream_start_event_new(yaml_encoding_t encoding,
+        yaml_mark_t start_mark, yaml_mark_t end_mark);
+
+/**
+ * Create a new @c YAML_STREAM_END_TOKEN event.
+ *
+ * @param[in]   start_mark  The beginning of the event.
+ * @param[in]   end_mark    The end of the event.
+ *
+ * @returns A new event object, or @c NULL on error.
+ */
+
+YAML_DECLARE(yaml_event_t *)
+yaml_stream_end_event_new(yaml_mark_t start_mark, yaml_mark_t end_mark);
+
+/**
+ * Create a new @c YAML_DOCUMENT_START_EVENT event.
+ *
+ * @param[in]   version_directive   The version directive or @c NULL.
+ * @param[in]   tag_directives      A list of tag directives or @c NULL.
+ * @param[in]   implicit            Is the document indicator present?
+ * @param[in]   start_mark          The beginning of the event.
+ * @param[in]   end_mark            The end of the event.
+ *
+ * @returns A new event object, or @c NULL on error.
+ */
+
+YAML_DECLARE(yaml_event_t *)
+yaml_document_start_event_new(yaml_version_directive_t *version_directive,
+        yaml_tag_directive_t **tag_directives, int implicit,
+        yaml_mark_t start_mark, yaml_mark_t end_mark);
+
+/**
+ * Create a new @c YAML_DOCUMENT_END_EVENT event.
+ *
+ * @param[in]   implicit    Is the document end indicator present?
+ * @param[in]   start_mark  The beginning of the event.
+ * @param[in]   end_mark    The end of the event.
+ *
+ * @returns A new event object, or @c NULL on error.
+ */
+
+YAML_DECLARE(yaml_event_t *)
+yaml_document_end_event_new(int implicit,
+        yaml_mark_t start_mark, yaml_mark_t end_mark);
+
+/**
+ * Create a new @c YAML_ALIAS_EVENT event.
+ *
+ * @param[in]   anchor      The anchor value.
+ * @param[in]   start_mark  The beginning of the event.
+ * @param[in]   end_mark    The end of the event.
+ *
+ * @returns A new event object, or @c NULL on error.
+ */
+
+YAML_DECLARE(yaml_event_t *)
+yaml_alias_event_new(yaml_char_t *anchor,
+        yaml_mark_t start_mark, yaml_mark_t end_mark);
+
+/**
+ * Create a new @c YAML_SCALAR_EVENT event.
+ *
+ * @param[in]   anchor          The anchor value or @c NULL.
+ * @param[in]   tag             The tag value or @c NULL.
+ * @param[in]   value           The scalar value.
+ * @param[in]   length          The length of the scalar value.
+ * @param[in]   plain_implicit  Is the tag optional for the plain style?
+ * @param[in]   quoted_implicit Is the tag optional for any non-plain style?
+ * @param[in]   style           The scalar style.
+ * @param[in]   start_mark      The beginning of the event.
+ * @param[in]   end_mark        The end of the event.
+ *
+ * @returns A new event object, or @c NULL on error.
+ */
+
+YAML_DECLARE(yaml_event_t *)
+yaml_scalar_event_new(yaml_char_t *anchor, yaml_char_t *tag,
+        yaml_char_t *value, size_t length,
+        int plain_implicit, int quoted_implicit,
+        yaml_scalar_style_t style,
+        yaml_mark_t start_mark, yaml_mark_t end_mark);
+
+/**
+ * Create a new @c YAML_SEQUENCE_START_EVENT event.
+ *
+ * @param[in]   anchor      The anchor value or @c NULL.
+ * @param[in]   tag         The tag value or @c NULL.
+ * @param[in]   implicit    Is the tag optional?
+ * @param[in]   style       The sequence style.
+ * @param[in]   start_mark  The beginning of the event.
+ * @param[in]   end_mark    The end of the event.
+ *
+ * @returns A new event object, or @c NULL on error.
+ */
+
+YAML_DECLARE(yaml_event_t *)
+yaml_sequence_start_new(yaml_char_t *anchor, yaml_char_t *tag,
+        int implicit, yaml_sequence_style_t style,
+        yaml_mark_t start_mark, yaml_mark_t end_mark);
+
+/**
+ * Create a new @c YAML_SEQUENCE_END_EVENT event.
+ *
+ * @param[in]   start_mark  The beginning of the event.
+ * @param[in]   end_mark    The end of the event.
+ *
+ * @returns A new event object, or @c NULL on error.
+ */
+
+YAML_DECLARE(yaml_event_t *)
+yaml_sequence_end_new(yaml_mark_t start_mark, yaml_mark_t end_mark);
+
+/**
+ * Create a new @c YAML_MAPPING_START_EVENT event.
+ *
+ * @param[in]   anchor      The anchor value or @c NULL.
+ * @param[in]   tag         The tag value or @c NULL.
+ * @param[in]   implicit    Is the tag optional?
+ * @param[in]   style       The mapping style.
+ * @param[in]   start_mark  The beginning of the event.
+ * @param[in]   end_mark    The end of the event.
+ *
+ * @returns A new event object, or @c NULL on error.
+ */
+
+YAML_DECLARE(yaml_event_t *)
+yaml_mapping_start_new(yaml_char_t *anchor, yaml_char_t *tag,
+        int implicit, yaml_mapping_style_t style,
+        yaml_mark_t start_mark, yaml_mark_t end_mark);
+
+/**
+ * Create a new @c YAML_MAPPING_END_EVENT event.
+ *
+ * @param[in]   start_mark  The beginning of the event.
+ * @param[in]   end_mark    The end of the event.
+ *
+ * @returns A new event object, or @c NULL on error.
+ */
+
+YAML_DECLARE(yaml_event_t *)
+yaml_mapping_end_new(yaml_mark_t start_mark, yaml_mark_t end_mark);
+
+/**
+ * Destroy an event object.
+ *
+ * @param[in]   event   An event object.
+ */
+
+YAML_DECLARE(void)
+yaml_event_delete(yaml_event_t *event);
+
+/** @} */
 
 /**
  * @defgroup parser Parser Definitions
