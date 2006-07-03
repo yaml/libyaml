@@ -1,4 +1,4 @@
-#include <yaml/yaml.h>
+#include <yaml.h>
 
 #include <stdlib.h>
 #include <stdio.h>

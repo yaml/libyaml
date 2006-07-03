@@ -3,9 +3,23 @@
 #include <config.h>
 #endif
 
-#include <yaml/yaml.h>
+#include <yaml.h>
 
 #include <assert.h>
+
+YAML_DECLARE(const char *)
+yaml_get_version_string(void)
+{
+    return YAML_VERSION_STRING;
+}
+
+YAML_DECLARE(void)
+yaml_get_version(int *major, int *minor, int *patch)
+{
+    *major = YAML_VERSION_MAJOR;
+    *minor = YAML_VERSION_MINOR;
+    *patch = YAML_VERSION_PATCH;
+}
 
 /*
  * Allocate a dynamic memory block.
