@@ -276,7 +276,7 @@ yaml_stream_start_token_new(yaml_encoding_t encoding,
 
     if (!token) return NULL;
 
-    token->data.encoding = encoding;
+    token->data.stream_start.encoding = encoding;
 
     return token;
 }
@@ -347,7 +347,7 @@ yaml_alias_token_new(yaml_char_t *anchor,
 
     if (!token) return NULL;
 
-    token->data.anchor = anchor;
+    token->data.alias.value = anchor;
 
     return token;
 }
@@ -365,7 +365,7 @@ yaml_anchor_token_new(yaml_char_t *anchor,
 
     if (!token) return NULL;
 
-    token->data.anchor = anchor;
+    token->data.anchor.value = anchor;
 
     return token;
 }
@@ -427,8 +427,11 @@ yaml_token_delete(yaml_token_t *token)
             break;
 
         case YAML_ALIAS_TOKEN:
+            yaml_free(token->data.alias.value);
+            break;
+
         case YAML_ANCHOR_TOKEN:
-            yaml_free(token->data.anchor);
+            yaml_free(token->data.anchor.value);
             break;
 
         case YAML_TAG_TOKEN:
@@ -444,5 +447,253 @@ yaml_token_delete(yaml_token_t *token)
     memset(token, 0, sizeof(yaml_token_t));
 
     yaml_free(token);
+}
+
+/*
+ * Create an event.
+ */
+
+static yaml_event_t *
+yaml_event_new(yaml_event_type_t type,
+        yaml_mark_t start_mark, yaml_mark_t end_mark)
+{
+    yaml_event_t *event = yaml_malloc(sizeof(yaml_event_t));
+
+    if (!event) return NULL;
+
+    memset(event, 0, sizeof(yaml_event_t));
+
+    event->type = type;
+    event->start_mark = start_mark;
+    event->end_mark = end_mark;
+
+    return event;
+}
+
+/*
+ * Create a STREAM-START event.
+ */
+
+YAML_DECLARE(yaml_event_t *)
+yaml_stream_start_event_new(yaml_encoding_t encoding,
+        yaml_mark_t start_mark, yaml_mark_t end_mark)
+{
+    yaml_event_t *event = yaml_event_new(YAML_STREAM_START_EVENT,
+            start_mark, end_mark);
+
+    if (!event) return NULL;
+
+    event->data.stream_start.encoding = encoding;
+
+    return event;
+}
+
+/*
+ * Create a STREAM-END event.
+ */
+
+YAML_DECLARE(yaml_event_t *)
+yaml_stream_end_event_new(yaml_mark_t start_mark, yaml_mark_t end_mark)
+{
+    return yaml_event_new(YAML_STREAM_END_EVENT, start_mark, end_mark);
+}
+
+/*
+ * Create a DOCUMENT-START event.
+ */
+
+YAML_DECLARE(yaml_event_t *)
+yaml_document_start_event_new(yaml_version_directive_t *version_directive,
+        yaml_tag_directive_t **tag_directives, int implicit,
+        yaml_mark_t start_mark, yaml_mark_t end_mark)
+{
+    yaml_event_t *event = yaml_event_new(YAML_DOCUMENT_START_EVENT,
+            start_mark, end_mark);
+
+    if (!event) return NULL;
+
+    event->data.document_start.version_directive = version_directive;
+    event->data.document_start.tag_directives = tag_directives;
+    event->data.document_start.implicit = implicit;
+
+    return event;
+}
+
+/*
+ * Create a DOCUMENT-END event.
+ */
+
+YAML_DECLARE(yaml_event_t *)
+yaml_document_end_event_new(int implicit,
+        yaml_mark_t start_mark, yaml_mark_t end_mark)
+{
+    yaml_event_t *event = yaml_event_new(YAML_DOCUMENT_END_EVENT,
+            start_mark, end_mark);
+
+    if (!event) return NULL;
+
+    event->data.document_end.implicit = implicit;
+
+    return event;
+}
+
+/*
+ * Create an ALIAS event.
+ */
+
+YAML_DECLARE(yaml_event_t *)
+yaml_alias_event_new(yaml_char_t *anchor,
+        yaml_mark_t start_mark, yaml_mark_t end_mark)
+{
+    yaml_event_t *event = yaml_event_new(YAML_ALIAS_EVENT,
+            start_mark, end_mark);
+
+    if (!event) return NULL;
+
+    event->data.alias.anchor = anchor;
+
+    return event;
+}
+
+/*
+ * Create a SCALAR event.
+ */
+
+YAML_DECLARE(yaml_event_t *)
+yaml_scalar_event_new(yaml_char_t *anchor, yaml_char_t *tag,
+        yaml_char_t *value, size_t length,
+        int plain_implicit, int quoted_implicit,
+        yaml_scalar_style_t style,
+        yaml_mark_t start_mark, yaml_mark_t end_mark)
+{
+    yaml_event_t *event = yaml_event_new(YAML_SCALAR_EVENT,
+            start_mark, end_mark);
+
+    if (!event) return NULL;
+
+    event->data.scalar.anchor = anchor;
+    event->data.scalar.tag = tag;
+    event->data.scalar.value = value;
+    event->data.scalar.length = length;
+    event->data.scalar.plain_implicit = plain_implicit;
+    event->data.scalar.quoted_implicit = quoted_implicit;
+    event->data.scalar.style = style;
+
+    return event;
+}
+
+/*
+ * Create a SEQUENCE-START event.
+ */
+
+YAML_DECLARE(yaml_event_t *)
+yaml_sequence_start_new(yaml_char_t *anchor, yaml_char_t *tag,
+        int implicit, yaml_sequence_style_t style,
+        yaml_mark_t start_mark, yaml_mark_t end_mark)
+{
+    yaml_event_t *event = yaml_event_new(YAML_SEQUENCE_START_EVENT,
+            start_mark, end_mark);
+
+    if (!event) return NULL;
+
+    event->data.sequence_start.anchor = anchor;
+    event->data.sequence_start.tag = tag;
+    event->data.sequence_start.implicit = implicit;
+    event->data.sequence_start.style = style;
+
+    return event;
+}
+
+/*
+ * Create a SEQUENCE-END event.
+ */
+
+YAML_DECLARE(yaml_event_t *)
+yaml_sequence_end_event_new(yaml_mark_t start_mark, yaml_mark_t end_mark)
+{
+    return yaml_event_new(YAML_SEQUENCE_END_EVENT, start_mark, end_mark);
+}
+
+/*
+ * Create a MAPPING-START event.
+ */
+
+YAML_DECLARE(yaml_event_t *)
+yaml_mapping_start_new(yaml_char_t *anchor, yaml_char_t *tag,
+        int implicit, yaml_mapping_style_t style,
+        yaml_mark_t start_mark, yaml_mark_t end_mark)
+{
+    yaml_event_t *event = yaml_event_new(YAML_MAPPING_START_EVENT,
+            start_mark, end_mark);
+
+    if (!event) return NULL;
+
+    event->data.mapping_start.anchor = anchor;
+    event->data.mapping_start.tag = tag;
+    event->data.mapping_start.implicit = implicit;
+    event->data.mapping_start.style = style;
+
+    return event;
+}
+
+/*
+ * Create a MAPPING-END event.
+ */
+
+YAML_DECLARE(yaml_event_t *)
+yaml_mapping_end_event_new(yaml_mark_t start_mark, yaml_mark_t end_mark)
+{
+    return yaml_event_new(YAML_MAPPING_END_EVENT, start_mark, end_mark);
+}
+
+/*
+ * Destroy an event object.
+ */
+
+YAML_DECLARE(void)
+yaml_event_delete(yaml_event_t *event)
+{
+    assert(event);  /* Non-NULL event object expected. */
+
+    switch (event->type)
+    {
+        case YAML_DOCUMENT_START_EVENT:
+            yaml_free(event->data.document_start.version_directive);
+            if (event->data.document_start.tag_directives) {
+                yaml_tag_directive_t **tag_directive;
+                for (tag_directive = event->data.document_start.tag_directives;
+                        *tag_directive; tag_directive++) {
+                    yaml_free((*tag_directive)->handle);
+                    yaml_free((*tag_directive)->prefix);
+                    yaml_free(*tag_directive);
+                }
+                yaml_free(event->data.document_start.tag_directives);
+            }
+            break;
+
+        case YAML_ALIAS_EVENT:
+            yaml_free(event->data.alias.anchor);
+            break;
+
+        case YAML_SCALAR_EVENT:
+            yaml_free(event->data.scalar.anchor);
+            yaml_free(event->data.scalar.tag);
+            yaml_free(event->data.scalar.value);
+            break;
+
+        case YAML_SEQUENCE_START_EVENT:
+            yaml_free(event->data.sequence_start.anchor);
+            yaml_free(event->data.sequence_start.tag);
+            break;
+
+        case YAML_MAPPING_START_EVENT:
+            yaml_free(event->data.mapping_start.anchor);
+            yaml_free(event->data.mapping_start.tag);
+            break;
+    }
+
+    memset(event, 0, sizeof(yaml_event_t));
+
+    yaml_free(event);
 }
 
