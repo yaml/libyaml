@@ -790,6 +790,36 @@ typedef struct {
 } yaml_simple_key_t;
 
 /**
+ * The states of the parser.
+ */
+typedef enum {
+    YAML_PARSE_END_STATE,
+    YAML_PARSE_STREAM_START_STATE,
+    YAML_PARSE_IMPLICIT_DOCUMENT_START_STATE,
+    YAML_PARSE_DOCUMENT_START_STATE,
+    YAML_PARSE_DOCUMENT_CONTENT_STATE,
+    YAML_PARSE_DOCUMENT_END_STATE,
+    YAML_PARSE_BLOCK_NODE_STATE,
+    YAML_PARSE_BLOCK_NODE_OR_INDENTLESS_SEQUENCE_STATE,
+    YAML_PARSE_FLOW_NODE_STATE,
+    YAML_PARSE_BLOCK_SEQUENCE_FIRST_ENTRY_STATE,
+    YAML_PARSE_BLOCK_SEQUENCE_ENTRY_STATE,
+    YAML_PARSE_INDENTLESS_SEQUENCE_ENTRY_STATE,
+    YAML_PARSE_BLOCK_MAPPING_FIRST_KEY_STATE,
+    YAML_PARSE_BLOCK_MAPPING_KEY_STATE,
+    YAML_PARSE_BLOCK_MAPPING_VALUE_STATE,
+    YAML_PARSE_FLOW_SEQUENCE_FIRST_ENTRY_STATE,
+    YAML_PARSE_FLOW_SEQUENCE_ENTRY_STATE,
+    YAML_PARSE_FLOW_SEQUENCE_ENTRY_MAPPING_KEY_STATE,
+    YAML_PARSE_FLOW_SEQUENCE_ENTRY_MAPPING_VALUE_STATE,
+    YAML_PARSE_FLOW_SEQUENCE_ENTRY_MAPPING_END_STATE,
+    YAML_PARSE_FLOW_MAPPING_FIRST_KEY_STATE,
+    YAML_PARSE_FLOW_MAPPING_KEY_STATE,
+    YAML_PARSE_FLOW_MAPPING_VALUE_STATE,
+    YAML_PARSE_FLOW_MAPPING_EMPTY_VALUE_STATE
+} yaml_parser_state_t;
+
+/**
  * The parser structure.
  *
  * All members are internal.  Manage the structure using the @c yaml_parser_
@@ -939,6 +969,51 @@ typedef struct {
      * @}
      */
 
+    /**
+     * @name Parser stuff
+     * @{
+     */
+
+    /** The parser states stack. */
+    yaml_parser_state_t *states;
+
+    /** The size of the parser states stack. */
+    size_t states_size;
+
+    /** The number of items in the parser states stack. */
+    size_t states_length;
+
+    /** The current parser state. */
+    yaml_parser_state_t state;
+
+    /** The stack of marks. */
+    yaml_mark_t *marks;
+
+    /** The size of the marks stack. */
+    size_t marks_size;
+
+    /** The number of items in the marks stack. */
+    size_t marks_length;
+
+    /** The current event. */
+    yaml_event_t *current_event;
+
+    /** The YAML version directive. */
+    yaml_version_directive_t *version_directive;
+
+    /** The list of TAG directives. */
+    yaml_tag_directive_t **tag_directives;
+
+    /** The size of the TAG directives list. */
+    size_t tag_directives_size;
+
+    /** The number of items in the TAG directives list. */
+    size_t tag_directives_length;
+
+    /**
+     * @}
+     */
+
 } yaml_parser_t;
 
 /**
@@ -1043,6 +1118,34 @@ yaml_parser_get_token(yaml_parser_t *parser);
 
 YAML_DECLARE(yaml_token_t *)
 yaml_parser_peek_token(yaml_parser_t *parser);
+
+/**
+ * Get the next event.
+ *
+ * The application is responsible for destroing the event object.
+ *
+ * @param[in]   parser      A parser object.
+ *
+ * @returns An event object, or @c NULL on error.
+ */
+
+YAML_DECLARE(yaml_event_t *)
+yaml_parser_get_event(yaml_parser_t *parser);
+
+/**
+ * Peek the next event.
+ *
+ * The event will be returned again on a subsequent call of
+ * @c yaml_parser_get_event or @c yaml_parser_peek_event.  The application
+ * should not destroy the event object.
+ *
+ * @param[in]   parser      A parser object.
+ *
+ * @returns An event object, or @c NULL on error.
+ */
+
+YAML_DECLARE(yaml_event_t *)
+yaml_parser_peek_event(yaml_parser_t *parser);
 
 /** @} */
 
