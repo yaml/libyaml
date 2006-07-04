@@ -114,6 +114,26 @@ yaml_parser_new(void)
 
     parser->simple_keys_size = YAML_DEFAULT_SIZE;
 
+    /* Allocate the stack of parser states. */
+
+    parser->states = yaml_malloc(YAML_DEFAULT_SIZE*sizeof(yaml_parser_state_t));
+    if (!parser->states) goto error;
+    memset(parser->states, 0, YAML_DEFAULT_SIZE*sizeof(yaml_parser_state_t));
+
+    parser->states_size = YAML_DEFAULT_SIZE;
+
+    /* Set the initial state. */
+
+    parser->state = YAML_PARSE_STREAM_START_STATE;
+
+    /* Allocate the list of TAG directives. */
+
+    parser->tag_directives = yaml_malloc(YAML_DEFAULT_SIZE*sizeof(yaml_tag_directive_t *));
+    if (!parser->tag_directives) goto error;
+    memset(parser->tag_directives, 0, YAML_DEFAULT_SIZE*sizeof(yaml_tag_directive_t *));
+
+    parser->tag_directives_size = YAML_DEFAULT_SIZE;
+
     /* Done. */
 
     return parser;
@@ -124,6 +144,8 @@ error:
 
     if (!parser) return NULL;
 
+    yaml_free(parser->tag_directives);
+    yaml_free(parser->states);
     yaml_free(parser->simple_keys);
     yaml_free(parser->indents);
     yaml_free(parser->tokens);
@@ -144,6 +166,8 @@ yaml_parser_delete(yaml_parser_t *parser)
 {
     assert(parser); /* Non-NULL parser object expected. */
 
+    yaml_free(parser->tag_directives);
+    yaml_free(parser->states);
     yaml_free(parser->simple_keys);
     yaml_free(parser->indents);
     yaml_free(parser->tokens);
