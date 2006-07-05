@@ -625,7 +625,7 @@ yaml_scalar_event_new(yaml_char_t *anchor, yaml_char_t *tag,
  */
 
 YAML_DECLARE(yaml_event_t *)
-yaml_sequence_start_new(yaml_char_t *anchor, yaml_char_t *tag,
+yaml_sequence_start_event_new(yaml_char_t *anchor, yaml_char_t *tag,
         int implicit, yaml_sequence_style_t style,
         yaml_mark_t start_mark, yaml_mark_t end_mark)
 {
@@ -657,7 +657,7 @@ yaml_sequence_end_event_new(yaml_mark_t start_mark, yaml_mark_t end_mark)
  */
 
 YAML_DECLARE(yaml_event_t *)
-yaml_mapping_start_new(yaml_char_t *anchor, yaml_char_t *tag,
+yaml_mapping_start_event_new(yaml_char_t *anchor, yaml_char_t *tag,
         int implicit, yaml_mapping_style_t style,
         yaml_mark_t start_mark, yaml_mark_t end_mark)
 {
