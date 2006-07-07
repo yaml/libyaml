@@ -126,6 +126,14 @@ yaml_parser_new(void)
 
     parser->state = YAML_PARSE_STREAM_START_STATE;
 
+    /* Allocate the stack of marks. */
+
+    parser->marks = yaml_malloc(YAML_DEFAULT_SIZE*sizeof(yaml_mark_t));
+    if (!parser->marks) goto error;
+    memset(parser->marks, 0, YAML_DEFAULT_SIZE*sizeof(yaml_mark_t));
+
+    parser->marks_size = YAML_DEFAULT_SIZE;
+
     /* Allocate the list of TAG directives. */
 
     parser->tag_directives = yaml_malloc(YAML_DEFAULT_SIZE*sizeof(yaml_tag_directive_t *));
@@ -145,6 +153,7 @@ error:
     if (!parser) return NULL;
 
     yaml_free(parser->tag_directives);
+    yaml_free(parser->marks);
     yaml_free(parser->states);
     yaml_free(parser->simple_keys);
     yaml_free(parser->indents);
@@ -166,7 +175,8 @@ yaml_parser_delete(yaml_parser_t *parser)
 {
     assert(parser); /* Non-NULL parser object expected. */
 
-    yaml_free(parser->tag_directives);
+    /*yaml_free(parser->tag_directives);*/
+    yaml_free(parser->marks);
     yaml_free(parser->states);
     yaml_free(parser->simple_keys);
     yaml_free(parser->indents);
@@ -696,7 +706,7 @@ yaml_event_delete(yaml_event_t *event)
     switch (event->type)
     {
         case YAML_DOCUMENT_START_EVENT:
-            yaml_free(event->data.document_start.version_directive);
+            /*yaml_free(event->data.document_start.version_directive);
             if (event->data.document_start.tag_directives) {
                 yaml_tag_directive_t **tag_directive;
                 for (tag_directive = event->data.document_start.tag_directives;
@@ -706,7 +716,7 @@ yaml_event_delete(yaml_event_t *event)
                     yaml_free(*tag_directive);
                 }
                 yaml_free(event->data.document_start.tag_directives);
-            }
+            }*/
             break;
 
         case YAML_ALIAS_EVENT:
