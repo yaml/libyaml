@@ -2739,6 +2739,8 @@ yaml_parser_scan_version_directive_value(yaml_parser_t *parser,
 
     if (!yaml_parser_scan_version_directive_number(parser, start_mark, minor))
         return 0;
+
+    return 1;
 }
 
 #define MAX_NUMBER_LENGTH   9
