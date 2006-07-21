@@ -363,6 +363,8 @@ yaml_parser_state_machine(yaml_parser_t *parser, yaml_event_t *event)
         default:
             assert(1);      /* Invalid state. */
     }
+
+    return 0;
 }
 
 /*
@@ -1358,11 +1360,15 @@ yaml_parser_process_directives(yaml_parser_t *parser,
     if (tag_directives_start_ref) {
         if (STACK_EMPTY(parser, tag_directives)) {
             *tag_directives_start_ref = *tag_directives_end_ref = NULL;
+            STACK_DEL(parser, tag_directives);
         }
         else {
             *tag_directives_start_ref = tag_directives.start;
-            *tag_directives_end_ref = tag_directives.end;
+            *tag_directives_end_ref = tag_directives.top;
         }
+    }
+    else {
+        STACK_DEL(parser, tag_directives);
     }
 
     return 1;
@@ -1384,7 +1390,6 @@ yaml_parser_append_tag_directive(yaml_parser_t *parser,
 {
     yaml_tag_directive_t *tag_directive;
     yaml_tag_directive_t copy = { NULL, NULL };
-    int length;
 
     for (tag_directive = parser->tag_directives.start;
             tag_directive != parser->tag_directives.top; tag_directive ++) {
