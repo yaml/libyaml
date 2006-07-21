@@ -368,6 +368,9 @@ yaml_token_delete(yaml_token_t *token)
         case YAML_SCALAR_TOKEN:
             yaml_free(token->data.scalar.value);
             break;
+
+        default:
+            break;
     }
 
     memset(token, 0, sizeof(yaml_token_t));
@@ -415,6 +418,9 @@ yaml_event_delete(yaml_event_t *event)
         case YAML_MAPPING_START_EVENT:
             yaml_free(event->data.mapping_start.anchor);
             yaml_free(event->data.mapping_start.tag);
+            break;
+
+        default:
             break;
     }
 

@@ -186,10 +186,10 @@ yaml_parser_update_buffer(yaml_parser_t *parser, size_t length)
 
         while (parser->raw_buffer.pointer != parser->raw_buffer.last)
         {
-            unsigned int value, value2;
+            unsigned int value = 0, value2 = 0;
             int incomplete = 0;
             unsigned char octet;
-            unsigned int width;
+            unsigned int width = 0;
             int k, low, high;
             int raw_unread = parser->raw_buffer.last - parser->raw_buffer.pointer;
 
@@ -366,7 +366,7 @@ yaml_parser_update_buffer(yaml_parser_t *parser, size_t length)
 
                         /* Get the next character. */
 
-                        unsigned int value2 = parser->raw_buffer.pointer[low+2]
+                        value2 = parser->raw_buffer.pointer[low+2]
                             + (parser->raw_buffer.pointer[high+2] << 8);
 
                         /* Check for a low surrogate area. */
@@ -386,6 +386,9 @@ yaml_parser_update_buffer(yaml_parser_t *parser, size_t length)
                     }
 
                     break;
+
+                default:
+                    assert(1);      /* Impossible. */
             }
 
             /* Check if the raw buffer contains enough bytes to form a character. */

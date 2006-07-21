@@ -3601,7 +3601,7 @@ yaml_parser_scan_plain_scalar(yaml_parser_t *parser, yaml_token_t *token)
     if (!STRING_INIT(parser, trailing_breaks, INITIAL_STRING_SIZE)) goto error;
     if (!STRING_INIT(parser, whitespaces, INITIAL_STRING_SIZE)) goto error;
 
-    start_mark = parser->mark;
+    start_mark = end_mark = parser->mark;
 
     /* Consume the content of the plain scalar. */
 

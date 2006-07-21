@@ -7,39 +7,52 @@
 int
 main(int argc, char *argv[])
 {
-    FILE *file;
-    yaml_parser_t parser;
-    yaml_token_t token;
-    int done = 0;
-    int count = 0;
+    int number;
 
-    if (argc != 2) {
-        printf("Usage: %s file.yaml\n", argv[0]);
+    if (argc < 2) {
+        printf("Usage: %s file1.yaml ...\n", argv[0]);
         return 0;
     }
-    file = fopen(argv[1], "rb");
-    assert(file);
 
-    assert(yaml_parser_initialize(&parser));
-
-    yaml_parser_set_input_file(&parser, file);
-
-    while (!done)
+    for (number = 1; number < argc; number ++)
     {
-        assert(yaml_parser_scan(&parser, &token));
+        FILE *file;
+        yaml_parser_t parser;
+        yaml_token_t token;
+        int done = 0;
+        int count = 0;
+        int error = 0;
 
-        done = (token.type == YAML_STREAM_END_TOKEN);
+        printf("[%d] Scanning '%s': ", number, argv[number]);
+        fflush(stdout);
 
-        yaml_token_delete(&token);
+        file = fopen(argv[number], "rb");
+        assert(file);
 
-        count ++;
+        assert(yaml_parser_initialize(&parser));
+
+        yaml_parser_set_input_file(&parser, file);
+
+        while (!done)
+        {
+            if (!yaml_parser_scan(&parser, &token)) {
+                error = 1;
+                break;
+            }
+
+            done = (token.type == YAML_STREAM_END_TOKEN);
+
+            yaml_token_delete(&token);
+
+            count ++;
+        }
+
+        yaml_parser_delete(&parser);
+
+        assert(!fclose(file));
+
+        printf("%s (%d tokens)\n", (error ? "FAILURE" : "SUCCESS"), count);
     }
-
-    yaml_parser_delete(&parser);
-
-    fclose(file);
-
-    printf("Parsing the file '%s': %d tokens\n", argv[1], count);
 
     return 0;
 }
