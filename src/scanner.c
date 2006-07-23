@@ -761,52 +761,6 @@
     1) : 0)
 
 /*
- * Token initializers.
- */
-
-#define TOKEN_INIT(token,token_type,token_start_mark,token_end_mark)            \
-    (memset(&(token), 0, sizeof(yaml_token_t)),                                 \
-     (token).type = (token_type),                                               \
-     (token).start_mark = (token_start_mark),                                   \
-     (token).end_mark = (token_end_mark))
-
-#define STREAM_START_TOKEN_INIT(token,token_encoding,start_mark,end_mark)       \
-    (TOKEN_INIT((token),YAML_STREAM_START_TOKEN,(start_mark),(end_mark)),       \
-     (token).data.stream_start.encoding = (token_encoding))
-
-#define STREAM_END_TOKEN_INIT(token,start_mark,end_mark)                        \
-    (TOKEN_INIT((token),YAML_STREAM_END_TOKEN,(start_mark),(end_mark)))
-
-#define ALIAS_TOKEN_INIT(token,token_value,start_mark,end_mark)                 \
-    (TOKEN_INIT((token),YAML_ALIAS_TOKEN,(start_mark),(end_mark)),              \
-     (token).data.alias.value = (token_value))
-
-#define ANCHOR_TOKEN_INIT(token,token_value,start_mark,end_mark)                \
-    (TOKEN_INIT((token),YAML_ANCHOR_TOKEN,(start_mark),(end_mark)),             \
-     (token).data.anchor.value = (token_value))
-
-#define TAG_TOKEN_INIT(token,token_handle,token_suffix,start_mark,end_mark)     \
-    (TOKEN_INIT((token),YAML_TAG_TOKEN,(start_mark),(end_mark)),                \
-     (token).data.tag.handle = (token_handle),                                  \
-     (token).data.tag.suffix = (token_suffix))
-
-#define SCALAR_TOKEN_INIT(token,token_value,token_length,token_style,start_mark,end_mark)   \
-    (TOKEN_INIT((token),YAML_SCALAR_TOKEN,(start_mark),(end_mark)),             \
-     (token).data.scalar.value = (token_value),                                 \
-     (token).data.scalar.length = (token_length),                               \
-     (token).data.scalar.style = (token_style))
-
-#define VERSION_DIRECTIVE_TOKEN_INIT(token,token_major,token_minor,start_mark,end_mark)     \
-    (TOKEN_INIT((token),YAML_VERSION_DIRECTIVE_TOKEN,(start_mark),(end_mark)),  \
-     (token).data.version_directive.major = (token_major),                      \
-     (token).data.version_directive.minor = (token_minor))
-
-#define TAG_DIRECTIVE_TOKEN_INIT(token,token_handle,token_prefix,start_mark,end_mark)       \
-    (TOKEN_INIT((token),YAML_TAG_DIRECTIVE_TOKEN,(start_mark),(end_mark)),      \
-     (token).data.tag_directive.handle = (token_handle),                        \
-     (token).data.tag_directive.prefix = (token_prefix))
-
-/*
  * Public API declarations.
  */
 

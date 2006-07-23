@@ -38,18 +38,32 @@ YAML_DECLARE(int)
 yaml_parser_fetch_more_tokens(yaml_parser_t *parser);
 
 /*
- * The size of the raw buffer.
+ * The size of the input raw buffer.
  */
 
-#define RAW_BUFFER_SIZE 16384
+#define INPUT_RAW_BUFFER_SIZE   16384
 
 /*
- * The size of the buffer.
+ * The size of the input buffer.
  *
  * It should be possible to decode the whole raw buffer.
  */
 
-#define BUFFER_SIZE     (RAW_BUFFER_SIZE*3)
+#define INPUT_BUFFER_SIZE       (INPUT_RAW_BUFFER_SIZE*3)
+
+/*
+ * The size of the output buffer.
+ */
+
+#define OUTPUT_BUFFER_SIZE      16384
+
+/*
+ * The size of the output raw buffer.
+ *
+ * It should be possible to encode the whole output buffer.
+ */
+
+#define OUTPUT_RAW_BUFFER_SIZE  (OUTPUT_BUFFER_SIZE*2+2)
 
 /*
  * The size of other stacks and queues.
@@ -202,4 +216,116 @@ yaml_queue_extend(void **start, void **head, void **tail, void **end);
          1) :                                                                   \
         ((context)->error = YAML_MEMORY_ERROR,                                  \
          0))
+
+/*
+ * Token initializers.
+ */
+
+#define TOKEN_INIT(token,token_type,token_start_mark,token_end_mark)            \
+    (memset(&(token), 0, sizeof(yaml_token_t)),                                 \
+     (token).type = (token_type),                                               \
+     (token).start_mark = (token_start_mark),                                   \
+     (token).end_mark = (token_end_mark))
+
+#define STREAM_START_TOKEN_INIT(token,token_encoding,start_mark,end_mark)       \
+    (TOKEN_INIT((token),YAML_STREAM_START_TOKEN,(start_mark),(end_mark)),       \
+     (token).data.stream_start.encoding = (token_encoding))
+
+#define STREAM_END_TOKEN_INIT(token,start_mark,end_mark)                        \
+    (TOKEN_INIT((token),YAML_STREAM_END_TOKEN,(start_mark),(end_mark)))
+
+#define ALIAS_TOKEN_INIT(token,token_value,start_mark,end_mark)                 \
+    (TOKEN_INIT((token),YAML_ALIAS_TOKEN,(start_mark),(end_mark)),              \
+     (token).data.alias.value = (token_value))
+
+#define ANCHOR_TOKEN_INIT(token,token_value,start_mark,end_mark)                \
+    (TOKEN_INIT((token),YAML_ANCHOR_TOKEN,(start_mark),(end_mark)),             \
+     (token).data.anchor.value = (token_value))
+
+#define TAG_TOKEN_INIT(token,token_handle,token_suffix,start_mark,end_mark)     \
+    (TOKEN_INIT((token),YAML_TAG_TOKEN,(start_mark),(end_mark)),                \
+     (token).data.tag.handle = (token_handle),                                  \
+     (token).data.tag.suffix = (token_suffix))
+
+#define SCALAR_TOKEN_INIT(token,token_value,token_length,token_style,start_mark,end_mark)   \
+    (TOKEN_INIT((token),YAML_SCALAR_TOKEN,(start_mark),(end_mark)),             \
+     (token).data.scalar.value = (token_value),                                 \
+     (token).data.scalar.length = (token_length),                               \
+     (token).data.scalar.style = (token_style))
+
+#define VERSION_DIRECTIVE_TOKEN_INIT(token,token_major,token_minor,start_mark,end_mark)     \
+    (TOKEN_INIT((token),YAML_VERSION_DIRECTIVE_TOKEN,(start_mark),(end_mark)),  \
+     (token).data.version_directive.major = (token_major),                      \
+     (token).data.version_directive.minor = (token_minor))
+
+#define TAG_DIRECTIVE_TOKEN_INIT(token,token_handle,token_prefix,start_mark,end_mark)       \
+    (TOKEN_INIT((token),YAML_TAG_DIRECTIVE_TOKEN,(start_mark),(end_mark)),      \
+     (token).data.tag_directive.handle = (token_handle),                        \
+     (token).data.tag_directive.prefix = (token_prefix))
+
+/*
+ * Event initializers.
+ */
+
+#define EVENT_INIT(event,event_type,event_start_mark,event_end_mark)            \
+    (memset(&(event), 0, sizeof(yaml_event_t)),                                 \
+     (event).type = (event_type),                                               \
+     (event).start_mark = (event_start_mark),                                   \
+     (event).end_mark = (event_end_mark))
+
+#define STREAM_START_EVENT_INIT(event,event_encoding,start_mark,end_mark)       \
+    (EVENT_INIT((event),YAML_STREAM_START_EVENT,(start_mark),(end_mark)),       \
+     (event).data.stream_start.encoding = (event_encoding))
+
+#define STREAM_END_EVENT_INIT(event,start_mark,end_mark)                        \
+    (EVENT_INIT((event),YAML_STREAM_END_EVENT,(start_mark),(end_mark)))
+
+#define DOCUMENT_START_EVENT_INIT(event,event_version_directive,                \
+        event_tag_directives_start,event_tag_directives_end,event_implicit,start_mark,end_mark) \
+    (EVENT_INIT((event),YAML_DOCUMENT_START_EVENT,(start_mark),(end_mark)),     \
+     (event).data.document_start.version_directive = (event_version_directive), \
+     (event).data.document_start.tag_directives.start = (event_tag_directives_start),   \
+     (event).data.document_start.tag_directives.end = (event_tag_directives_end),   \
+     (event).data.document_start.implicit = (event_implicit))
+
+#define DOCUMENT_END_EVENT_INIT(event,event_implicit,start_mark,end_mark)       \
+    (EVENT_INIT((event),YAML_DOCUMENT_END_EVENT,(start_mark),(end_mark)),       \
+     (event).data.document_end.implicit = (event_implicit))
+
+#define ALIAS_EVENT_INIT(event,event_anchor,start_mark,end_mark)                \
+    (EVENT_INIT((event),YAML_ALIAS_EVENT,(start_mark),(end_mark)),              \
+     (event).data.alias.anchor = (event_anchor))
+
+#define SCALAR_EVENT_INIT(event,event_anchor,event_tag,event_value,event_length,    \
+        event_plain_implicit, event_quoted_implicit,event_style,start_mark,end_mark)    \
+    (EVENT_INIT((event),YAML_SCALAR_EVENT,(start_mark),(end_mark)),             \
+     (event).data.scalar.anchor = (event_anchor),                               \
+     (event).data.scalar.tag = (event_tag),                                     \
+     (event).data.scalar.value = (event_value),                                 \
+     (event).data.scalar.length = (event_length),                               \
+     (event).data.scalar.plain_implicit = (event_plain_implicit),               \
+     (event).data.scalar.quoted_implicit = (event_quoted_implicit),             \
+     (event).data.scalar.style = (event_style))
+
+#define SEQUENCE_START_EVENT_INIT(event,event_anchor,event_tag,                 \
+        event_implicit,event_style,start_mark,end_mark)                         \
+    (EVENT_INIT((event),YAML_SEQUENCE_START_EVENT,(start_mark),(end_mark)),     \
+     (event).data.sequence_start.anchor = (event_anchor),                       \
+     (event).data.sequence_start.tag = (event_tag),                             \
+     (event).data.sequence_start.implicit = (event_implicit),                   \
+     (event).data.sequence_start.style = (event_style))
+
+#define SEQUENCE_END_EVENT_INIT(event,start_mark,end_mark)                      \
+    (EVENT_INIT((event),YAML_SEQUENCE_END_EVENT,(start_mark),(end_mark)))
+
+#define MAPPING_START_EVENT_INIT(event,event_anchor,event_tag,                  \
+        event_implicit,event_style,start_mark,end_mark)                         \
+    (EVENT_INIT((event),YAML_MAPPING_START_EVENT,(start_mark),(end_mark)),      \
+     (event).data.mapping_start.anchor = (event_anchor),                        \
+     (event).data.mapping_start.tag = (event_tag),                              \
+     (event).data.mapping_start.implicit = (event_implicit),                    \
+     (event).data.mapping_start.style = (event_style))
+
+#define MAPPING_END_EVENT_INIT(event,start_mark,end_mark)                       \
+    (EVENT_INIT((event),YAML_MAPPING_END_EVENT,(start_mark),(end_mark)))
 
