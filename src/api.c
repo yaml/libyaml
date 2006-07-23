@@ -169,9 +169,9 @@ yaml_parser_initialize(yaml_parser_t *parser)
     assert(parser);     /* Non-NULL parser object expected. */
 
     memset(parser, 0, sizeof(yaml_parser_t));
-    if (!BUFFER_INIT(parser, parser->raw_buffer, RAW_BUFFER_SIZE))
+    if (!BUFFER_INIT(parser, parser->raw_buffer, INPUT_RAW_BUFFER_SIZE))
         goto error;
-    if (!BUFFER_INIT(parser, parser->buffer, BUFFER_SIZE))
+    if (!BUFFER_INIT(parser, parser->buffer, INPUT_BUFFER_SIZE))
         goto error;
     if (!QUEUE_INIT(parser, parser->tokens, INITIAL_QUEUE_SIZE))
         goto error;
@@ -334,6 +334,233 @@ yaml_parser_set_encoding(yaml_parser_t *parser, yaml_encoding_t encoding)
     assert(!parser->encoding); /* Encoding is already set or detected. */
 
     parser->encoding = encoding;
+}
+
+/*
+ * Create a new emitter object.
+ */
+
+YAML_DECLARE(int)
+yaml_emitter_initialize(yaml_emitter_t *emitter)
+{
+    assert(emitter);    /* Non-NULL emitter object expected. */
+
+    memset(emitter, 0, sizeof(yaml_emitter_t));
+    if (!BUFFER_INIT(emitter, emitter->buffer, OUTPUT_BUFFER_SIZE))
+        goto error;
+    if (!BUFFER_INIT(emitter, emitter->raw_buffer, OUTPUT_RAW_BUFFER_SIZE))
+        goto error;
+    if (!STACK_INIT(emitter, emitter->states, INITIAL_STACK_SIZE))
+        goto error;
+    if (!QUEUE_INIT(emitter, emitter->events, INITIAL_QUEUE_SIZE))
+        goto error;
+    if (!STACK_INIT(emitter, emitter->indents, INITIAL_STACK_SIZE))
+        goto error;
+    if (!STACK_INIT(emitter, emitter->tag_directives, INITIAL_STACK_SIZE))
+        goto error;
+
+    return 1;
+
+error:
+
+    BUFFER_DEL(emitter, emitter->buffer);
+    BUFFER_DEL(emitter, emitter->raw_buffer);
+    STACK_DEL(emitter, emitter->states);
+    QUEUE_DEL(emitter, emitter->events);
+    STACK_DEL(emitter, emitter->indents);
+    STACK_DEL(emitter, emitter->tag_directives);
+
+    return 0;
+}
+
+/*
+ * Destroy an emitter object.
+ */
+
+YAML_DECLARE(void)
+yaml_emitter_delete(yaml_emitter_t *emitter)
+{
+    assert(emitter);    /* Non-NULL emitter object expected. */
+
+    BUFFER_DEL(emitter, emitter->buffer);
+    BUFFER_DEL(emitter, emitter->raw_buffer);
+    STACK_DEL(emitter, emitter->states);
+    while (!QUEUE_EMPTY(emitter, emitter->events)) {
+        yaml_event_delete(&DEQUEUE(emitter, emitter->events));
+    }
+    STACK_DEL(emitter, emitter->indents);
+    while (!STACK_EMPTY(empty, emitter->tag_directives)) {
+        yaml_tag_directive_t tag_directive = POP(emitter, emitter->tag_directives);
+        yaml_free(tag_directive.handle);
+        yaml_free(tag_directive.prefix);
+    }
+    STACK_DEL(emitter, emitter->tag_directives);
+
+    memset(emitter, 0, sizeof(yaml_emitter_t));
+}
+
+/*
+ * String write handler.
+ */
+
+static int
+yaml_string_write_handler(void *data, unsigned char *buffer, size_t size)
+{
+    yaml_emitter_t *emitter = data;
+
+    if (emitter->output.string.size + *emitter->output.string.size_written
+            < size) {
+        memcpy(emitter->output.string.buffer
+                + *emitter->output.string.size_written,
+                buffer,
+                emitter->output.string.size
+                - *emitter->output.string.size_written);
+        *emitter->output.string.size_written = emitter->output.string.size;
+        return 0;
+    }
+
+    memcpy(emitter->output.string.buffer
+            + *emitter->output.string.size_written, buffer, size);
+    *emitter->output.string.size_written += size;
+    return 1;
+}
+
+/*
+ * File write handler.
+ */
+
+static int
+yaml_file_write_handler(void *data, unsigned char *buffer, size_t size)
+{
+    yaml_emitter_t *emitter = data;
+
+    return (fwrite(buffer, 1, size, emitter->output.file) == size);
+}
+/*
+ * Set a string output.
+ */
+
+YAML_DECLARE(void)
+yaml_emitter_set_output_string(yaml_emitter_t *emitter,
+        unsigned char *output, size_t size, size_t *size_written)
+{
+    assert(emitter);    /* Non-NULL emitter object expected. */
+    assert(!emitter->write_handler);    /* You can set the output only once. */
+    assert(output);     /* Non-NULL output string expected. */
+
+    emitter->write_handler = yaml_string_write_handler;
+    emitter->write_handler_data = emitter;
+
+    emitter->output.string.buffer = output;
+    emitter->output.string.size = size;
+    emitter->output.string.size_written = size_written;
+    *size_written = 0;
+}
+
+/*
+ * Set a file output.
+ */
+
+YAML_DECLARE(void)
+yaml_emitter_set_output_file(yaml_emitter_t *emitter, FILE *file)
+{
+    assert(emitter);    /* Non-NULL emitter object expected. */
+    assert(!emitter->write_handler);    /* You can set the output only once. */
+    assert(file);       /* Non-NULL file object expected. */
+
+    emitter->write_handler = yaml_file_write_handler;
+    emitter->write_handler_data = emitter;
+
+    emitter->output.file = file;
+}
+
+/*
+ * Set a generic output handler.
+ */
+
+YAML_DECLARE(void)
+yaml_emitter_set_output(yaml_emitter_t *emitter,
+        yaml_write_handler_t *handler, void *data)
+{
+    assert(emitter);    /* Non-NULL emitter object expected. */
+    assert(!emitter->write_handler);    /* You can set the output only once. */
+    assert(handler);    /* Non-NULL handler object expected. */
+
+    emitter->write_handler = handler;
+    emitter->write_handler_data = data;
+}
+
+/*
+ * Set the output encoding.
+ */
+
+YAML_DECLARE(void)
+yaml_emitter_set_encoding(yaml_emitter_t *emitter, yaml_encoding_t encoding)
+{
+    assert(emitter);    /* Non-NULL emitter object expected. */
+    assert(!emitter->encoding);     /* You can set encoding only once. */
+
+    emitter->encoding = encoding;
+}
+
+/*
+ * Set the canonical output style.
+ */
+
+YAML_DECLARE(void)
+yaml_emitter_set_canonical(yaml_emitter_t *emitter, int canonical)
+{
+    assert(emitter);    /* Non-NULL emitter object expected. */
+
+    emitter->canonical = (canonical != 0);
+}
+
+/*
+ * Set the indentation increment.
+ */
+
+YAML_DECLARE(void)
+yaml_emitter_set_indent(yaml_emitter_t *emitter, int indent)
+{
+    assert(emitter);    /* Non-NULL emitter object expected. */
+
+    emitter->best_indent = (1 < indent && indent < 10) ? indent : 2;
+}
+
+/*
+ * Set the preferred line width.
+ */
+
+YAML_DECLARE(void)
+yaml_emitter_set_width(yaml_emitter_t *emitter, int width)
+{
+    assert(emitter);    /* Non-NULL emitter object expected. */
+
+    emitter->best_width = (width > 0) ? width : 0;
+}
+
+/*
+ * Set if unescaped non-ASCII characters are allowed.
+ */
+
+YAML_DECLARE(void)
+yaml_emitter_set_unicode(yaml_emitter_t *emitter, int unicode)
+{
+    assert(emitter);    /* Non-NULL emitter object expected. */
+
+    emitter->unicode = (unicode != 0);
+}
+
+/*
+ * Set the preferred line break character.
+ */
+
+YAML_DECLARE(void)
+yaml_emitter_set_break(yaml_emitter_t *emitter, yaml_break_t line_break)
+{
+    assert(emitter);    /* Non-NULL emitter object expected. */
+
+    emitter->line_break = line_break;
 }
 
 /*
