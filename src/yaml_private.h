@@ -20,8 +20,8 @@ yaml_realloc(void *ptr, size_t size);
 YAML_DECLARE(void)
 yaml_free(void *ptr);
 
-YAML_DECLARE(char *)
-yaml_strdup(const char *);
+YAML_DECLARE(yaml_char_t *)
+yaml_strdup(const yaml_char_t *);
 
 /*
  * Reader: Ensure that the buffer contains at least `length` characters.

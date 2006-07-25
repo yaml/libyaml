@@ -1139,14 +1139,14 @@ yaml_emitter_set_canonical(yaml_emitter_t *emitter, int canonical);
  * Set the intendation increment.
  *
  * @param[in]   emitter     An emitter object.
- * @param[in]   indent      The indentation increment (> 1).
+ * @param[in]   indent      The indentation increment (1 < . < 10).
  */
 
 YAML_DECLARE(void)
 yaml_emitter_set_indent(yaml_emitter_t *emitter, int indent);
 
 /**
- * Set the preferred line width. @c 0 means unlimited.
+ * Set the preferred line width. @c -1 means unlimited.
  *
  * @param[in]   emitter     An emitter object.
  * @param[in]   width       The preferred line width.

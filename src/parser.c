@@ -1335,8 +1335,8 @@ yaml_parser_append_tag_directive(yaml_parser_t *parser,
         }
     }
 
-    copy.handle = (yaml_char_t *)yaml_strdup((char *)value.handle);
-    copy.prefix = (yaml_char_t *)yaml_strdup((char *)value.prefix);
+    copy.handle = yaml_strdup(value.handle);
+    copy.prefix = yaml_strdup(value.prefix);
     if (!copy.handle || !copy.prefix) {
         parser->error = YAML_MEMORY_ERROR;
         goto error;

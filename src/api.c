@@ -57,10 +57,13 @@ yaml_free(void *ptr)
  * Duplicate a string.
  */
 
-YAML_DECLARE(char *)
-yaml_strdup(const char *str)
+YAML_DECLARE(yaml_char_t *)
+yaml_strdup(const yaml_char_t *str)
 {
-    return strdup(str);
+    if (!str)
+        return NULL;
+
+    return (yaml_char_t *)strdup((char *)str);
 }
 
 /*
@@ -389,6 +392,7 @@ yaml_emitter_delete(yaml_emitter_t *emitter)
         yaml_event_delete(&DEQUEUE(emitter, emitter->events));
     }
     STACK_DEL(emitter, emitter->indents);
+    yaml_event_delete(&emitter->event);
     while (!STACK_EMPTY(empty, emitter->tag_directives)) {
         yaml_tag_directive_t tag_directive = POP(emitter, emitter->tag_directives);
         yaml_free(tag_directive.handle);
@@ -536,7 +540,7 @@ yaml_emitter_set_width(yaml_emitter_t *emitter, int width)
 {
     assert(emitter);    /* Non-NULL emitter object expected. */
 
-    emitter->best_width = (width > 0) ? width : 0;
+    emitter->best_width = (width >= 0) ? width : -1;
 }
 
 /*
