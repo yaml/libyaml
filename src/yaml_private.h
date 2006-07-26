@@ -6,6 +6,7 @@
 #include <yaml.h>
 
 #include <assert.h>
+#include <limits.h>
 
 /*
  * Memory management.
