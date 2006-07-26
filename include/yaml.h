@@ -169,8 +169,8 @@ typedef enum {
     YAML_ANY_MAPPING_STYLE,
 
     YAML_BLOCK_MAPPING_STYLE,
-    YAML_FLOW_MAPPING_STYLE,
-    YAML_FLOW_SET_MAPPING_STYLE
+    YAML_FLOW_MAPPING_STYLE
+/*    YAML_FLOW_SET_MAPPING_STYLE   */
 } yaml_mapping_style_t;
 
 /** @} */
@@ -412,6 +412,169 @@ typedef struct {
     yaml_mark_t end_mark;
 
 } yaml_event_t;
+
+/**
+ * Create the STREAM-START event.
+ *
+ * @param[in]   event       An empty event object.
+ *
+ * @returns @c 1 if the function succeeded, @c 0 on error.
+ */
+
+YAML_DECLARE(int)
+yaml_stream_start_event_initialize(yaml_event_t *event,
+        yaml_encoding_t encoding);
+
+/**
+ * Create the STREAM-END event.
+ *
+ * @param[in]   event       An empty event object.
+ *
+ * @returns @c 1 if the function succeeded, @c 0 on error.
+ */
+
+YAML_DECLARE(int)
+yaml_stream_end_event_initialize(yaml_event_t *event);
+
+/**
+ * Create the DOCUMENT-START event.
+ *
+ * The @a implicit argument is considered as a stylistic parameter and may be
+ * ignored by the emitter.
+ *
+ * @param[in]   event                   An empty event object.
+ * @param[in]   version_directive       The %YAML directive value or @c NULL.
+ * @param[in]   tag_directives_start    The beginning of the %TAG directives list.
+ * @param[in]   tag_directives_end      The end of the %TAG directives list.
+ * @param[in]   implicit                If the document start indicator is implicit.
+ *
+ * @returns @c 1 if the function succeeded, @c 0 on error.
+ */
+
+YAML_DECLARE(int)
+yaml_document_start_event_initialize(yaml_event_t *event,
+        yaml_version_directive_t *version_directive,
+        yaml_tag_directive_t *tag_directives_start,
+        yaml_tag_directive_t *tag_directives_end,
+        int implicit);
+
+/**
+ * Create the DOCUMENT-END event.
+ *
+ * The @a implicit argument is considered as a stylistic parameter and may be
+ * ignored by the emitter.
+ *
+ * @param[in]   event       An empty event object.
+ * @param[in]   implicit    If the document end indicator is implicit.
+ *
+ * @returns @c 1 if the function succeeded, @c 0 on error.
+ */
+
+YAML_DECLARE(int)
+yaml_document_end_event_initialize(yaml_event_t *event, int implicit);
+
+/**
+ * Create an ALIAS event.
+ *
+ * @param[in]   event       An empty event object.
+ * @param[in]   anchor      The anchor value.
+ *
+ * @returns @c 1 if the function succeeded, @c 0 on error.
+ */
+
+YAML_DECLARE(int)
+yaml_alias_event_initialize(yaml_event_t *event, yaml_char_t *anchor);
+
+/**
+ * Create a SCALAR event.
+ *
+ * The @a style argument may be ignored by the emitter.
+ *
+ * Either the @a tag attribute or one of the @a plain_implicit and
+ * @a quoted_implicit flags must be set.
+ *
+ * @param[in]   event           An empty event object.
+ * @param[in]   anchor          The scalar anchor or @c NULL.
+ * @param[in]   tag             The scalar tag or @c NULL.
+ * @param[in]   value           The scalar value.
+ * @param[in]   length          The length of the scalar value.
+ * @param[in]   plain_implicit  If the tag may be omitted for the plain style.
+ * @param[in]   quoted_implicit If the tag may be omitted for any non-plain style.
+ * @param[in]   style           The scalar style.
+ *
+ * @returns @c 1 if the function succeeded, @c 0 on error.
+ */
+
+YAML_DECLARE(int)
+yaml_scalar_event_initialize(yaml_event_t *event,
+        yaml_char_t *anchor, yaml_char_t *tag,
+        yaml_char_t *value, size_t length,
+        int plain_implicit, int quoted_implicit,
+        yaml_scalar_style_t style);
+
+/**
+ * Create a SEQUENCE-START event.
+ *
+ * The @a style argument may be ignored by the emitter.
+ *
+ * Either the @a tag attribute or the @a implicit flag must be set.
+ *
+ * @param[in]   event       An empty event object.
+ * @param[in]   anchor      The sequence anchor or @c NULL.
+ * @param[in]   tag         The sequence tag or @c NULL.
+ * @param[in]   implicit    If the tag may be omitted.
+ * @param[in]   style       The sequence style.
+ *
+ * @returns @c 1 if the function succeeded, @c 0 on error.
+ */
+
+YAML_DECLARE(int)
+yaml_sequence_start_event_initialize(yaml_event_t *event,
+        yaml_char_t *anchor, yaml_char_t *tag, int implicit,
+        yaml_sequence_style_t style);
+
+/**
+ * Create a SEQUENCE-END event.
+ *
+ * @param[in]   event       An empty event object.
+ *
+ * @returns @c 1 if the function succeeded, @c 0 on error.
+ */
+
+YAML_DECLARE(int)
+yaml_sequence_end_event_initialize(yaml_event_t *event);
+
+/**
+ * Create a MAPPING-START event.
+ *
+ * The @a style argument may be ignored by the emitter.
+ *
+ * Either the @a tag attribute or the @a implicit flag must be set.
+ *
+ * @param[in]   event       An empty event object.
+ * @param[in]   anchor      The mapping anchor or @c NULL.
+ * @param[in]   tag         The mapping tag or @c NULL.
+ * @param[in]   implicit    If the tag may be omitted.
+ * @param[in]   style       The mapping style.
+ *
+ * @returns @c 1 if the function succeeded, @c 0 on error.
+ */
+
+YAML_DECLARE(int)
+yaml_mapping_start_event_initialize(yaml_event_t *event,
+        yaml_char_t *anchor, yaml_char_t *tag, int implicit,
+        yaml_mapping_style_t style);
+
+/**
+ * Create a MAPPING-END event.
+ *
+ * @param[in]   event       An empty event object.
+ *
+ * @returns @c 1 if the function succeeded, @c 0 on error.
+ */
+
+YAML_DECLARE(int)
+yaml_mapping_end_event_initialize(yaml_event_t *event);
 
 /**
  * Free any memory allocated for an event object.
@@ -870,7 +1033,8 @@ typedef enum {
     YAML_EMIT_BLOCK_MAPPING_FIRST_KEY_STATE,
     YAML_EMIT_BLOCK_MAPPING_KEY_STATE,
     YAML_EMIT_BLOCK_MAPPING_SIMPLE_VALUE_STATE,
-    YAML_EMIT_BLOCK_MAPPING_VALUE_STATE
+    YAML_EMIT_BLOCK_MAPPING_VALUE_STATE,
+    YAML_EMIT_END_STATE
 } yaml_emitter_state_t;
 
 /**
@@ -994,9 +1158,6 @@ typedef struct {
         /** The tail of the event queue. */
         yaml_event_t *tail;
     } events;
-
-    /** The current event. */
-    yaml_event_t event;
 
     /** The stack of indentation levels. */
     struct {
@@ -1179,9 +1340,9 @@ yaml_emitter_set_break(yaml_emitter_t *emitter, yaml_break_t line_break);
  * Emit an event.
  *
  * The event object may be generated using the @c yaml_parser_parse function.
- * The emitter will destroy the event object if the function succeeds.  If the
- * function fails, the application is responsible for destroing the event
- * object.
+ * The emitter takes the responsibility for the event object and destroys its
+ * content after it is emitted. The event object is destroyed even if the
+ * function fails.
  *
  * @param[in]   emitter     An emitter object.
  * @param[in]   event       An event object.
@@ -1191,170 +1352,6 @@ yaml_emitter_set_break(yaml_emitter_t *emitter, yaml_break_t line_break);
 
 YAML_DECLARE(int)
 yaml_emitter_emit(yaml_emitter_t *emitter, yaml_event_t *event);
-
-/**
- * Emit the STREAM-START event.
- *
- * @param[in]   emitter     An emitter object.
- * @param[in]   encoding    The stream encoding.
- *
- * @returns @c 1 if the function succeeded, @c 0 on error.
- */
-
-YAML_DECLARE(int)
-yaml_emitter_emit_stream_start(yaml_emitter_t *emitter,
-        yaml_encoding_t encoding);
-
-/**
- * Emit the STREAM-END event.
- *
- * @param[in]   emitter     An emitter object.
- *
- * @returns @c 1 if the function succeeded, @c 0 on error.
- */
-
-YAML_DECLARE(int)
-yaml_emitter_emit_stream_end(yaml_emitter_t *emitter);
-
-/**
- * Emit the DOCUMENT-START event.
- *
- * The @a implicit argument is considered as a stylistic parameter and may be
- * ignored by the emitter.
- *
- * @param[in]   emitter                 An emitter object.
- * @param[in]   version_directive       The %YAML directive value or @c NULL.
- * @param[in]   tag_directives_start    The beginning of the %TAG directives list.
- * @param[in]   tag_directives_end      The end of the %TAG directives list.
- * @param[in]   implicit                If the document start indicator is implicit.
- *
- * @returns @c 1 if the function succeeded, @c 0 on error.
- */
-
-YAML_DECLARE(int)
-yaml_emitter_emit_document_start(yaml_emitter_t *emitter,
-        yaml_version_directive_t *version_directive,
-        yaml_tag_directive_t *tag_directives_start,
-        yaml_tag_directive_t *tag_directives_end,
-        int implicit);
-
-/**
- * Emit the DOCUMENT-END event.
- *
- * The @a implicit argument is considered as a stylistic parameter and may be
- * ignored by the emitter.
- *
- * @param[in]   emitter     An emitter object.
- * @param[in]   implicit    If the document end indicator is implicit.
- *
- * @returns @c 1 if the function succeeded, @c 0 on error.
- */
-
-YAML_DECLARE(int)
-yaml_emitter_emit_document_end(yaml_emitter_t *emitter, int implicit);
-
-/**
- * Emit an ALIAS event.
- *
- * @param[in]   emitter     An emitter object.
- * @param[in]   anchor      The anchor value.
- *
- * @returns @c 1 if the function succeeded, @c 0 on error.
- */
-
-YAML_DECLARE(int)
-yaml_emitter_emit_alias(yaml_emitter_t *emitter, yaml_char_t *anchor);
-
-/**
- * Emit a SCALAR event.
- *
- * The @a style argument may be ignored by the emitter.
- *
- * Either the @a tag attribute or one of the @a plain_implicit and
- * @a quoted_implicit flags must be set.
- *
- * @param[in]   emitter         An emitter object.
- * @param[in]   anchor          The scalar anchor or @c NULL.
- * @param[in]   tag             The scalar tag or @c NULL.
- * @param[in]   value           The scalar value.
- * @param[in]   length          The length of the scalar value.
- * @param[in]   plain_implicit  If the tag may be omitted for the plain style.
- * @param[in]   quoted_implicit If the tag may be omitted for any non-plain style.
- * @param[in]   style           The scalar style.
- *
- * @returns @c 1 if the function succeeded, @c 0 on error.
- */
-
-YAML_DECLARE(int)
-yaml_emitter_emit_scalar(yaml_emitter_t *emitter,
-        yaml_char_t *anchor, yaml_char_t *tag,
-        yaml_char_t *value, size_t length,
-        int plain_implicit, int quoted_implicit,
-        yaml_scalar_style_t style);
-
-/**
- * Emit a SEQUENCE-START event.
- *
- * The @a style argument may be ignored by the emitter.
- *
- * Either the @a tag attribute or the @a implicit flag must be set.
- *
- * @param[in]   emitter     An emitter object.
- * @param[in]   anchor      The sequence anchor or @c NULL.
- * @param[in]   tag         The sequence tag or @c NULL.
- * @param[in]   implicit    If the tag may be omitted.
- * @param[in]   style       The sequence style.
- *
- * @returns @c 1 if the function succeeded, @c 0 on error.
- */
-
-YAML_DECLARE(int)
-yaml_emitter_emit_sequence_start(yaml_emitter_t *emitter,
-        yaml_char_t *anchor, yaml_char_t *tag, int implicit,
-        yaml_sequence_style_t style);
-
-/**
- * Emit a SEQUENCE-END event.
- *
- * @param[in]   emitter     An emitter object.
- *
- * @returns @c 1 if the function succeeded, @c 0 on error.
- */
-
-YAML_DECLARE(int)
-yaml_emitter_emit_sequence_end(yaml_emitter_t *emitter);
-
-/**
- * Emit a MAPPING-START event.
- *
- * The @a style argument may be ignored by the emitter.
- *
- * Either the @a tag attribute or the @a implicit flag must be set.
- *
- * @param[in]   emitter     An emitter object.
- * @param[in]   anchor      The mapping anchor or @c NULL.
- * @param[in]   tag         The mapping tag or @c NULL.
- * @param[in]   implicit    If the tag may be omitted.
- * @param[in]   style       The mapping style.
- *
- * @returns @c 1 if the function succeeded, @c 0 on error.
- */
-
-YAML_DECLARE(int)
-yaml_emitter_emit_mapping_start(yaml_emitter_t *emitter,
-        yaml_char_t *anchor, yaml_char_t *tag, int implicit,
-        yaml_mapping_style_t style);
-
-/**
- * Emit a MAPPING-END event.
- *
- * @param[in]   emitter     An emitter object.
- *
- * @returns @c 1 if the function succeeded, @c 0 on error.
- */
-
-YAML_DECLARE(int)
-yaml_emitter_emit_mapping_end(yaml_emitter_t *emitter);
 
 /**
  * Flush the accumulated characters to the output.

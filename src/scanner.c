@@ -938,11 +938,13 @@ yaml_parser_scan(yaml_parser_t *parser, yaml_token_t *token)
     assert(parser); /* Non-NULL parser object is expected. */
     assert(token);  /* Non-NULL token object is expected. */
 
+    /* Erase the token object. */
+
+    memset(token, 0, sizeof(yaml_token_t));
+
     /* No tokens after STREAM-END or error. */
 
     if (parser->stream_end_produced || parser->error) {
-        memset(token, 0, sizeof(yaml_token_t));
-
         return 1;
     }
 

@@ -392,7 +392,6 @@ yaml_emitter_delete(yaml_emitter_t *emitter)
         yaml_event_delete(&DEQUEUE(emitter, emitter->events));
     }
     STACK_DEL(emitter, emitter->indents);
-    yaml_event_delete(&emitter->event);
     while (!STACK_EMPTY(empty, emitter->tag_directives)) {
         yaml_tag_directive_t tag_directive = POP(emitter, emitter->tag_directives);
         yaml_free(tag_directive.handle);
@@ -605,6 +604,364 @@ yaml_token_delete(yaml_token_t *token)
     }
 
     memset(token, 0, sizeof(yaml_token_t));
+}
+
+/*
+ * Check if a string is a valid UTF-8 sequence.
+ *
+ * Check 'reader.c' for more details on UTF-8 encoding.
+ */
+
+static int
+yaml_check_utf8(yaml_char_t *start, size_t length)
+{
+    yaml_char_t *end = start+length;
+    yaml_char_t *pointer = start;
+
+    while (pointer < end) {
+        unsigned char octet;
+        unsigned int width;
+        unsigned int value;
+        int k;
+
+        octet = pointer[0];
+        width = (octet & 0x80) == 0x00 ? 1 :
+                (octet & 0xE0) == 0xC0 ? 2 :
+                (octet & 0xF0) == 0xE0 ? 3 :
+                (octet & 0xF8) == 0xF0 ? 4 : 0;
+       value = (octet & 0x80) == 0x00 ? octet & 0x7F :
+                (octet & 0xE0) == 0xC0 ? octet & 0x1F :
+                (octet & 0xF0) == 0xE0 ? octet & 0x0F :
+                (octet & 0xF8) == 0xF0 ? octet & 0x07 : 0;
+        if (!width) return 0;
+        if (pointer+width > end) return 0;
+        for (k = 1; k < width; k ++) {
+            octet = pointer[k];
+            if ((octet & 0xC0) != 0x80) return 0;
+            value = (value << 6) + (octet & 0x3F);
+        }
+        if (!((width == 1) ||
+            (width == 2 && value >= 0x80) ||
+            (width == 3 && value >= 0x800) ||
+            (width == 4 && value >= 0x10000))) return 0;
+
+        pointer += width;
+    }
+
+    return 1;
+}
+
+/*
+ * Create STREAM-START.
+ */
+
+YAML_DECLARE(int)
+yaml_stream_start_event_initialize(yaml_event_t *event,
+        yaml_encoding_t encoding)
+{
+    yaml_mark_t mark = { 0, 0, 0 };
+
+    assert(event);  /* Non-NULL event object is expected. */
+
+    STREAM_START_EVENT_INIT(*event, encoding, mark, mark);
+
+    return 1;
+}
+
+/*
+ * Create STREAM-END.
+ */
+
+YAML_DECLARE(int)
+yaml_stream_end_event_initialize(yaml_event_t *event)
+{
+    yaml_mark_t mark = { 0, 0, 0 };
+
+    assert(event);  /* Non-NULL event object is expected. */
+
+    STREAM_END_EVENT_INIT(*event, mark, mark);
+
+    return 1;
+}
+
+/*
+ * Create DOCUMENT-START.
+ */
+
+YAML_DECLARE(int)
+yaml_document_start_event_initialize(yaml_event_t *event,
+        yaml_version_directive_t *version_directive,
+        yaml_tag_directive_t *tag_directives_start,
+        yaml_tag_directive_t *tag_directives_end,
+        int implicit)
+{
+    struct {
+        yaml_error_type_t error;
+    } context;
+    yaml_mark_t mark = { 0, 0, 0 };
+    yaml_version_directive_t *version_directive_copy = NULL;
+    struct {
+        yaml_tag_directive_t *start;
+        yaml_tag_directive_t *end;
+        yaml_tag_directive_t *top;
+    } tag_directives_copy = { NULL, NULL, NULL };
+    yaml_tag_directive_t value = { NULL, NULL };
+
+    assert(event);          /* Non-NULL event object is expected. */
+    assert((tag_directives_start && tag_directives_end) ||
+            (tag_directives_start == tag_directives_end));
+                            /* Valid tag directives are expected. */
+
+    if (version_directive) {
+        version_directive_copy = yaml_malloc(sizeof(yaml_version_directive_t));
+        if (!version_directive_copy) goto error;
+        version_directive_copy->major = version_directive->major;
+        version_directive_copy->minor = version_directive->minor;
+    }
+
+    if (tag_directives_start != tag_directives_end) {
+        yaml_tag_directive_t *tag_directive;
+        if (!STACK_INIT(&context, tag_directives_copy, INITIAL_STACK_SIZE))
+            goto error;
+        for (tag_directive = tag_directives_start;
+                tag_directive != tag_directives_end; tag_directive ++) {
+            assert(tag_directive->handle);
+            assert(tag_directive->prefix);
+            if (!yaml_check_utf8(tag_directive->handle,
+                        strlen((char *)tag_directive->handle)))
+                goto error;
+            if (!yaml_check_utf8(tag_directive->prefix,
+                        strlen((char *)tag_directive->prefix)))
+                goto error;
+            value.handle = yaml_strdup(tag_directive->handle);
+            value.prefix = yaml_strdup(tag_directive->prefix);
+            if (!value.handle || !value.prefix) goto error;
+            if (!PUSH(&context, tag_directives_copy, value))
+                goto error;
+            value.handle = NULL;
+            value.prefix = NULL;
+        }
+    }
+
+    DOCUMENT_START_EVENT_INIT(*event, version_directive_copy,
+            tag_directives_copy.start, tag_directives_copy.end,
+            implicit, mark, mark);
+
+    return 1;
+
+error:
+    yaml_free(version_directive_copy);
+    while (!STACK_EMPTY(context, tag_directives_copy)) {
+        yaml_tag_directive_t value = POP(context, tag_directives_copy);
+        yaml_free(value.handle);
+        yaml_free(value.prefix);
+    }
+    STACK_DEL(context, tag_directives_copy);
+    yaml_free(value.handle);
+    yaml_free(value.prefix);
+
+    return 0;
+}
+
+/*
+ * Create DOCUMENT-END.
+ */
+
+YAML_DECLARE(int)
+yaml_document_end_event_initialize(yaml_event_t *event, int implicit)
+{
+    yaml_mark_t mark = { 0, 0, 0 };
+
+    assert(event);      /* Non-NULL emitter object is expected. */
+
+    DOCUMENT_END_EVENT_INIT(*event, implicit, mark, mark);
+
+    return 1;
+}
+
+/*
+ * Create ALIAS.
+ */
+
+YAML_DECLARE(int)
+yaml_alias_event_initialize(yaml_event_t *event, yaml_char_t *anchor)
+{
+    yaml_mark_t mark = { 0, 0, 0 };
+    yaml_char_t *anchor_copy = NULL;
+
+    assert(event);      /* Non-NULL event object is expected. */
+    assert(anchor);     /* Non-NULL anchor is expected. */
+
+    if (!yaml_check_utf8(anchor, strlen((char *)anchor))) return 0;
+
+    anchor_copy = yaml_strdup(anchor);
+    if (!anchor_copy)
+        return 0;
+
+    ALIAS_EVENT_INIT(*event, anchor_copy, mark, mark);
+
+    return 1;
+}
+
+/*
+ * Create SCALAR.
+ */
+
+YAML_DECLARE(int)
+yaml_scalar_event_initialize(yaml_event_t *event,
+        yaml_char_t *anchor, yaml_char_t *tag,
+        yaml_char_t *value, size_t length,
+        int plain_implicit, int quoted_implicit,
+        yaml_scalar_style_t style)
+{
+    yaml_mark_t mark = { 0, 0, 0 };
+    yaml_char_t *anchor_copy = NULL;
+    yaml_char_t *tag_copy = NULL;
+    yaml_char_t *value_copy = NULL;
+
+    assert(event);      /* Non-NULL event object is expected. */
+    assert(value);      /* Non-NULL anchor is expected. */
+
+
+    if (anchor) {
+        if (!yaml_check_utf8(anchor, strlen((char *)anchor))) goto error;
+        anchor_copy = yaml_strdup(anchor);
+        if (!anchor_copy) goto error;
+    }
+
+    if (tag) {
+        if (!yaml_check_utf8(tag, strlen((char *)tag))) goto error;
+        tag_copy = yaml_strdup(tag);
+        if (!tag_copy) goto error;
+    }
+
+    if (!yaml_check_utf8(value, length)) goto error;
+    value_copy = yaml_malloc(length+1);
+    if (!value_copy) goto error;
+    memcpy(value_copy, value, length);
+    value_copy[length] = '\0';
+
+    SCALAR_EVENT_INIT(*event, anchor_copy, tag_copy, value_copy, length,
+            plain_implicit, quoted_implicit, style, mark, mark);
+
+    return 1;
+
+error:
+    yaml_free(anchor_copy);
+    yaml_free(tag_copy);
+    yaml_free(value_copy);
+
+    return 0;
+}
+
+/*
+ * Create SEQUENCE-START.
+ */
+
+YAML_DECLARE(int)
+yaml_sequence_start_event_initialize(yaml_event_t *event,
+        yaml_char_t *anchor, yaml_char_t *tag, int implicit,
+        yaml_sequence_style_t style)
+{
+    yaml_mark_t mark = { 0, 0, 0 };
+    yaml_char_t *anchor_copy = NULL;
+    yaml_char_t *tag_copy = NULL;
+
+    assert(event);      /* Non-NULL event object is expected. */
+
+    if (anchor) {
+        if (!yaml_check_utf8(anchor, strlen((char *)anchor))) goto error;
+        anchor_copy = yaml_strdup(anchor);
+        if (!anchor_copy) goto error;
+    }
+
+    if (tag) {
+        if (!yaml_check_utf8(tag, strlen((char *)tag))) goto error;
+        tag_copy = yaml_strdup(tag);
+        if (!tag_copy) goto error;
+    }
+
+    SEQUENCE_START_EVENT_INIT(*event, anchor_copy, tag_copy,
+            implicit, style, mark, mark);
+
+    return 1;
+
+error:
+    yaml_free(anchor_copy);
+    yaml_free(tag_copy);
+
+    return 0;
+}
+
+/*
+ * Create SEQUENCE-END.
+ */
+
+YAML_DECLARE(int)
+yaml_sequence_end_event_initialize(yaml_event_t *event)
+{
+    yaml_mark_t mark = { 0, 0, 0 };
+
+    assert(event);      /* Non-NULL event object is expected. */
+
+    SEQUENCE_END_EVENT_INIT(*event, mark, mark);
+
+    return 1;
+}
+
+/*
+ * Create MAPPING-START.
+ */
+
+YAML_DECLARE(int)
+yaml_mapping_start_event_initialize(yaml_event_t *event,
+        yaml_char_t *anchor, yaml_char_t *tag, int implicit,
+        yaml_mapping_style_t style)
+{
+    yaml_mark_t mark = { 0, 0, 0 };
+    yaml_char_t *anchor_copy = NULL;
+    yaml_char_t *tag_copy = NULL;
+
+    assert(event);      /* Non-NULL event object is expected. */
+
+    if (anchor) {
+        if (!yaml_check_utf8(anchor, strlen((char *)anchor))) goto error;
+        anchor_copy = yaml_strdup(anchor);
+        if (!anchor_copy) goto error;
+    }
+
+    if (tag) {
+        if (!yaml_check_utf8(tag, strlen((char *)tag))) goto error;
+        tag_copy = yaml_strdup(tag);
+        if (!tag_copy) goto error;
+    }
+
+    MAPPING_START_EVENT_INIT(*event, anchor_copy, tag_copy,
+            implicit, style, mark, mark);
+
+    return 1;
+
+error:
+    yaml_free(anchor_copy);
+    yaml_free(tag_copy);
+
+    return 0;
+}
+
+/*
+ * Create MAPPING-END.
+ */
+
+YAML_DECLARE(int)
+yaml_mapping_end_event_initialize(yaml_event_t *event)
+{
+    yaml_mark_t mark = { 0, 0, 0 };
+
+    assert(event);      /* Non-NULL event object is expected. */
+
+    MAPPING_END_EVENT_INIT(*event, mark, mark);
+
+    return 1;
 }
 
 /*
