@@ -37,6 +37,9 @@ yaml_emitter_flush(yaml_emitter_t *emitter)
     assert(emitter->write_handler); /* Write handler must be set. */
     assert(emitter->encoding);  /* Output encoding must be set. */
 
+    emitter->buffer.last = emitter->buffer.pointer;
+    emitter->buffer.pointer = emitter->buffer.start;
+
     /* Check if the buffer is empty. */
 
     if (emitter->buffer.start == emitter->buffer.last) {

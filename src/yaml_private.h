@@ -111,6 +111,8 @@ yaml_string_join(
 
 #define NULL_STRING { NULL, NULL, NULL }
 
+#define STRING(string,length)   { (string), (string)+(length), (string) }
+
 #define STRING_INIT(context,string,size)                                        \
     (((string).start = yaml_malloc(size)) ?                                     \
         ((string).pointer = (string).start,                                     \
@@ -141,6 +143,253 @@ yaml_string_join(
          1) :                                                                   \
         ((context)->error = YAML_MEMORY_ERROR,                                  \
          0))
+
+/*
+ * String check operations.
+ */
+
+/*
+ * Check the octet at the specified position.
+ */
+
+#define CHECK_AT(string,octet,offset)                                           \
+    ((string).pointer[offset] == (yaml_char_t)(octet))
+
+/*
+ * Check the current octet in the buffer.
+ */
+
+#define CHECK(string,octet) CHECK_AT((string),(octet),0)
+
+/*
+ * Check if the character at the specified position is an alphabetical
+ * character, a digit, '_', or '-'.
+ */
+
+#define IS_ALPHA_AT(string,offset)                                              \
+     (((string).pointer[offset] >= (yaml_char_t) '0' &&                         \
+       (string).pointer[offset] <= (yaml_char_t) '9') ||                        \
+      ((string).pointer[offset] >= (yaml_char_t) 'A' &&                         \
+       (string).pointer[offset] <= (yaml_char_t) 'Z') ||                        \
+      ((string).pointer[offset] >= (yaml_char_t) 'a' &&                         \
+       (string).pointer[offset] <= (yaml_char_t) 'z') ||                        \
+      (string).pointer[offset] == '_' ||                                        \
+      (string).pointer[offset] == '-')
+
+#define IS_ALPHA(string)    IS_ALPHA_AT((string),0)
+
+/*
+ * Check if the character at the specified position is a digit.
+ */
+
+#define IS_DIGIT_AT(string,offset)                                              \
+     (((string).pointer[offset] >= (yaml_char_t) '0' &&                         \
+       (string).pointer[offset] <= (yaml_char_t) '9'))
+
+#define IS_DIGIT(string)    IS_DIGIT_AT((string),0)
+
+/*
+ * Get the value of a digit.
+ */
+
+#define AS_DIGIT_AT(string,offset)                                              \
+     ((string).pointer[offset] - (yaml_char_t) '0')
+
+#define AS_DIGIT(string)    AS_DIGIT_AT((string),0)
+
+/*
+ * Check if the character at the specified position is a hex-digit.
+ */
+
+#define IS_HEX_AT(string,offset)                                                \
+     (((string).pointer[offset] >= (yaml_char_t) '0' &&                         \
+       (string).pointer[offset] <= (yaml_char_t) '9') ||                        \
+      ((string).pointer[offset] >= (yaml_char_t) 'A' &&                         \
+       (string).pointer[offset] <= (yaml_char_t) 'F') ||                        \
+      ((string).pointer[offset] >= (yaml_char_t) 'a' &&                         \
+       (string).pointer[offset] <= (yaml_char_t) 'f'))
+
+#define IS_HEX(string)    IS_HEX_AT((string),0)
+
+/*
+ * Get the value of a hex-digit.
+ */
+
+#define AS_HEX_AT(string,offset)                                                \
+      (((string).pointer[offset] >= (yaml_char_t) 'A' &&                        \
+        (string).pointer[offset] <= (yaml_char_t) 'F') ?                        \
+       ((string).pointer[offset] - (yaml_char_t) 'A' + 10) :                    \
+       ((string).pointer[offset] >= (yaml_char_t) 'a' &&                        \
+        (string).pointer[offset] <= (yaml_char_t) 'f') ?                        \
+       ((string).pointer[offset] - (yaml_char_t) 'a' + 10) :                    \
+       ((string).pointer[offset] - (yaml_char_t) '0'))
+ 
+#define AS_HEX(string)  AS_HEX_AT((string),0)
+ 
+/*
+ * Check if the character is ASCII.
+ */
+
+#define IS_ASCII_AT(string,offset)                                              \
+    ((string).pointer[offset] <= (yaml_char_t) '\x7F')
+
+#define IS_ASCII(string)    IS_ASCII_AT((string),0)
+
+/*
+ * Check if the character can be printed unescaped.
+ */
+
+#define IS_PRINTABLE_AT(string,offset)                                          \
+    (((string).pointer[offset] == 0x0A)         /* . == #x0A */                 \
+     || ((string).pointer[offset] >= 0x20       /* #x20 <= . <= #x7E */         \
+         && (string).pointer[offset] <= 0x7E)                                   \
+     || ((string).pointer[offset] == 0xC2       /* #0xA0 <= . <= #xD7FF */      \
+         && (string).pointer[offset+1] >= 0xA0)                                 \
+     || ((string).pointer[offset] > 0xC2                                        \
+         && (string).pointer[offset] < 0xED)                                    \
+     || ((string).pointer[offset] == 0xED                                       \
+         && (string).pointer[offset+1] < 0xA0)                                  \
+     || ((string).pointer[offset] == 0xEE)                                      \
+     || ((string).pointer[offset] == 0xEF      /* #xE000 <= . <= #xFFFD */      \
+         && !((string).pointer[offset+1] == 0xBB        /* && . != #xFEFF */    \
+             && (string).pointer[offset+2] == 0xBF)                             \
+         && !((string).pointer[offset+1] == 0xBF                                \
+             && ((string).pointer[offset+2] == 0xBE                             \
+                 || (string).pointer[offset+2] == 0xBF))))
+
+#define IS_PRINTABLE(string)    IS_PRINTABLE_AT((string),0)
+
+/*
+ * Check if the character at the specified position is NUL.
+ */
+
+#define IS_Z_AT(string,offset)    CHECK_AT((string),'\0',(offset))
+
+#define IS_Z(string)    IS_Z_AT((string),0)
+
+/*
+ * Check if the character at the specified position is BOM.
+ */
+
+#define IS_BOM_AT(string,offset)                                                \
+     (CHECK_AT((string),'\xEF',(offset))                                        \
+      && CHECK_AT((string),'\xBB',(offset)+1)                                   \
+      && CHECK_AT((string),'\xBF',(offset)+2))  /* BOM (#xFEFF) */
+
+#define IS_BOM(string)  IS_BOM_AT(string,0)
+
+/*
+ * Check if the character at the specified position is space.
+ */
+
+#define IS_SPACE_AT(string,offset)  CHECK_AT((string),' ',(offset))
+
+#define IS_SPACE(string)    IS_SPACE_AT((string),0)
+
+/*
+ * Check if the character at the specified position is tab.
+ */
+
+#define IS_TAB_AT(string,offset)    CHECK_AT((string),'\t',(offset))
+
+#define IS_TAB(string)  IS_TAB_AT((string),0)
+
+/*
+ * Check if the character at the specified position is blank (space or tab).
+ */
+
+#define IS_BLANK_AT(string,offset)                                              \
+    (IS_SPACE_AT((string),(offset)) || IS_TAB_AT((string),(offset)))
+
+#define IS_BLANK(string)    IS_BLANK_AT((string),0)
+
+/*
+ * Check if the character at the specified position is a line break.
+ */
+
+#define IS_BREAK_AT(string,offset)                                              \
+    (CHECK_AT((string),'\r',(offset))               /* CR (#xD)*/               \
+     || CHECK_AT((string),'\n',(offset))            /* LF (#xA) */              \
+     || (CHECK_AT((string),'\xC2',(offset))                                     \
+         && CHECK_AT((string),'\x85',(offset)+1))   /* NEL (#x85) */            \
+     || (CHECK_AT((string),'\xE2',(offset))                                     \
+         && CHECK_AT((string),'\x80',(offset)+1)                                \
+         && CHECK_AT((string),'\xA8',(offset)+2))   /* LS (#x2028) */           \
+     || (CHECK_AT((string),'\xE2',(offset))                                     \
+         && CHECK_AT((string),'\x80',(offset)+1)                                \
+         && CHECK_AT((string),'\xA9',(offset)+2)))  /* PS (#x2029) */
+
+#define IS_BREAK(string)    IS_BREAK_AT((string),0)
+
+#define IS_CRLF_AT(string,offset)                                               \
+     (CHECK_AT((string),'\r',(offset)) && CHECK_AT((string),'\n',(offset)+1))
+
+#define IS_CRLF(string) IS_CRLF_AT((string),0)
+
+/*
+ * Check if the character is a line break or NUL.
+ */
+
+#define IS_BREAKZ_AT(string,offset)                                             \
+    (IS_BREAK_AT((string),(offset)) || IS_Z_AT((string),(offset)))
+
+#define IS_BREAKZ(string)   IS_BREAKZ_AT((string),0)
+
+/*
+ * Check if the character is a line break, space, or NUL.
+ */
+
+#define IS_SPACEZ_AT(string,offset)                                             \
+    (IS_SPACE_AT((string),(offset)) || IS_BREAKZ_AT((string),(offset)))
+
+#define IS_SPACEZ(string)   IS_SPACEZ_AT((string),0)
+
+/*
+ * Check if the character is a line break, space, tab, or NUL.
+ */
+
+#define IS_BLANKZ_AT(string,offset)                                             \
+    (IS_BLANK_AT((string),(offset)) || IS_BREAKZ_AT((string),(offset)))
+
+#define IS_BLANKZ(string)   IS_BLANKZ_AT((string),0)
+
+/*
+ * Determine the width of the character.
+ */
+
+#define WIDTH_AT(string,offset)                                                 \
+     (((string).pointer[offset] & 0x80) == 0x00 ? 1 :                           \
+      ((string).pointer[offset] & 0xE0) == 0xC0 ? 2 :                           \
+      ((string).pointer[offset] & 0xF0) == 0xE0 ? 3 :                           \
+      ((string).pointer[offset] & 0xF8) == 0xF0 ? 4 : 0)
+
+#define WIDTH(string)   WIDTH_AT((string),0)
+
+/*
+ * Move the string pointer to the next character.
+ */
+
+#define MOVE(string)    ((string).pointer += WIDTH((string)))
+
+/*
+ * Copy a character and move the pointers of both strings.
+ */
+
+#define COPY(string_a,string_b)                                                 \
+    ((*(string_b).pointer & 0x80) == 0x00 ?                                     \
+     (*((string_a).pointer++) = *((string_b).pointer++)) :                      \
+     (*(string_b).pointer & 0xE0) == 0xC0 ?                                     \
+     (*((string_a).pointer++) = *((string_b).pointer++),                        \
+      *((string_a).pointer++) = *((string_b).pointer++)) :                      \
+     (*(string_b).pointer & 0xF0) == 0xE0 ?                                     \
+     (*((string_a).pointer++) = *((string_b).pointer++),                        \
+      *((string_a).pointer++) = *((string_b).pointer++),                        \
+      *((string_a).pointer++) = *((string_b).pointer++)) :                      \
+     (*(string_b).pointer & 0xF8) == 0xF0 ?                                     \
+     (*((string_a).pointer++) = *((string_b).pointer++),                        \
+      *((string_a).pointer++) = *((string_b).pointer++),                        \
+      *((string_a).pointer++) = *((string_b).pointer++),                        \
+      *((string_a).pointer++) = *((string_b).pointer++)) : 0)
 
 /*
  * Stack and queue management.
