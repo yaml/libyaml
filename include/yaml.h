@@ -1203,6 +1203,48 @@ typedef struct {
     /** If the last character was an indentation character (' ', '-', '?', ':')? */
     int indention;
 
+    /** Anchor analysis. */
+    struct {
+        /** The anchor value. */
+        yaml_char_t *anchor;
+        /** The anchor length. */
+        size_t anchor_length;
+        /** Is it an alias? */
+        int alias;
+    } anchor_data;
+
+    /** Tag analysis. */
+    struct {
+        /** The tag handle. */
+        yaml_char_t *handle;
+        /** The tag handle length. */
+        size_t handle_length;
+        /** The tag suffix. */
+        yaml_char_t *suffix;
+        /** The tag suffix length. */
+        size_t suffix_length;
+    } tag_data;
+
+    /** Scalar analysis. */
+    struct {
+        /** The scalar value. */
+        yaml_char_t *value;
+        /** The scalar length. */
+        size_t length;
+        /** Does the scalar contain line breaks? */
+        int multiline;
+        /** Can the scalar be expessed in the flow plain style? */
+        int flow_plain_allowed;
+        /** Can the scalar be expressed in the block plain style? */
+        int block_plain_allowed;
+        /** Can the scalar be expressed in the single quoted style? */
+        int single_quoted_allowed;
+        /** Can the scalar be expressed in the literal or folded styles? */
+        int block_allowed;
+        /** The output style. */
+        yaml_scalar_style_t style;
+    } scalar_data;
+
     /**
      * @}
      */
