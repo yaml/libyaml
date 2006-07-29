@@ -629,7 +629,7 @@ yaml_check_utf8(yaml_char_t *start, size_t length)
                 (octet & 0xE0) == 0xC0 ? 2 :
                 (octet & 0xF0) == 0xE0 ? 3 :
                 (octet & 0xF8) == 0xF0 ? 4 : 0;
-       value = (octet & 0x80) == 0x00 ? octet & 0x7F :
+        value = (octet & 0x80) == 0x00 ? octet & 0x7F :
                 (octet & 0xE0) == 0xC0 ? octet & 0x1F :
                 (octet & 0xF0) == 0xE0 ? octet & 0x0F :
                 (octet & 0xF8) == 0xF0 ? octet & 0x07 : 0;
