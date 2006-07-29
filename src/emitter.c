@@ -52,10 +52,14 @@
 
 #define WRITE_BREAK(emitter,string)                                             \
     (FLUSH(emitter)                                                             \
-     && (COPY(emitter->buffer,string),                                          \
-         emitter->column = 0,                                                   \
-         emitter->line ++,                                                      \
-         1))
+     && (CHECK(string,'\n') ?                                                   \
+         (PUT_BREAK(emitter),                                                   \
+          string.pointer ++,                                                    \
+          1) :                                                                  \
+         (COPY(emitter->buffer,string),                                         \
+          emitter->column = 0,                                                  \
+          emitter->line ++,                                                     \
+          1)))
 
 /*
  * API functions.
@@ -230,7 +234,7 @@ yaml_emitter_write_tag_handle(yaml_emitter_t *emitter,
 
 static int
 yaml_emitter_write_tag_content(yaml_emitter_t *emitter,
-        yaml_char_t *value, size_t length);
+        yaml_char_t *value, size_t length, int need_whitespace);
 
 static int
 yaml_emitter_write_plain_scalar(yaml_emitter_t *emitter,
@@ -243,6 +247,10 @@ yaml_emitter_write_single_quoted_scalar(yaml_emitter_t *emitter,
 static int
 yaml_emitter_write_double_quoted_scalar(yaml_emitter_t *emitter,
         yaml_char_t *value, size_t length, int allow_breaks);
+
+static int
+yaml_emitter_determine_chomping(yaml_emitter_t *emitter,
+        yaml_string_t string);
 
 static int
 yaml_emitter_write_literal_scalar(yaml_emitter_t *emitter,
@@ -601,7 +609,7 @@ yaml_emitter_emit_document_start(yaml_emitter_t *emitter,
                             strlen((char *)tag_directive->handle)))
                     return 0;
                 if (!yaml_emitter_write_tag_content(emitter, tag_directive->prefix,
-                            strlen((char *)tag_directive->prefix)))
+                            strlen((char *)tag_directive->prefix), 1))
                     return 0;
                 if (!yaml_emitter_write_indent(emitter))
                     return 0;
@@ -1229,7 +1237,7 @@ yaml_emitter_process_tag(yaml_emitter_t *emitter)
             return 0;
         if (emitter->tag_data.suffix) {
             if (!yaml_emitter_write_tag_content(emitter, emitter->tag_data.suffix,
-                        emitter->tag_data.suffix_length))
+                        emitter->tag_data.suffix_length, 0))
                 return 0;
         }
     }
@@ -1238,7 +1246,7 @@ yaml_emitter_process_tag(yaml_emitter_t *emitter)
         if (!yaml_emitter_write_indicator(emitter, "!<", 1, 0, 0))
             return 0;
         if (!yaml_emitter_write_tag_content(emitter, emitter->tag_data.suffix,
-                    emitter->tag_data.suffix_length))
+                    emitter->tag_data.suffix_length, 0))
             return 0;
         if (!yaml_emitter_write_indicator(emitter, ">", 0, 0, 0))
             return 0;
@@ -1786,6 +1794,10 @@ yaml_emitter_write_tag_handle(yaml_emitter_t *emitter,
 {
     yaml_string_t string = STRING(value, length);
 
+    if (!emitter->whitespace) {
+        if (!PUT(emitter, ' ')) return 0;
+    }
+
     while (string.pointer != string.end) {
         if (!WRITE(emitter, string)) return 0;
     }
@@ -1798,43 +1810,432 @@ yaml_emitter_write_tag_handle(yaml_emitter_t *emitter,
 
 static int
 yaml_emitter_write_tag_content(yaml_emitter_t *emitter,
-        yaml_char_t *value, size_t length)
+        yaml_char_t *value, size_t length,
+        int need_whitespace)
 {
-    return 0;
+    yaml_string_t string = STRING(value, length);
+
+    if (need_whitespace && !emitter->whitespace) {
+        if (!PUT(emitter, ' ')) return 0;
+    }
+
+    while (string.pointer != string.end) {
+        if (IS_ALPHA(string)
+                || CHECK(string, ';') || CHECK(string, '/')
+                || CHECK(string, '?') || CHECK(string, ':')
+                || CHECK(string, '@') || CHECK(string, '&')
+                || CHECK(string, '=') || CHECK(string, '+')
+                || CHECK(string, '$') || CHECK(string, ',')
+                || CHECK(string, '_') || CHECK(string, '.')
+                || CHECK(string, '~') || CHECK(string, '*')
+                || CHECK(string, '\'') || CHECK(string, '(')
+                || CHECK(string, ')') || CHECK(string, '[')
+                || CHECK(string, ']')) {
+            if (!WRITE(emitter, string)) return 0;
+        }
+        else {
+            int width = WIDTH(string);
+            unsigned int value;
+            while (width --) {
+                value = *(string.pointer++);
+                if (!PUT(emitter, '%')) return 0;
+                if (!PUT(emitter, (value >> 8)
+                            + ((value >> 8) < 10 ? '0' : 'A' - 10)))
+                    return 0;
+                if (!PUT(emitter, (value & 0x0F)
+                            + ((value & 0x0F) < 10 ? '0' : 'A' - 10)))
+                    return 0;
+            }
+        }
+    }
+
+    emitter->whitespace = 0;
+    emitter->indention = 0;
+
+    return 1;
 }
 
 static int
 yaml_emitter_write_plain_scalar(yaml_emitter_t *emitter,
         yaml_char_t *value, size_t length, int allow_breaks)
 {
-    return 0;
+    yaml_string_t string = STRING(value, length);
+    int spaces = 0;
+    int breaks = 0;
+
+    if (!emitter->whitespace) {
+        if (!PUT(emitter, ' ')) return 0;
+    }
+
+    while (string.pointer != string.end)
+    {
+        if (IS_SPACE(string))
+        {
+            if (allow_breaks && !spaces
+                    && emitter->column > emitter->best_width
+                    && !IS_SPACE_AT(string, 1)) {
+                if (!yaml_emitter_write_indent(emitter)) return 0;
+                MOVE(string);
+            }
+            else {
+                if (!WRITE(emitter, string)) return 0;
+            }
+            spaces = 1;
+        }
+        else if (IS_BREAK(string))
+        {
+            if (!breaks && CHECK(string, '\n')) {
+                if (!PUT_BREAK(emitter)) return 0;
+            }
+            if (!WRITE_BREAK(emitter, string)) return 0;
+            emitter->indention = 1;
+            breaks = 1;
+        }
+        else
+        {
+            if (breaks) {
+                if (!yaml_emitter_write_indent(emitter)) return 0;
+            }
+            if (!WRITE(emitter, string)) return 0;
+            emitter->indention = 0;
+            spaces = 0;
+            breaks = 0;
+        }
+    }
+
+    emitter->whitespace = 0;
+    emitter->indention = 0;
+
+    return 1;
 }
 
 static int
 yaml_emitter_write_single_quoted_scalar(yaml_emitter_t *emitter,
         yaml_char_t *value, size_t length, int allow_breaks)
 {
-    return 0;
+    yaml_string_t string = STRING(value, length);
+    int spaces = 0;
+    int breaks = 0;
+
+    if (!yaml_emitter_write_indicator(emitter, "'", 1, 0, 0))
+        return 0;
+
+    while (string.pointer != string.end)
+    {
+        if (IS_SPACE(string))
+        {
+            if (allow_breaks && !spaces
+                    && emitter->column > emitter->best_width
+                    && string.pointer != string.start
+                    && string.pointer != string.end - 1
+                    && !IS_SPACE_AT(string, 1)) {
+                if (!yaml_emitter_write_indent(emitter)) return 0;
+                MOVE(string);
+            }
+            else {
+                if (!WRITE(emitter, string)) return 0;
+            }
+            spaces = 1;
+        }
+        else if (IS_BREAK(string))
+        {
+            if (!breaks && CHECK(string, '\n')) {
+                if (!PUT_BREAK(emitter)) return 0;
+            }
+            if (!WRITE_BREAK(emitter, string)) return 0;
+            emitter->indention = 1;
+            breaks = 1;
+        }
+        else
+        {
+            if (breaks) {
+                if (!yaml_emitter_write_indent(emitter)) return 0;
+            }
+            if (CHECK(string, '\'')) {
+                if (!PUT(emitter, '\'')) return 0;
+            }
+            if (!WRITE(emitter, string)) return 0;
+            emitter->indention = 0;
+            spaces = 0;
+            breaks = 0;
+        }
+    }
+
+    if (!yaml_emitter_write_indicator(emitter, "'", 0, 0, 0))
+        return 0;
+
+    emitter->whitespace = 0;
+    emitter->indention = 0;
+
+    return 1;
 }
 
 static int
 yaml_emitter_write_double_quoted_scalar(yaml_emitter_t *emitter,
         yaml_char_t *value, size_t length, int allow_breaks)
 {
-    return 0;
+    yaml_string_t string = STRING(value, length);
+    int spaces = 0;
+
+    if (!yaml_emitter_write_indicator(emitter, "\"", 1, 0, 0))
+        return 0;
+
+    while (string.pointer != string.end)
+    {
+        if (!IS_PRINTABLE(string) || (!emitter->unicode && !IS_ASCII(string))
+                || IS_BOM(string) || IS_BREAK(string)
+                || CHECK(string, '"') || CHECK(string, '\\'))
+        {
+            unsigned char octet;
+            unsigned int width;
+            unsigned int value;
+            int k;
+
+            octet = string.pointer[0];
+            width = (octet & 0x80) == 0x00 ? 1 :
+                    (octet & 0xE0) == 0xC0 ? 2 :
+                    (octet & 0xF0) == 0xE0 ? 3 :
+                    (octet & 0xF8) == 0xF0 ? 4 : 0;
+            value = (octet & 0x80) == 0x00 ? octet & 0x7F :
+                    (octet & 0xE0) == 0xC0 ? octet & 0x1F :
+                    (octet & 0xF0) == 0xE0 ? octet & 0x0F :
+                    (octet & 0xF8) == 0xF0 ? octet & 0x07 : 0;
+            for (k = 1; k < width; k ++) {
+                octet = string.pointer[k];
+                value = (value << 6) + (octet & 0x3F);
+            }
+            string.pointer += width;
+
+            if (!PUT(emitter, '\\')) return 0;
+
+            switch (value)
+            {
+                case 0x00:
+                    if (!PUT(emitter, '0')) return 0;
+                    break;
+
+                case 0x07:
+                    if (!PUT(emitter, 'a')) return 0;
+                    break;
+
+                case 0x08:
+                    if (!PUT(emitter, 'b')) return 0;
+                    break;
+
+                case 0x09:
+                    if (!PUT(emitter, 't')) return 0;
+                    break;
+
+                case 0x0A:
+                    if (!PUT(emitter, 'n')) return 0;
+                    break;
+
+                case 0x0B:
+                    if (!PUT(emitter, 'v')) return 0;
+                    break;
+
+                case 0x0C:
+                    if (!PUT(emitter, 'f')) return 0;
+                    break;
+
+                case 0x0D:
+                    if (!PUT(emitter, 'r')) return 0;
+                    break;
+
+                case 0x1B:
+                    if (!PUT(emitter, 'e')) return 0;
+                    break;
+
+                case 0x22:
+                    if (!PUT(emitter, '\"')) return 0;
+                    break;
+
+                case 0x5C:
+                    if (!PUT(emitter, '\\')) return 0;
+                    break;
+
+                case 0x85:
+                    if (!PUT(emitter, 'N')) return 0;
+                    break;
+
+                case 0xA0:
+                    if (!PUT(emitter, '_')) return 0;
+                    break;
+
+                case 0x2028:
+                    if (!PUT(emitter, 'L')) return 0;
+                    break;
+
+                case 0x2029:
+                    if (!PUT(emitter, 'P')) return 0;
+                    break;
+
+                default:
+                    if (value <= 0xFF) {
+                        if (!PUT(emitter, 'x')) return 0;
+                        width = 2;
+                    }
+                    else if (value <= 0xFFFF) {
+                        if (!PUT(emitter, 'u')) return 0;
+                        width = 4;
+                    }
+                    else {
+                        if (!PUT(emitter, 'U')) return 0;
+                        width = 8;
+                    }
+                    for (k = width*4; k >= 0; k -= 4) {
+                        if (!PUT(emitter, (value >> k) & 0x0F)) return 0;
+                    }
+            }
+            spaces = 0;
+        }
+        else if (IS_SPACE(string))
+        {
+            if (allow_breaks && !spaces
+                    && emitter->column > emitter->best_width
+                    && string.pointer != string.start
+                    && string.pointer != string.end - 1) {
+                if (!yaml_emitter_write_indent(emitter)) return 0;
+                if (IS_SPACE_AT(string, 1)) {
+                    if (!PUT(emitter, '\\')) return 0;
+                }
+                MOVE(string);
+            }
+            else {
+                if (!WRITE(emitter, string)) return 0;
+            }
+            spaces = 1;
+        }
+        else
+        {
+            if (!WRITE(emitter, string)) return 0;
+            spaces = 0;
+        }
+    }
+
+    if (!yaml_emitter_write_indicator(emitter, "\"", 0, 0, 0))
+        return 0;
+
+    emitter->whitespace = 0;
+    emitter->indention = 0;
+
+    return 1;
+}
+
+static int
+yaml_emitter_determine_chomping(yaml_emitter_t *emitter,
+        yaml_string_t string)
+{
+    string.pointer = string.end;
+    if (string.start == string.pointer)
+        return -1;
+    while ((string.pointer[-1] & 0xC0) == 0x80) {
+        string.pointer --;
+    }
+    if (!IS_BREAK(string))
+        return -1;
+    if (string.start == string.pointer)
+        return 0;
+    while ((string.pointer[-1] & 0xC0) == 0x80) {
+        string.pointer --;
+    }
+    if (!IS_BREAK(string))
+        return 0;
+    return +1;
+    
 }
 
 static int
 yaml_emitter_write_literal_scalar(yaml_emitter_t *emitter,
         yaml_char_t *value, size_t length)
 {
-    return 0;
+    yaml_string_t string = STRING(value, length);
+    int chomp = yaml_emitter_determine_chomping(emitter, string);
+    int breaks = 0;
+
+    if (!yaml_emitter_write_indicator(emitter,
+                chomp == -1 ? "|-" : chomp == +1 ? "|+" : "|", 1, 0, 0))
+        return 0;
+    if (!yaml_emitter_write_indent(emitter))
+        return 0;
+
+    while (string.pointer != string.end)
+    {
+        if (IS_BREAK(string))
+        {
+            if (!WRITE_BREAK(emitter, string)) return 0;
+            emitter->indention = 1;
+            breaks = 1;
+        }
+        else
+        {
+            if (breaks) {
+                if (!yaml_emitter_write_indent(emitter)) return 0;
+            }
+            if (!WRITE(emitter, string)) return 0;
+            emitter->indention = 0;
+            breaks = 0;
+        }
+    }
+
+    if (!yaml_emitter_write_indent(emitter)) return 0;
+
+    return 1;
 }
 
 static int
 yaml_emitter_write_folded_scalar(yaml_emitter_t *emitter,
         yaml_char_t *value, size_t length)
 {
-    return 0;
+    yaml_string_t string = STRING(value, length);
+    int chomp = yaml_emitter_determine_chomping(emitter, string);
+    int breaks = 0;
+    int leading_spaces = 1;
+
+    if (!yaml_emitter_write_indicator(emitter,
+                chomp == -1 ? ">-" : chomp == +1 ? ">+" : ">", 1, 0, 0))
+        return 0;
+    if (!yaml_emitter_write_indent(emitter))
+        return 0;
+
+    while (string.pointer != string.end)
+    {
+        if (IS_BREAK(string))
+        {
+            if (!breaks && !leading_spaces && CHECK(string, '\n')) {
+                int k = 0;
+                while (IS_BREAK_AT(string, k)) {
+                    k += WIDTH_AT(string, k);
+                }
+                if (!IS_BLANK_AT(string, k)) {
+                    if (!PUT_BREAK(emitter)) return 0;
+                }
+            }
+            if (!WRITE_BREAK(emitter, string)) return 0;
+            emitter->indention = 1;
+            breaks = 1;
+        }
+        else
+        {
+            if (breaks) {
+                if (!yaml_emitter_write_indent(emitter)) return 0;
+                leading_spaces = IS_BLANK(string);
+            }
+            if (!breaks && IS_SPACE(string) && !IS_SPACE_AT(string, 1)
+                    && emitter->column > emitter->best_width) {
+                if (!yaml_emitter_write_indent(emitter)) return 0;
+                MOVE(string);
+            }
+            else {
+                if (!WRITE(emitter, string)) return 0;
+            }
+            emitter->indention = 0;
+            breaks = 0;
+        }
+    }
+
+    if (!yaml_emitter_write_indent(emitter)) return 0;
+
+    return 1;
 }
 
