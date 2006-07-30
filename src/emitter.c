@@ -290,7 +290,7 @@ yaml_emitter_emit(yaml_emitter_t *emitter, yaml_event_t *event)
             return 0;
         if (!yaml_emitter_state_machine(emitter, emitter->events.head))
             return 0;
-        DEQUEUE(emitter, emitter->events);
+        yaml_event_delete(&DEQUEUE(emitter, emitter->events));
     }
 
     return 1;
@@ -687,6 +687,13 @@ yaml_emitter_emit_document_end(yaml_emitter_t *emitter,
 
         emitter->state = YAML_EMIT_DOCUMENT_START_STATE;
 
+        while (!STACK_EMPTY(emitter, emitter->tag_directives)) {
+            yaml_tag_directive_t tag_directive = POP(emitter,
+                    emitter->tag_directives);
+            yaml_free(tag_directive.handle);
+            yaml_free(tag_directive.prefix);
+        }
+
         return 1;
     }
 
@@ -695,6 +702,7 @@ yaml_emitter_emit_document_end(yaml_emitter_t *emitter,
 }
 
 /*
+ * 
  * Expect a flow item node.
  */
 
@@ -728,11 +736,16 @@ yaml_emitter_emit_flow_sequence_item(yaml_emitter_t *emitter,
         return 1;
     }
 
+    if (!first) {
+        if (!yaml_emitter_write_indicator(emitter, ",", 0, 0, 0))
+            return 0;
+    }
+
     if (emitter->canonical || emitter->column > emitter->best_width) {
         if (!yaml_emitter_write_indent(emitter))
             return 0;
     }
-    if (PUSH(emitter, emitter->states, YAML_EMIT_FLOW_SEQUENCE_ITEM_STATE))
+    if (!PUSH(emitter, emitter->states, YAML_EMIT_FLOW_SEQUENCE_ITEM_STATE))
         return 0;
 
     return yaml_emitter_emit_node(emitter, event, 0, 1, 0, 0);
@@ -1178,7 +1191,8 @@ yaml_emitter_select_scalar_style(yaml_emitter_t *emitter, yaml_event_t *event)
 
     if (style == YAML_LITERAL_SCALAR_STYLE || style == YAML_FOLDED_SCALAR_STYLE)
     {
-        if (!emitter->scalar_data.block_allowed)
+        if (!emitter->scalar_data.block_allowed
+                || emitter->flow_level || emitter->simple_key_context)
             style = YAML_DOUBLE_QUOTED_SCALAR_STYLE;
     }
 
@@ -1340,7 +1354,7 @@ yaml_emitter_analyze_tag_directive(yaml_emitter_t *emitter,
 
     handle.pointer ++;
 
-    while (handle.pointer != handle.end-1) {
+    while (handle.pointer < handle.end-1) {
         if (!IS_ALPHA(handle)) {
             return yaml_emitter_set_emitter_error(emitter,
                     "tag handle must contain alphanumerical characters only");
@@ -1380,6 +1394,12 @@ yaml_emitter_analyze_anchor(yaml_emitter_t *emitter,
         }
         MOVE(string);
     }
+
+    emitter->anchor_data.anchor = string.start;
+    emitter->anchor_data.anchor_length = string.end - string.start;
+    emitter->anchor_data.alias = alias;
+
+    return 1;
 }
 
 /*
@@ -1399,7 +1419,7 @@ yaml_emitter_analyze_tag(yaml_emitter_t *emitter,
     }
 
     for (tag_directive = emitter->tag_directives.start;
-            tag_directive != emitter->tag_directives.end; tag_directive ++) {
+            tag_directive != emitter->tag_directives.top; tag_directive ++) {
         size_t prefix_length = strlen((char *)tag_directive->prefix);
         if (prefix_length < (string.end - string.start)
                 && strncmp((char *)tag_directive->prefix, (char *)string.start,
@@ -1584,6 +1604,25 @@ yaml_emitter_analyze_scalar(yaml_emitter_t *emitter,
                 }
             }
             spaces = breaks = mixed = leading = 0;
+        }
+
+        if ((spaces || breaks) && string.pointer == string.end-1)
+        {
+            if (spaces && breaks) {
+                mixed_breaks_spaces = 1;
+            }
+            else if (spaces) {
+                if (leading) {
+                    leading_spaces = 1;
+                }
+                trailing_spaces = 1;
+            }
+            else if (breaks) {
+                if (leading) {
+                    leading_breaks = 1;
+                }
+                trailing_breaks = 1;
+            }
         }
 
         preceeded_by_space = IS_BLANKZ(string);
@@ -1839,8 +1878,8 @@ yaml_emitter_write_tag_content(yaml_emitter_t *emitter,
             while (width --) {
                 value = *(string.pointer++);
                 if (!PUT(emitter, '%')) return 0;
-                if (!PUT(emitter, (value >> 8)
-                            + ((value >> 8) < 10 ? '0' : 'A' - 10)))
+                if (!PUT(emitter, (value >> 4)
+                            + ((value >> 4) < 10 ? '0' : 'A' - 10)))
                     return 0;
                 if (!PUT(emitter, (value & 0x0F)
                             + ((value & 0x0F) < 10 ? '0' : 'A' - 10)))
@@ -2083,8 +2122,10 @@ yaml_emitter_write_double_quoted_scalar(yaml_emitter_t *emitter,
                         if (!PUT(emitter, 'U')) return 0;
                         width = 8;
                     }
-                    for (k = width*4; k >= 0; k -= 4) {
-                        if (!PUT(emitter, (value >> k) & 0x0F)) return 0;
+                    for (k = (width-1)*4; k >= 0; k -= 4) {
+                        int digit = (value >> k) & 0x0F;
+                        if (!PUT(emitter, digit + (digit < 10 ? '0' : 'A'-10)))
+                            return 0;
                     }
             }
             spaces = 0;
@@ -2129,16 +2170,16 @@ yaml_emitter_determine_chomping(yaml_emitter_t *emitter,
     string.pointer = string.end;
     if (string.start == string.pointer)
         return -1;
-    while ((string.pointer[-1] & 0xC0) == 0x80) {
+    do {
         string.pointer --;
-    }
+    } while ((*string.pointer & 0xC0) == 0x80);
     if (!IS_BREAK(string))
         return -1;
     if (string.start == string.pointer)
         return 0;
-    while ((string.pointer[-1] & 0xC0) == 0x80) {
+    do {
         string.pointer --;
-    }
+    } while ((*string.pointer & 0xC0) == 0x80);
     if (!IS_BREAK(string))
         return 0;
     return +1;
@@ -2178,8 +2219,6 @@ yaml_emitter_write_literal_scalar(yaml_emitter_t *emitter,
         }
     }
 
-    if (!yaml_emitter_write_indent(emitter)) return 0;
-
     return 1;
 }
 
@@ -2189,8 +2228,8 @@ yaml_emitter_write_folded_scalar(yaml_emitter_t *emitter,
 {
     yaml_string_t string = STRING(value, length);
     int chomp = yaml_emitter_determine_chomping(emitter, string);
-    int breaks = 0;
-    int leading_spaces = 1;
+    int breaks = 1;
+    int leading_spaces = 0;
 
     if (!yaml_emitter_write_indicator(emitter,
                 chomp == -1 ? ">-" : chomp == +1 ? ">+" : ">", 1, 0, 0))
@@ -2233,8 +2272,6 @@ yaml_emitter_write_folded_scalar(yaml_emitter_t *emitter,
             breaks = 0;
         }
     }
-
-    if (!yaml_emitter_write_indent(emitter)) return 0;
 
     return 1;
 }
