@@ -391,6 +391,7 @@ yaml_emitter_delete(yaml_emitter_t *emitter)
     while (!QUEUE_EMPTY(emitter, emitter->events)) {
         yaml_event_delete(&DEQUEUE(emitter, emitter->events));
     }
+    QUEUE_DEL(emitter, emitter->events);
     STACK_DEL(emitter, emitter->indents);
     while (!STACK_EMPTY(empty, emitter->tag_directives)) {
         yaml_tag_directive_t tag_directive = POP(emitter, emitter->tag_directives);
@@ -744,7 +745,7 @@ yaml_document_start_event_initialize(yaml_event_t *event,
     }
 
     DOCUMENT_START_EVENT_INIT(*event, version_directive_copy,
-            tag_directives_copy.start, tag_directives_copy.end,
+            tag_directives_copy.start, tag_directives_copy.top,
             implicit, mark, mark);
 
     return 1;
