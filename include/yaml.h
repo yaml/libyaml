@@ -417,6 +417,7 @@ typedef struct {
  * Create the STREAM-START event.
  *
  * @param[in]   event       An empty event object.
+ * @param[in]   encoding    The stream encoding.
  *
  * @returns @c 1 if the function succeeded, @c 0 on error.
  */
@@ -508,7 +509,7 @@ yaml_alias_event_initialize(yaml_event_t *event, yaml_char_t *anchor);
 YAML_DECLARE(int)
 yaml_scalar_event_initialize(yaml_event_t *event,
         yaml_char_t *anchor, yaml_char_t *tag,
-        yaml_char_t *value, size_t length,
+        yaml_char_t *value, int length,
         int plain_implicit, int quoted_implicit,
         yaml_scalar_style_t style);
 

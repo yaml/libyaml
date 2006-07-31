@@ -811,7 +811,7 @@ yaml_alias_event_initialize(yaml_event_t *event, yaml_char_t *anchor)
 YAML_DECLARE(int)
 yaml_scalar_event_initialize(yaml_event_t *event,
         yaml_char_t *anchor, yaml_char_t *tag,
-        yaml_char_t *value, size_t length,
+        yaml_char_t *value, int length,
         int plain_implicit, int quoted_implicit,
         yaml_scalar_style_t style)
 {
@@ -823,7 +823,6 @@ yaml_scalar_event_initialize(yaml_event_t *event,
     assert(event);      /* Non-NULL event object is expected. */
     assert(value);      /* Non-NULL anchor is expected. */
 
-
     if (anchor) {
         if (!yaml_check_utf8(anchor, strlen((char *)anchor))) goto error;
         anchor_copy = yaml_strdup(anchor);
@@ -834,6 +833,10 @@ yaml_scalar_event_initialize(yaml_event_t *event,
         if (!yaml_check_utf8(tag, strlen((char *)tag))) goto error;
         tag_copy = yaml_strdup(tag);
         if (!tag_copy) goto error;
+    }
+
+    if (length < 0) {
+        length = strlen((char *)value);
     }
 
     if (!yaml_check_utf8(value, length)) goto error;
