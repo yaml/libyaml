@@ -3,7 +3,7 @@
 
 SUBDIRS = include src . tests
 
-EXTRA_DIST = doc/doxygen.cfg
+EXTRA_DIST = README LICENSE doc/doxygen.cfg
 
 maintainer-clean-local:
 	-rm -f aclocal.m4 config.h.in configure config/*

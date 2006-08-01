@@ -4,7 +4,7 @@
  * 
  * Include the header file with the code:
  * @code
- * #include <yaml/yaml.h>
+ * #include <yaml.h>
  * @endcode
  */
 
@@ -285,7 +285,7 @@ typedef struct {
 /**
  * Free any memory allocated for a token object.
  *
- * @param[in]   token   A token object.
+ * @param[in,out]   token   A token object.
  */
 
 YAML_DECLARE(void)
@@ -416,7 +416,7 @@ typedef struct {
 /**
  * Create the STREAM-START event.
  *
- * @param[in]   event       An empty event object.
+ * @param[out]  event       An empty event object.
  * @param[in]   encoding    The stream encoding.
  *
  * @returns @c 1 if the function succeeded, @c 0 on error.
@@ -429,7 +429,7 @@ yaml_stream_start_event_initialize(yaml_event_t *event,
 /**
  * Create the STREAM-END event.
  *
- * @param[in]   event       An empty event object.
+ * @param[out]  event       An empty event object.
  *
  * @returns @c 1 if the function succeeded, @c 0 on error.
  */
@@ -443,7 +443,7 @@ yaml_stream_end_event_initialize(yaml_event_t *event);
  * The @a implicit argument is considered as a stylistic parameter and may be
  * ignored by the emitter.
  *
- * @param[in]   event                   An empty event object.
+ * @param[out]  event                   An empty event object.
  * @param[in]   version_directive       The %YAML directive value or @c NULL.
  * @param[in]   tag_directives_start    The beginning of the %TAG directives list.
  * @param[in]   tag_directives_end      The end of the %TAG directives list.
@@ -465,7 +465,7 @@ yaml_document_start_event_initialize(yaml_event_t *event,
  * The @a implicit argument is considered as a stylistic parameter and may be
  * ignored by the emitter.
  *
- * @param[in]   event       An empty event object.
+ * @param[out]  event       An empty event object.
  * @param[in]   implicit    If the document end indicator is implicit.
  *
  * @returns @c 1 if the function succeeded, @c 0 on error.
@@ -477,7 +477,7 @@ yaml_document_end_event_initialize(yaml_event_t *event, int implicit);
 /**
  * Create an ALIAS event.
  *
- * @param[in]   event       An empty event object.
+ * @param[out]  event       An empty event object.
  * @param[in]   anchor      The anchor value.
  *
  * @returns @c 1 if the function succeeded, @c 0 on error.
@@ -494,7 +494,7 @@ yaml_alias_event_initialize(yaml_event_t *event, yaml_char_t *anchor);
  * Either the @a tag attribute or one of the @a plain_implicit and
  * @a quoted_implicit flags must be set.
  *
- * @param[in]   event           An empty event object.
+ * @param[out]  event           An empty event object.
  * @param[in]   anchor          The scalar anchor or @c NULL.
  * @param[in]   tag             The scalar tag or @c NULL.
  * @param[in]   value           The scalar value.
@@ -520,7 +520,7 @@ yaml_scalar_event_initialize(yaml_event_t *event,
  *
  * Either the @a tag attribute or the @a implicit flag must be set.
  *
- * @param[in]   event       An empty event object.
+ * @param[out]  event       An empty event object.
  * @param[in]   anchor      The sequence anchor or @c NULL.
  * @param[in]   tag         The sequence tag or @c NULL.
  * @param[in]   implicit    If the tag may be omitted.
@@ -537,7 +537,7 @@ yaml_sequence_start_event_initialize(yaml_event_t *event,
 /**
  * Create a SEQUENCE-END event.
  *
- * @param[in]   event       An empty event object.
+ * @param[out]  event       An empty event object.
  *
  * @returns @c 1 if the function succeeded, @c 0 on error.
  */
@@ -552,7 +552,7 @@ yaml_sequence_end_event_initialize(yaml_event_t *event);
  *
  * Either the @a tag attribute or the @a implicit flag must be set.
  *
- * @param[in]   event       An empty event object.
+ * @param[out]  event       An empty event object.
  * @param[in]   anchor      The mapping anchor or @c NULL.
  * @param[in]   tag         The mapping tag or @c NULL.
  * @param[in]   implicit    If the tag may be omitted.
@@ -569,7 +569,7 @@ yaml_mapping_start_event_initialize(yaml_event_t *event,
 /**
  * Create a MAPPING-END event.
  *
- * @param[in]   event       An empty event object.
+ * @param[out]  event       An empty event object.
  *
  * @returns @c 1 if the function succeeded, @c 0 on error.
  */
@@ -580,7 +580,7 @@ yaml_mapping_end_event_initialize(yaml_event_t *event);
 /**
  * Free any memory allocated for an event object.
  *
- * @param[in]   event   An event object.
+ * @param[out]  event   An event object.
  */
 
 YAML_DECLARE(void)
@@ -600,11 +600,11 @@ yaml_event_delete(yaml_event_t *event);
  * source.  The handler should write not more than @a size bytes to the @a
  * buffer.  The number of written bytes should be set to the @a length variable.
  *
- * @param[in]   data        A pointer to an application data specified by
- *                          @c yaml_parser_set_read_handler.
- * @param[out]  buffer      The buffer to write the data from the source.
- * @param[in]   size        The size of the buffer.
- * @param[out]  size_read   The actual number of bytes read from the source.
+ * @param[in,out]   data        A pointer to an application data specified by
+ *                              yaml_parser_set_input().
+ * @param[out]      buffer      The buffer to write the data from the source.
+ * @param[in]       size        The size of the buffer.
+ * @param[out]      size_read   The actual number of bytes read from the source.
  *
  * @returns On success, the handler should return @c 1.  If the handler failed,
  * the returned value should be @c 0.  On EOF, the handler should set the
@@ -875,9 +875,9 @@ typedef struct {
  * Initialize a parser.
  *
  * This function creates a new parser object.  An application is responsible
- * for destroying the object using the @c yaml_parser_delete function.
+ * for destroying the object using the yaml_parser_delete() function.
  *
- * @param[in]   parser  An empty parser object.
+ * @param[out]  parser  An empty parser object.
  *
  * @returns @c 1 if the function succeeded, @c 0 on error.
  */
@@ -888,7 +888,7 @@ yaml_parser_initialize(yaml_parser_t *parser);
 /**
  * Destroy a parser.
  *
- * @param[in]   parser  A parser object.
+ * @param[in,out]   parser  A parser object.
  */
 
 YAML_DECLARE(void)
@@ -901,9 +901,9 @@ yaml_parser_delete(yaml_parser_t *parser);
  * exists.  The application is responsible for destroing @a input after
  * destroying the @a parser.
  *
- * @param[in]   parser  A parser object.
- * @param[in]   input   A source data.
- * @param[in]   size    The length of the source data in bytes.
+ * @param[in,out]   parser  A parser object.
+ * @param[in]       input   A source data.
+ * @param[in]       size    The length of the source data in bytes.
  */
 
 YAML_DECLARE(void)
@@ -916,8 +916,8 @@ yaml_parser_set_input_string(yaml_parser_t *parser,
  * @a file should be a file object open for reading.  The application is
  * responsible for closing the @a file.
  *
- * @param[in]   parser  A parser object.
- * @param[in]   file    An open file.
+ * @param[in,out]   parser  A parser object.
+ * @param[in]       file    An open file.
  */
 
 YAML_DECLARE(void)
@@ -926,9 +926,10 @@ yaml_parser_set_input_file(yaml_parser_t *parser, FILE *file);
 /**
  * Set a generic input handler.
  *
- * @param[in]   parser  A parser object.
- * @param[in]   handler A read handler.
- * @param[in]   data    Any application data for passing to the read handler.
+ * @param[in,out]   parser  A parser object.
+ * @param[in]       handler A read handler.
+ * @param[in]       data    Any application data for passing to the read
+ *                          handler.
  */
 
 YAML_DECLARE(void)
@@ -938,8 +939,8 @@ yaml_parser_set_input(yaml_parser_t *parser,
 /**
  * Set the source encoding.
  *
- * @param[in]   parser      A parser object.
- * @param[in]   encoding    The source encoding.
+ * @param[in,out]   parser      A parser object.
+ * @param[in]       encoding    The source encoding.
  */
 
 YAML_DECLARE(void)
@@ -956,11 +957,11 @@ yaml_parser_set_encoding(yaml_parser_t *parser, yaml_encoding_t encoding);
  * An application is responsible for freeing any buffers associated with the
  * produced token object using the @c yaml_token_delete function.
  *
- * An application must not alternate the calls of @c yaml_parser_scan with the
- * calls of @c yaml_parser_parse. Doing this will break the parser.
+ * An application must not alternate the calls of yaml_parser_scan() with the
+ * calls of yaml_parser_parse(). Doing this will break the parser.
  *
- * @param[in]   parser      A parser object.
- * @param[in]   token       An empty token object.
+ * @param[in,out]   parser      A parser object.
+ * @param[out]      token       An empty token object.
  *
  * @returns @c 1 if the function succeeded, @c 0 on error.
  */
@@ -977,13 +978,13 @@ yaml_parser_scan(yaml_parser_t *parser, yaml_token_t *token);
  * @c YAML_STREAM_END_EVENT.
  *
  * An application is responsible for freeing any buffers associated with the
- * produced event object using the @c yaml_event_delete function.
+ * produced event object using the yaml_event_delete() function.
  *
- * An application must not alternate the calls of @c yaml_parser_scan with the
- * calls of @c yaml_parser_parse. Doing this will break the parser.
+ * An application must not alternate the calls of yaml_parser_scan() with the
+ * calls of yaml_parser_parse(). Doing this will break the parser.
  *
- * @param[in]   parser      A parser object.
- * @param[in]   event       An empty event object.
+ * @param[in,out]   parser      A parser object.
+ * @param[out]      event       An empty event object.
  *
  * @returns @c 1 if the function succeeded, @c 0 on error.
  */
@@ -1005,10 +1006,10 @@ yaml_parser_parse(yaml_parser_t *parser, yaml_event_t *event);
  * characters to the output.  The handler should write @a size bytes of the
  * @a buffer to the output.
  *
- * @param[in]   data        A pointer to an application data specified by
- *                          @c yaml_emitter_set_write_handler.
- * @param[out]  buffer      The buffer with bytes to be written.
- * @param[in]   size        The size of the buffer.
+ * @param[in,out]   data        A pointer to an application data specified by
+ *                              yaml_emitter_set_output().
+ * @param[in]       buffer      The buffer with bytes to be written.
+ * @param[in]       size        The size of the buffer.
  *
  * @returns On success, the handler should return @c 1.  If the handler failed,
  * the returned value should be @c 0.
@@ -1256,9 +1257,9 @@ typedef struct {
  * Initialize an emitter.
  *
  * This function creates a new emitter object.  An application is responsible
- * for destroying the object using the @c yaml_emitter_delete function.
+ * for destroying the object using the yaml_emitter_delete() function.
  *
- * @param[in]   emitter An empty parser object.
+ * @param[out]      emitter     An empty parser object.
  *
  * @returns @c 1 if the function succeeded, @c 0 on error.
  */
@@ -1269,7 +1270,7 @@ yaml_emitter_initialize(yaml_emitter_t *emitter);
 /**
  * Destroy an emitter.
  *
- * @param[in]   emitter An emitter object.
+ * @param[in,out]   emitter     An emitter object.
  */
 
 YAML_DECLARE(void)
@@ -1283,10 +1284,11 @@ yaml_emitter_delete(yaml_emitter_t *emitter);
  * bytes.  If the buffer is smaller than required, the emitter produces the
  * YAML_WRITE_ERROR error.
  *
- * @param[in]   emitter         An emitter object.
- * @param[in]   output          An output buffer.
- * @param[in]   size            The buffer size.
- * @param[in]   size_written    The pointer to save the number of written bytes.
+ * @param[in,out]   emitter         An emitter object.
+ * @param[in]       output          An output buffer.
+ * @param[in]       size            The buffer size.
+ * @param[in]       size_written    The pointer to save the number of written
+ *                                  bytes.
  */
 
 YAML_DECLARE(void)
@@ -1299,8 +1301,8 @@ yaml_emitter_set_output_string(yaml_emitter_t *emitter,
  * @a file should be a file object open for writing.  The application is
  * responsible for closing the @a file.
  *
- * @param[in]   emitter An emitter object.
- * @param[in]   file    An open file.
+ * @param[in,out]   emitter     An emitter object.
+ * @param[in]       file        An open file.
  */
 
 YAML_DECLARE(void)
@@ -1309,9 +1311,10 @@ yaml_emitter_set_output_file(yaml_emitter_t *emitter, FILE *file);
 /**
  * Set a generic output handler.
  *
- * @param[in]   emitter An emitter object.
- * @param[in]   handler A write handler.
- * @param[in]   data    Any application data for passing to the write handler.
+ * @param[in,out]   emitter     An emitter object.
+ * @param[in]       handler     A write handler.
+ * @param[in]       data        Any application data for passing to the write
+ *                              handler.
  */
 
 YAML_DECLARE(void)
@@ -1321,8 +1324,8 @@ yaml_emitter_set_output(yaml_emitter_t *emitter,
 /**
  * Set the output encoding.
  *
- * @param[in]   emitter     An emitter object.
- * @param[in]   encoding    The output encoding.
+ * @param[in,out]   emitter     An emitter object.
+ * @param[in]       encoding    The output encoding.
  */
 
 YAML_DECLARE(void)
@@ -1332,8 +1335,8 @@ yaml_emitter_set_encoding(yaml_emitter_t *emitter, yaml_encoding_t encoding);
  * Set if the output should be in the "canonical" format as in the YAML
  * specification.
  *
- * @param[in]   emitter     An emitter object.
- * @param[in]   canonical   If the output is canonical.
+ * @param[in,out]   emitter     An emitter object.
+ * @param[in]       canonical   If the output is canonical.
  */
 
 YAML_DECLARE(void)
@@ -1342,8 +1345,8 @@ yaml_emitter_set_canonical(yaml_emitter_t *emitter, int canonical);
 /**
  * Set the intendation increment.
  *
- * @param[in]   emitter     An emitter object.
- * @param[in]   indent      The indentation increment (1 < . < 10).
+ * @param[in,out]   emitter     An emitter object.
+ * @param[in]       indent      The indentation increment (1 < . < 10).
  */
 
 YAML_DECLARE(void)
@@ -1352,8 +1355,8 @@ yaml_emitter_set_indent(yaml_emitter_t *emitter, int indent);
 /**
  * Set the preferred line width. @c -1 means unlimited.
  *
- * @param[in]   emitter     An emitter object.
- * @param[in]   width       The preferred line width.
+ * @param[in,out]   emitter     An emitter object.
+ * @param[in]       width       The preferred line width.
  */
 
 YAML_DECLARE(void)
@@ -1362,8 +1365,8 @@ yaml_emitter_set_width(yaml_emitter_t *emitter, int width);
 /**
  * Set if unescaped non-ASCII characters are allowed.
  *
- * @param[in]   emitter     An emitter object.
- * @param[in]   unicode     If unescaped Unicode characters are allowed.
+ * @param[in,out]   emitter     An emitter object.
+ * @param[in]       unicode     If unescaped Unicode characters are allowed.
  */
 
 YAML_DECLARE(void)
@@ -1372,8 +1375,8 @@ yaml_emitter_set_unicode(yaml_emitter_t *emitter, int unicode);
 /**
  * Set the preferred line break.
  *
- * @param[in]   emitter     An emitter object.
- * @param[in]   line_break  The preferred line break.
+ * @param[in,out]   emitter     An emitter object.
+ * @param[in]       line_break  The preferred line break.
  */
 
 YAML_DECLARE(void)
@@ -1382,13 +1385,13 @@ yaml_emitter_set_break(yaml_emitter_t *emitter, yaml_break_t line_break);
 /**
  * Emit an event.
  *
- * The event object may be generated using the @c yaml_parser_parse function.
+ * The event object may be generated using the yaml_parser_parse() function.
  * The emitter takes the responsibility for the event object and destroys its
  * content after it is emitted. The event object is destroyed even if the
  * function fails.
  *
- * @param[in]   emitter     An emitter object.
- * @param[in]   event       An event object.
+ * @param[in,out]   emitter     An emitter object.
+ * @param[in,out]   event       An event object.
  *
  * @returns @c 1 if the function succeeded, @c 0 on error.
  */
@@ -1399,7 +1402,7 @@ yaml_emitter_emit(yaml_emitter_t *emitter, yaml_event_t *event);
 /**
  * Flush the accumulated characters to the output.
  *
- * @param[in]   emitter     An emitter object.
+ * @param[in,out]   emitter     An emitter object.
  *
  * @returns @c 1 if the function succeeded, @c 0 on error.
  */
