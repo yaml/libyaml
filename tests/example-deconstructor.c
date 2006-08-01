@@ -1046,14 +1046,14 @@ parser_error:
             if (parser.context) {
                 fprintf(stderr, "Scanner error: %s at line %d, column %d\n"
                         "%s at line %d, column %d\n", parser.context,
-                        parser.context_mark.line, parser.context_mark.column,
-                        parser.problem, parser.problem_mark.line,
-                        parser.problem_mark.column);
+                        parser.context_mark.line+1, parser.context_mark.column+1,
+                        parser.problem, parser.problem_mark.line+1,
+                        parser.problem_mark.column+1);
             }
             else {
                 fprintf(stderr, "Scanner error: %s at line %d, column %d\n",
-                        parser.problem, parser.problem_mark.line,
-                        parser.problem_mark.column);
+                        parser.problem, parser.problem_mark.line+1,
+                        parser.problem_mark.column+1);
             }
             break;
 
@@ -1061,14 +1061,14 @@ parser_error:
             if (parser.context) {
                 fprintf(stderr, "Parser error: %s at line %d, column %d\n"
                         "%s at line %d, column %d\n", parser.context,
-                        parser.context_mark.line, parser.context_mark.column,
-                        parser.problem, parser.problem_mark.line,
-                        parser.problem_mark.column);
+                        parser.context_mark.line+1, parser.context_mark.column+1,
+                        parser.problem, parser.problem_mark.line+1,
+                        parser.problem_mark.column+1);
             }
             else {
                 fprintf(stderr, "Parser error: %s at line %d, column %d\n",
-                        parser.problem, parser.problem_mark.line,
-                        parser.problem_mark.column);
+                        parser.problem, parser.problem_mark.line+1,
+                        parser.problem_mark.column+1);
             }
             break;
 
