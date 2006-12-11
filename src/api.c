@@ -279,7 +279,7 @@ yaml_file_read_handler(void *data, unsigned char *buffer, size_t size,
 
 YAML_DECLARE(void)
 yaml_parser_set_input_string(yaml_parser_t *parser,
-        unsigned char *input, size_t size)
+        const unsigned char *input, size_t size)
 {
     assert(parser); /* Non-NULL parser object expected. */
     assert(!parser->read_handler);  /* You can set the source only once. */
@@ -1018,4 +1018,185 @@ yaml_event_delete(yaml_event_t *event)
 
     memset(event, 0, sizeof(yaml_event_t));
 }
+
+#if 0
+
+/*
+ * Create a SCALAR node.
+ */
+
+YAML_DECLARE(int)
+yaml_scalar_node_initialize(yaml_node_t *node,
+        yaml_char_t *tag, yaml_char_t *value, int length,
+        yaml_scalar_style_t style)
+{
+    yaml_mark_t mark = { 0, 0, 0 };
+    yaml_char_t *tag_copy = NULL;
+    yaml_char_t *value_copy = NULL;
+
+    assert(node);       /* Non-NULL node object is expected. */
+    assert(value);      /* Non-NULL anchor is expected. */
+
+    if (!tag) {
+        tag = YAML_DEFAULT_SCALAR_TAG;
+    }
+
+    if (!yaml_check_utf8(tag, strlen((char *)tag))) goto error;
+    tag_copy = yaml_strdup(tag);
+    if (!tag_copy) goto error;
+
+    if (length < 0) {
+        length = strlen((char *)value);
+    }
+
+    if (!yaml_check_utf8(value, length)) goto error;
+    value_copy = yaml_malloc(length+1);
+    if (!value_copy) goto error;
+    memcpy(value_copy, value, length);
+    value_copy[length] = '\0';
+
+    SCALAR_NODE_INIT(*node, tag_copy, value_copy, length, style, mark, mark);
+
+    return 1;
+
+error:
+    yaml_free(tag_copy);
+    yaml_free(value_copy);
+
+    return 0;
+}
+
+/*
+ * Create a SEQUENCE node.
+ */
+
+YAML_DECLARE(int)
+yaml_sequence_node_initialize(yaml_node_t *node,
+        yaml_char_t *tag, yaml_sequence_style_t style)
+{
+    struct {
+        yaml_error_type_t error;
+    } context;
+    yaml_mark_t mark = { 0, 0, 0 };
+    yaml_char_t *tag_copy = NULL;
+    struct {
+        yaml_node_item_t *start;
+        yaml_node_item_t *end;
+        yaml_node_item_t *top;
+    } items = { NULL, NULL, NULL };
+
+    assert(node);   /* Non-NULL node object is expected. */
+
+    if (!tag) {
+        tag = YAML_DEFAULT_SEQUENCE_TAG;
+    }
+
+    if (tag) {
+        if (!yaml_check_utf8(tag, strlen((char *)tag))) goto error;
+        tag_copy = yaml_strdup(tag);
+        if (!tag_copy) goto error;
+    }
+
+    if (!STACK_INIT(context, items, INITIAL_STACK_SIZE)) goto error;
+
+    SEQUENCE_NODE_INIT(*node, tag_copy, items.start, item.end, style,
+            mark, mark);
+
+    return 1;
+
+error:
+    yaml_free(tag_copy);
+    STACK_DEL(context, items);
+
+    return 0;
+}
+
+/*
+ * Create a MAPPING node.
+ */
+
+YAML_DECLARE(int)
+yaml_mapping_node_initialize(yaml_node_t *node,
+        yaml_char_t *tag, yaml_mapping_style_t style)
+{
+    struct {
+        yaml_error_type_t error;
+    } context;
+    yaml_mark_t mark = { 0, 0, 0 };
+    yaml_char_t *tag_copy = NULL;
+    struct {
+        yaml_node_pair_t *start;
+        yaml_node_pair_t *end;
+        yaml_node_pair_t *top;
+    } pairs = { NULL, NULL, NULL };
+
+    assert(node);   /* Non-NULL node object is expected. */
+
+    if (!tag) {
+        tag = YAML_DEFAULT_MAPPING_TAG;
+    }
+
+    if (tag) {
+        if (!yaml_check_utf8(tag, strlen((char *)tag))) goto error;
+        tag_copy = yaml_strdup(tag);
+        if (!tag_copy) goto error;
+    }
+
+    if (!STACK_INIT(context, pairs, INITIAL_STACK_SIZE)) goto error;
+
+    MAPPING_NODE_INIT(*node, tag_copy, pairs.start, pairs.end, style,
+            mark, mark);
+
+    return 1;
+
+error:
+    yaml_free(tag_copy);
+    STACK_DEL(context, pairs);
+
+    return 0;
+}
+
+/*
+ * Delete a node and its subnodes.
+ */
+
+YAML_DECLARE(void)
+yaml_node_delete(yaml_node_t *node)
+{
+    struct {
+        yaml_error_type_t error;
+    } context;
+    struct {
+        yaml_node_item_t *start;
+        yaml_node_item_t *end;
+        yaml_node_item_t *head;
+        yaml_node_item_t *tail;
+    } queue = { NULL, NULL, NULL, NULL };
+
+    assert(node);   /* Non-NULL node object is expected. */
+
+    if (node->type == YAML_SCALAR_NODE) {
+        yaml_free(node->data.scalar.tag);
+        yaml_free(node->data.scalar.value);
+        memset(node, 0, sizeof(yaml_node_t));
+        return;
+    }
+
+    if (!QUEUE_INIT(context, queue, INITIAL_QUEUE_SIZE)) goto error;
+    if (!ENQUEUE(context, queue, node)) goto error;
+
+    while (!QUEUE_EMPTY(context, queue)) {
+        yaml_node_t node = DEQUEUE(context, queue);
+        if (node.type == YAML_SCALAR_NODE) {
+            if (!node->reference)
+        }
+        if (node->type == YAML_SEQUENCE_NODE) {
+            while (!STACK_EMPTY(context, node->data.sequence.items)) {
+                yaml_node_t *item = 
+            }
+        }
+    }
+}
+
+#endif
 
