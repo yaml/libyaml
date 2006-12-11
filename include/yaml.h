@@ -406,9 +406,9 @@ typedef struct {
 
     } data;
 
-    /** The beginning of the token. */
+    /** The beginning of the event. */
     yaml_mark_t start_mark;
-    /** The end of the token. */
+    /** The end of the event. */
     yaml_mark_t end_mark;
 
 } yaml_event_t;
@@ -586,6 +586,304 @@ yaml_mapping_end_event_initialize(yaml_event_t *event);
 YAML_DECLARE(void)
 yaml_event_delete(yaml_event_t *event);
 
+/**
+ * @defgroup nodes Nodes
+ * @{
+ */
+
+#define YAML_NULL_TAG       "tag:yaml.org,2002:null"
+#define YAML_BOOL_TAG       "tag:yaml.org,2002:bool"
+#define YAML_STR_TAG        "tag:yaml.org,2002:str"
+#define YAML_INT_TAG        "tag:yaml.org,2002:int"
+#define YAML_FLOAT_TAG      "tag:yaml.org,2002:float"
+#define YAML_TIMESTAMP_TAG  "tag:yaml.org,2002:timestamp"
+
+#define YAML_SEQ_TAG        "tag:yaml.org,2002:seq"
+#define YAML_MAP_TAG        "tag:yaml.org,2002:map"
+
+#define YAML_DEFAULT_SCALAR_TAG     YAML_STR_TAG
+#define YAML_DEFAULT_SEQUENCE_TAG   YAML_SEQ_TAG
+#define YAML_DEFAULT_MAPPING_STYLE  YAML_MAP_TAG
+
+/** Node types. */
+typedef enum {
+    YAML_NO_NODE,
+
+    YAML_SCALAR_NODE,
+    YAML_SEQUENCE_NODE,
+    YAML_MAPPING_NODE
+} yaml_node_type_t;
+
+#if 0
+
+typedef struct _yaml_node_t yaml_node_item_t;
+
+typedef struct {
+    yaml_node_item_t key;
+    yaml_node_item_t value;
+} yaml_node_pair_t;
+
+/** The node structure. */
+typedef struct _yaml_node_t {
+
+    /** The node type. */
+    yaml_node_type_t type;
+
+    /* The reference counter. */
+    int references;
+
+    /** The node data. */
+    union {
+        
+        /** The scalar parameters (for @c YAML_SCALAR_NODE). */
+        struct {
+            /** The tag. */
+            yaml_char_t *tag;
+            /** The scalar value. */
+            yaml_char_t *value;
+            /** The length of the scalar value. */
+            size_t length;
+            /** The scalar style. */
+            yaml_scalar_style_t style;
+        } scalar;
+
+        /** The sequence parameters (for @c YAML_SEQUENCE_NODE). */
+        struct {
+            /** The tag. */
+            yaml_char_t *tag;
+            /** The stack of sequence items. */
+            struct {
+                /** The beginning of the stack. */
+                struct yaml_node_item_t *start;
+                /** The end of the stack. */
+                struct yaml_node_item_t *end;
+                /** The top of the stack. */
+                struct yaml_node_item_t *top;
+            } items;
+            /** The sequence style. */
+            yaml_sequence_style_t style;
+        } sequence;
+
+        /** The mapping parameters (for @c YAML_MAPPING_NODE). */
+        struct {
+            /** The tag. */
+            yaml_char_t *tag;
+            /** The stack of mapping pairs. */
+            struct {
+                /** The beginning of the stack. */
+                struct yaml_node_pair_t *start;
+                /** The end of the stack. */
+                struct yaml_node_pair_t *end;
+                /** The top of the stack. */
+                struct yaml_node_pair_t *top;
+            } pairs;
+            /** The mapping style. */
+            yaml_mapping_style_t style;
+        } mapping;
+
+    } data;
+
+    /** The beginning of the node. */
+    yaml_mark_t start_mark;
+    /** The end of the node. */
+    yaml_mark_t end_mark;
+
+} yaml_node_t;
+
+/**
+ * Create a SCALAR node.
+ *
+ * The @a style argument may be ignored by the emitter.
+ *
+ * @param[out]  node            An empty node object.
+ * @param[in]   tag             The scalar tag.
+ * @param[in]   value           The scalar value.
+ * @param[in]   length          The length of the scalar value.
+ * @param[in]   style           The scalar style.
+ *
+ * @returns @c 1 if the function succeeded, @c 0 on error.
+ */
+
+YAML_DECLARE(int)
+yaml_scalar_node_initialize(yaml_node_t *node,
+        yaml_char_t *tag, yaml_char_t *value, int length,
+        yaml_scalar_style_t style);
+
+/**
+ * Create a SEQUENCE node.
+ *
+ * The @a style argument may be ignored by the emitter.
+ *
+ * @param[out]  node        An empty node object.
+ * @param[in]   tag         The sequence tag.
+ * @param[in]   style       The sequence style.
+ *
+ * @returns @c 1 if the function succeeded, @c 0 on error.
+ */
+
+YAML_DECLARE(int)
+yaml_sequence_node_initialize(yaml_node_t *node,
+        yaml_char_t *tag, yaml_sequence_style_t style);
+
+/**
+ * Add an item to a SEQUENCE node
+ *
+ * @param[out]  node        A sequence node.
+ * @param[in]   item        An item node.
+*
+ * @returns @c 1 if the function succeeded, @c 0 on error.
+ */
+
+YAML_DECLARE(int)
+yaml_sequence_node_add_item(yaml_node_t *node, yaml_node_t *item)
+
+/**
+ * Create a SCALAR node and add it to a SEQUENCE node.
+ *
+ * @param[out]  node        A sequence node.
+ * @param[in]   tag         The scalar tag.
+ * @param[in]   value       The scalar value.
+ * @param[in]   length      The length of the scalar value.
+ * @param[in]   style       The scalar style.
+ *
+ * @returns @c 1 if the function succeeded, @c 0 on error.
+ */
+
+YAML_DECLARE(int)
+yaml_sequence_node_add_scalar_item(yaml_node_t *node,
+        yaml_char_t *tag, yaml_char_t *value, int length,
+        yaml_scalar_style_t style);
+
+/**
+ * Get the number of subnodes of a SEQUENCE node.
+ *
+ * @param[in]  node         A sequence node.
+ *
+ * @returns the number of subnodes.
+ */
+
+YAML_DECLARE(size_t)
+yaml_sequence_node_get_length(yaml_node_t *node);
+
+/**
+ * Get a subnode of a SEQUENCE node.
+ *
+ * @param[in]   node        A sequence node.
+ * @param[in]   index       The index of a subnode.
+ * @param[out]  item        A subnode.
+ */
+
+YAML_DECLARE(void)
+yaml_sequence_node_get_item(yaml_node_t *node, size_t index,
+        yaml_node_t *item);
+
+/**
+ * Create a MAPPING node.
+ *
+ * The @a style argument may be ignored by the emitter.
+ *
+ * @param[out]  node        An empty node object.
+ * @param[in]   tag         The mapping tag.
+ * @param[in]   style       The mapping style.
+ *
+ * @returns @c 1 if the function succeeded, @c 0 on error.
+ */
+
+YAML_DECLARE(int)
+yaml_mapping_node_initialize(yaml_node_t *node,
+        yaml_char_t *tag, yaml_mapping_style_t style);
+
+/**
+ * Add a key/value pair of nodes to a MAPPING node.
+ *
+ * @param[out]  node        A mapping node.
+ * @param[in]   key         A key node.
+ * @param[in]   value       A value node.
+ *
+ * @returns @c 1 if the function succeeded, @c 0 on error.
+ */
+
+YAML_DECLARE(int)
+yaml_mapping_node_add_pair(yaml_node_t *node,
+        yaml_node_t *key, yaml_node_t *value)
+
+/**
+ * Create a scalar key and add the key/value pair to a MAPPING node.
+ *
+ * @param[out]  node        A mapping node.
+ * @param[in]   key_tag     The key node tag.
+ * @param[in]   key_value   The key node value.
+ * @param[in]   key_length  The length of the key node value.
+ * @param[in]   key_style   The key node style.
+ * @param[in]   value       A value node.
+ *
+ * @returns @c 1 if the function succeeded, @c 0 on error.
+ */
+
+YAML_DECLARE(int)
+yaml_sequence_node_add_scalar_key_pair(yaml_node_t *node,
+        yaml_char_t *key_tag, yaml_char_t *key_value, int key_length,
+        yaml_scalar_style_t key_style,
+        yaml_node_t *value);
+
+/**
+ * Create a scalar key/value nodes and add the pair to a MAPPING node.
+ *
+ * @param[out]  node            A mapping node.
+ * @param[in]   key_tag         The key node tag.
+ * @param[in]   key_value       The key node value.
+ * @param[in]   key_length      The length of the key node value.
+ * @param[in]   key_style       The key node style.
+ * @param[in]   value_tag       The value node tag.
+ * @param[in]   value_value     The value node value.
+ * @param[in]   value_length    The length of the value node value.
+ * @param[in]   value_style     The value node style.
+ *
+ * @returns @c 1 if the function succeeded, @c 0 on error.
+ */
+
+YAML_DECLARE(int)
+yaml_sequence_node_add_scalar_pair(yaml_node_t *node,
+        yaml_char_t *key_tag, yaml_char_t *key_value, int key_length,
+        yaml_scalar_style_t key_style,
+        yaml_char_t *value_tag, yaml_char_t *value_value, int value_length,
+        yaml_scalar_style_t value_style);
+
+/**
+ * Get the number of subnode pairs of a MAPPING node.
+ *
+ * @param[in]  node         A mapping node.
+ *
+ * @returns the number of pairs.
+ */
+
+YAML_DECLARE(size_t)
+yaml_mapping_node_get_length(yaml_node_t *node);
+
+/**
+ * Get a subnode of a SEQUENCE node.
+ *
+ * @param[in]   node        A sequence node.
+ * @param[in]   index       The index of a subnode.
+ * @param[out]  key         The key subnode.
+ * @param[out]  value       The value subnode.
+ */
+
+YAML_DECLARE(void)
+yaml_mapping_node_get_pair(yaml_node_t *node, size_t index,
+        yaml_node_t *key, yaml_node_t *value);
+
+/**
+ * Delete a node and its subnodes.
+ *
+ * @param[out]  node    A node object.
+ */
+
+YAML_DECLARE(void)
+yaml_node_delete(yaml_node_t *node);
+
+#endif
+
 /** @} */
 
 /**
@@ -711,11 +1009,11 @@ typedef struct {
         /** String input data. */
         struct {
             /** The string start pointer. */
-            unsigned char *start;
+            const unsigned char *start;
             /** The string end pointer. */
-            unsigned char *end;
+            const unsigned char *end;
             /** The string current position. */
-            unsigned char *current;
+            const unsigned char *current;
         } string;
 
         /** File input data. */
@@ -908,7 +1206,7 @@ yaml_parser_delete(yaml_parser_t *parser);
 
 YAML_DECLARE(void)
 yaml_parser_set_input_string(yaml_parser_t *parser,
-        unsigned char *input, size_t size);
+        const unsigned char *input, size_t size);
 
 /**
  * Set a file input.

@@ -579,3 +579,39 @@ yaml_queue_extend(void **start, void **head, void **tail, void **end);
 #define MAPPING_END_EVENT_INIT(event,start_mark,end_mark)                       \
     (EVENT_INIT((event),YAML_MAPPING_END_EVENT,(start_mark),(end_mark)))
 
+/*
+ * Node initializers.
+ */
+
+#define NODE_INIT(node,node_type,node_start_mark,node_end_mark)                 \
+    (memset(&(node), 0, sizeof(yaml_node_t)),                                   \
+     (node).type = (node_type),                                                 \
+     (node).start_mark = (node_start_mark),                                     \
+     (node).end_mark = (node_end_mark))
+
+#define SCALAR_NODE_INIT(node,node_tag,node_value,node_length,                  \
+        node_style,start_mark,end_mark)                                         \
+    (EVENT_INIT((node),YAML_SCALAR_NODE,(start_mark),(end_mark)),               \
+     (node).data.scalar.tag = (node_tag),                                       \
+     (node).data.scalar.value = (node_value),                                   \
+     (node).data.scalar.length = (node_length),                                 \
+     (node).data.scalar.style = (node_style))
+
+#define SEQUENCE_NODE_INIT(node,node_tag,node_items_start,node_items_end,       \
+        node_style,start_mark,end_mark)                                         \
+    (NODE_INIT((node),YAML_SEQUENCE_NODE,(start_mark),(end_mark)),             \
+     (node).data.sequence.tag = (node_tag),                                     \
+     (node).data.sequence.items.start = (node_items_start),                     \
+     (node).data.sequence.items.end = (node_items_end),                         \
+     (node).data.sequence.items.top = (node_items_start),                       \
+     (node).data.sequence.style = (node_style))
+
+#define MAPPING_NODE_INIT(node,node_tag,node_pairs_start,node_pairs_end,        \
+        node_style,start_mark,end_mark)                                         \
+    (NODE_INIT((node),YAML_MAPPING_NODE,(start_mark),(end_mark)),               \
+     (node).data.mapping.tag = (node_tag),                                      \
+     (node).data.mapping.pairs.start = (node_pairs_start),                      \
+     (node).data.mapping.pairs.end = (node_pairs_end),                          \
+     (node).data.mapping.pairs.top = (node_pairs_start),                        \
+     (node).data.mapping.style = (node_style))
+
