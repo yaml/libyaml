@@ -1324,6 +1324,13 @@ yaml_parser_fetch_stream_end(yaml_parser_t *parser)
 {
     yaml_token_t token;
 
+    /* Force new line. */
+
+    if (parser->mark.column != 0) {
+        parser->mark.column = 0;
+        parser->mark.line ++;
+    }
+
     /* Reset the indentation level. */
 
     if (!yaml_parser_unroll_indent(parser, -1))
