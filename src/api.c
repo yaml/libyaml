@@ -399,6 +399,7 @@ yaml_emitter_delete(yaml_emitter_t *emitter)
         yaml_free(tag_directive.prefix);
     }
     STACK_DEL(emitter, emitter->tag_directives);
+    yaml_free(emitter->anchors);
 
     memset(emitter, 0, sizeof(yaml_emitter_t));
 }
@@ -1019,23 +1020,187 @@ yaml_event_delete(yaml_event_t *event)
     memset(event, 0, sizeof(yaml_event_t));
 }
 
-#if 0
-
 /*
- * Create a SCALAR node.
+ * Create a document object.
  */
 
 YAML_DECLARE(int)
-yaml_scalar_node_initialize(yaml_node_t *node,
+yaml_document_initialize(yaml_document_t *document,
+        yaml_version_directive_t *version_directive,
+        yaml_tag_directive_t *tag_directives_start,
+        yaml_tag_directive_t *tag_directives_end,
+        int start_implicit, int end_implicit)
+{
+    struct {
+        yaml_error_type_t error;
+    } context;
+    struct {
+        yaml_node_t *start;
+        yaml_node_t *end;
+        yaml_node_t *top;
+    } nodes = { NULL, NULL, NULL };
+    yaml_version_directive_t *version_directive_copy = NULL;
+    struct {
+        yaml_tag_directive_t *start;
+        yaml_tag_directive_t *end;
+        yaml_tag_directive_t *top;
+    } tag_directives_copy = { NULL, NULL, NULL };
+    yaml_tag_directive_t value = { NULL, NULL };
+    yaml_mark_t mark = { 0, 0, 0 };
+
+    assert(document);       /* Non-NULL document object is expected. */
+    assert((tag_directives_start && tag_directives_end) ||
+            (tag_directives_start == tag_directives_end));
+                            /* Valid tag directives are expected. */
+
+    if (!STACK_INIT(&context, nodes, INITIAL_STACK_SIZE)) goto error;
+
+    if (version_directive) {
+        version_directive_copy = yaml_malloc(sizeof(yaml_version_directive_t));
+        if (!version_directive_copy) goto error;
+        version_directive_copy->major = version_directive->major;
+        version_directive_copy->minor = version_directive->minor;
+    }
+
+    if (tag_directives_start != tag_directives_end) {
+        yaml_tag_directive_t *tag_directive;
+        if (!STACK_INIT(&context, tag_directives_copy, INITIAL_STACK_SIZE))
+            goto error;
+        for (tag_directive = tag_directives_start;
+                tag_directive != tag_directives_end; tag_directive ++) {
+            assert(tag_directive->handle);
+            assert(tag_directive->prefix);
+            if (!yaml_check_utf8(tag_directive->handle,
+                        strlen((char *)tag_directive->handle)))
+                goto error;
+            if (!yaml_check_utf8(tag_directive->prefix,
+                        strlen((char *)tag_directive->prefix)))
+                goto error;
+            value.handle = yaml_strdup(tag_directive->handle);
+            value.prefix = yaml_strdup(tag_directive->prefix);
+            if (!value.handle || !value.prefix) goto error;
+            if (!PUSH(&context, tag_directives_copy, value))
+                goto error;
+            value.handle = NULL;
+            value.prefix = NULL;
+        }
+    }
+
+    DOCUMENT_INIT(*document, nodes.start, nodes.end, version_directive_copy,
+            tag_directives_copy.start, tag_directives_copy.top,
+            start_implicit, end_implicit, mark, mark);
+
+    return 1;
+
+error:
+    STACK_DEL(&context, nodes);
+    yaml_free(version_directive_copy);
+    while (!STACK_EMPTY(&context, tag_directives_copy)) {
+        yaml_tag_directive_t value = POP(&context, tag_directives_copy);
+        yaml_free(value.handle);
+        yaml_free(value.prefix);
+    }
+    STACK_DEL(&context, tag_directives_copy);
+    yaml_free(value.handle);
+    yaml_free(value.prefix);
+
+    return 0;
+}
+
+/*
+ * Destroy a document object.
+ */
+
+YAML_DECLARE(void)
+yaml_document_delete(yaml_document_t *document)
+{
+    struct {
+        yaml_error_type_t error;
+    } context;
+    yaml_tag_directive_t *tag_directive;
+
+    assert(document);   /* Non-NULL document object is expected. */
+
+    while (!STACK_EMPTY(&context, document->nodes)) {
+        yaml_node_t node = POP(&context, document->nodes);
+        yaml_free(node.tag);
+        switch (node.type) {
+            case YAML_SCALAR_NODE:
+                yaml_free(node.data.scalar.value);
+                break;
+            case YAML_SEQUENCE_NODE:
+                STACK_DEL(&context, node.data.sequence.items);
+                break;
+            case YAML_MAPPING_NODE:
+                STACK_DEL(&context, node.data.mapping.pairs);
+                break;
+            default:
+                assert(0);  /* Should not happen. */
+        }
+    }
+    STACK_DEL(&context, document->nodes);
+
+    yaml_free(document->version_directive);
+    for (tag_directive = document->tag_directives.start;
+            tag_directive != document->tag_directives.end;
+            tag_directive++) {
+        yaml_free(tag_directive->handle);
+        yaml_free(tag_directive->prefix);
+    }
+    yaml_free(document->tag_directives.start);
+
+    memset(document, 0, sizeof(yaml_document_t));
+}
+
+/**
+ * Get a document node.
+ */
+
+YAML_DECLARE(yaml_node_t *)
+yaml_document_get_node(yaml_document_t *document, int node)
+{
+    assert(document);   /* Non-NULL document object is expected. */
+
+    if (node > 0 && document->nodes.start + node <= document->nodes.top) {
+        return document->nodes.start + node - 1;
+    }
+    return NULL;
+}
+
+/**
+ * Get the root object.
+ */
+
+YAML_DECLARE(yaml_node_t *)
+yaml_document_get_root_node(yaml_document_t *document)
+{
+    assert(document);   /* Non-NULL document object is expected. */
+
+    if (document->nodes.top != document->nodes.start) {
+        return document->nodes.start;
+    }
+    return NULL;
+}
+
+/*
+ * Add a scalar node to a document.
+ */
+
+YAML_DECLARE(int)
+yaml_document_add_scalar(yaml_document_t *document,
         yaml_char_t *tag, yaml_char_t *value, int length,
         yaml_scalar_style_t style)
 {
+    struct {
+        yaml_error_type_t error;
+    } context;
     yaml_mark_t mark = { 0, 0, 0 };
     yaml_char_t *tag_copy = NULL;
     yaml_char_t *value_copy = NULL;
+    yaml_node_t node;
 
-    assert(node);       /* Non-NULL node object is expected. */
-    assert(value);      /* Non-NULL anchor is expected. */
+    assert(document);   /* Non-NULL document object is expected. */
+    assert(value);      /* Non-NULL value is expected. */
 
     if (!tag) {
         tag = YAML_DEFAULT_SCALAR_TAG;
@@ -1055,9 +1220,10 @@ yaml_scalar_node_initialize(yaml_node_t *node,
     memcpy(value_copy, value, length);
     value_copy[length] = '\0';
 
-    SCALAR_NODE_INIT(*node, tag_copy, value_copy, length, style, mark, mark);
+    SCALAR_NODE_INIT(node, tag_copy, value_copy, length, style, mark, mark);
+    if (!PUSH(&context, document->nodes, node)) goto error;
 
-    return 1;
+    return document->nodes.top - document->nodes.start;
 
 error:
     yaml_free(tag_copy);
@@ -1067,11 +1233,11 @@ error:
 }
 
 /*
- * Create a SEQUENCE node.
+ * Add a sequence node to a document.
  */
 
 YAML_DECLARE(int)
-yaml_sequence_node_initialize(yaml_node_t *node,
+yaml_document_add_sequence(yaml_document_t *document,
         yaml_char_t *tag, yaml_sequence_style_t style)
 {
     struct {
@@ -1084,39 +1250,39 @@ yaml_sequence_node_initialize(yaml_node_t *node,
         yaml_node_item_t *end;
         yaml_node_item_t *top;
     } items = { NULL, NULL, NULL };
+    yaml_node_t node;
 
-    assert(node);   /* Non-NULL node object is expected. */
+    assert(document);   /* Non-NULL document object is expected. */
 
     if (!tag) {
         tag = YAML_DEFAULT_SEQUENCE_TAG;
     }
 
-    if (tag) {
-        if (!yaml_check_utf8(tag, strlen((char *)tag))) goto error;
-        tag_copy = yaml_strdup(tag);
-        if (!tag_copy) goto error;
-    }
+    if (!yaml_check_utf8(tag, strlen((char *)tag))) goto error;
+    tag_copy = yaml_strdup(tag);
+    if (!tag_copy) goto error;
 
-    if (!STACK_INIT(context, items, INITIAL_STACK_SIZE)) goto error;
+    if (!STACK_INIT(&context, items, INITIAL_STACK_SIZE)) goto error;
 
-    SEQUENCE_NODE_INIT(*node, tag_copy, items.start, item.end, style,
-            mark, mark);
+    SEQUENCE_NODE_INIT(node, tag_copy, items.start, items.end,
+            style, mark, mark);
+    if (!PUSH(&context, document->nodes, node)) goto error;
 
-    return 1;
+    return document->nodes.top - document->nodes.start;
 
 error:
+    STACK_DEL(&context, items);
     yaml_free(tag_copy);
-    STACK_DEL(context, items);
 
     return 0;
 }
 
 /*
- * Create a MAPPING node.
+ * Add a mapping node to a document.
  */
 
 YAML_DECLARE(int)
-yaml_mapping_node_initialize(yaml_node_t *node,
+yaml_document_add_mapping(yaml_document_t *document,
         yaml_char_t *tag, yaml_mapping_style_t style)
 {
     struct {
@@ -1129,74 +1295,89 @@ yaml_mapping_node_initialize(yaml_node_t *node,
         yaml_node_pair_t *end;
         yaml_node_pair_t *top;
     } pairs = { NULL, NULL, NULL };
+    yaml_node_t node;
 
-    assert(node);   /* Non-NULL node object is expected. */
+    assert(document);   /* Non-NULL document object is expected. */
 
     if (!tag) {
         tag = YAML_DEFAULT_MAPPING_TAG;
     }
 
-    if (tag) {
-        if (!yaml_check_utf8(tag, strlen((char *)tag))) goto error;
-        tag_copy = yaml_strdup(tag);
-        if (!tag_copy) goto error;
-    }
+    if (!yaml_check_utf8(tag, strlen((char *)tag))) goto error;
+    tag_copy = yaml_strdup(tag);
+    if (!tag_copy) goto error;
 
-    if (!STACK_INIT(context, pairs, INITIAL_STACK_SIZE)) goto error;
+    if (!STACK_INIT(&context, pairs, INITIAL_STACK_SIZE)) goto error;
 
-    MAPPING_NODE_INIT(*node, tag_copy, pairs.start, pairs.end, style,
-            mark, mark);
+    MAPPING_NODE_INIT(node, tag_copy, pairs.start, pairs.end,
+            style, mark, mark);
+    if (!PUSH(&context, document->nodes, node)) goto error;
 
-    return 1;
+    return document->nodes.top - document->nodes.start;
 
 error:
+    STACK_DEL(&context, pairs);
     yaml_free(tag_copy);
-    STACK_DEL(context, pairs);
 
     return 0;
 }
 
 /*
- * Delete a node and its subnodes.
+ * Append an item to a sequence node.
  */
 
-YAML_DECLARE(void)
-yaml_node_delete(yaml_node_t *node)
+YAML_DECLARE(int)
+yaml_document_append_sequence_item(yaml_document_t *document,
+        int sequence, int item)
 {
     struct {
         yaml_error_type_t error;
     } context;
-    struct {
-        yaml_node_item_t *start;
-        yaml_node_item_t *end;
-        yaml_node_item_t *head;
-        yaml_node_item_t *tail;
-    } queue = { NULL, NULL, NULL, NULL };
 
-    assert(node);   /* Non-NULL node object is expected. */
+    assert(document);       /* Non-NULL document is required. */
+    assert(sequence > 0
+            && document->nodes.start + sequence <= document->nodes.top);
+                            /* Valid sequence id is required. */
+    assert(document->nodes.start[sequence-1].type == YAML_SEQUENCE_NODE);
+                            /* A sequence node is required. */
+    assert(item > 0 && document->nodes.start + item <= document->nodes.top);
+                            /* Valid item id is required. */
 
-    if (node->type == YAML_SCALAR_NODE) {
-        yaml_free(node->data.scalar.tag);
-        yaml_free(node->data.scalar.value);
-        memset(node, 0, sizeof(yaml_node_t));
-        return;
-    }
+    if (!PUSH(&context,
+                document->nodes.start[sequence-1].data.sequence.items, item))
+        return 0;
 
-    if (!QUEUE_INIT(context, queue, INITIAL_QUEUE_SIZE)) goto error;
-    if (!ENQUEUE(context, queue, node)) goto error;
-
-    while (!QUEUE_EMPTY(context, queue)) {
-        yaml_node_t node = DEQUEUE(context, queue);
-        if (node.type == YAML_SCALAR_NODE) {
-            if (!node->reference)
-        }
-        if (node->type == YAML_SEQUENCE_NODE) {
-            while (!STACK_EMPTY(context, node->data.sequence.items)) {
-                yaml_node_t *item = 
-            }
-        }
-    }
+    return 1;
 }
 
-#endif
+/*
+ * Append a pair of a key and a value to a mapping node.
+ */
+
+YAML_DECLARE(int)
+yaml_document_append_mapping_pair(yaml_document_t *document,
+        int mapping, int key, int value)
+{
+    struct {
+        yaml_error_type_t error;
+    } context;
+    yaml_node_pair_t pair = { key, value };
+
+    assert(document);       /* Non-NULL document is required. */
+    assert(mapping > 0
+            && document->nodes.start + mapping <= document->nodes.top);
+                            /* Valid mapping id is required. */
+    assert(document->nodes.start[mapping-1].type == YAML_MAPPING_NODE);
+                            /* A mapping node is required. */
+    assert(key > 0 && document->nodes.start + key <= document->nodes.top);
+                            /* Valid key id is required. */
+    assert(value > 0 && document->nodes.start + value <= document->nodes.top);
+                            /* Valid value id is required. */
+
+    if (!PUSH(&context,
+                document->nodes.start[mapping-1].data.mapping.pairs, pair))
+        return 0;
+
+    return 1;
+}
 

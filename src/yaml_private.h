@@ -580,27 +580,44 @@ yaml_queue_extend(void **start, void **head, void **tail, void **end);
     (EVENT_INIT((event),YAML_MAPPING_END_EVENT,(start_mark),(end_mark)))
 
 /*
+ * Document initializer.
+ */
+
+#define DOCUMENT_INIT(document,document_nodes_start,document_nodes_end,         \
+        document_version_directive,document_tag_directives_start,               \
+        document_tag_directives_end,document_start_implicit,                    \
+        document_end_implicit,start_mark,end_mark)                              \
+    (memset(&(document), 0, sizeof(yaml_document_t)),                           \
+     (document).nodes.start = (document_nodes_start),                           \
+     (document).nodes.end = (document_nodes_end),                               \
+     (document).nodes.top = (document_nodes_start),                             \
+     (document).version_directive = (document_version_directive),               \
+     (document).tag_directives.start = (document_tag_directives_start),         \
+     (document).tag_directives.end = (document_tag_directives_end),             \
+     (document).start_implicit = (document_start_implicit),                     \
+     (document).end_implicit = (document_end_implicit))
+
+/*
  * Node initializers.
  */
 
-#define NODE_INIT(node,node_type,node_start_mark,node_end_mark)                 \
+#define NODE_INIT(node,node_type,node_tag,node_start_mark,node_end_mark)        \
     (memset(&(node), 0, sizeof(yaml_node_t)),                                   \
      (node).type = (node_type),                                                 \
+     (node).tag = (node_tag),                                                   \
      (node).start_mark = (node_start_mark),                                     \
      (node).end_mark = (node_end_mark))
 
 #define SCALAR_NODE_INIT(node,node_tag,node_value,node_length,                  \
         node_style,start_mark,end_mark)                                         \
-    (EVENT_INIT((node),YAML_SCALAR_NODE,(start_mark),(end_mark)),               \
-     (node).data.scalar.tag = (node_tag),                                       \
+    (NODE_INIT((node),YAML_SCALAR_NODE,(node_tag),(start_mark),(end_mark)),     \
      (node).data.scalar.value = (node_value),                                   \
      (node).data.scalar.length = (node_length),                                 \
      (node).data.scalar.style = (node_style))
 
 #define SEQUENCE_NODE_INIT(node,node_tag,node_items_start,node_items_end,       \
         node_style,start_mark,end_mark)                                         \
-    (NODE_INIT((node),YAML_SEQUENCE_NODE,(start_mark),(end_mark)),             \
-     (node).data.sequence.tag = (node_tag),                                     \
+    (NODE_INIT((node),YAML_SEQUENCE_NODE,(node_tag),(start_mark),(end_mark)),   \
      (node).data.sequence.items.start = (node_items_start),                     \
      (node).data.sequence.items.end = (node_items_end),                         \
      (node).data.sequence.items.top = (node_items_start),                       \
@@ -608,8 +625,7 @@ yaml_queue_extend(void **start, void **head, void **tail, void **end);
 
 #define MAPPING_NODE_INIT(node,node_tag,node_pairs_start,node_pairs_end,        \
         node_style,start_mark,end_mark)                                         \
-    (NODE_INIT((node),YAML_MAPPING_NODE,(start_mark),(end_mark)),               \
-     (node).data.mapping.tag = (node_tag),                                      \
+    (NODE_INIT((node),YAML_MAPPING_NODE,(node_tag),(start_mark),(end_mark)),    \
      (node).data.mapping.pairs.start = (node_pairs_start),                      \
      (node).data.mapping.pairs.end = (node_pairs_end),                          \
      (node).data.mapping.pairs.top = (node_pairs_start),                        \
