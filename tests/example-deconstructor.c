@@ -336,67 +336,67 @@ main(int argc, char *argv[])
                             tag != input_event.data.document_start.tag_directives.end;
                             tag ++)
                     {
-                            /* Write '{'. */
+                        /* Write '{'. */
 
-                            if (!yaml_mapping_start_event_initialize(&output_event,
-                                        NULL, "tag:yaml.org,2002:map", 1,
-                                        YAML_FLOW_MAPPING_STYLE))
-                                goto event_error;
-                            if (!yaml_emitter_emit(&emitter, &output_event))
-                                goto emitter_error;
-
-                            /* Write 'handle'. */
-
-                            if (!yaml_scalar_event_initialize(&output_event,
-                                        NULL, "tag:yaml.org,2002:str", "handle", -1,
-                                        1, 1, YAML_PLAIN_SCALAR_STYLE))
-                                goto event_error;
-                            if (!yaml_emitter_emit(&emitter, &output_event))
-                                goto emitter_error;
-
-                            /* Write the tag directive handle. */
-
-                            if (!yaml_scalar_event_initialize(&output_event,
-                                        NULL, "tag:yaml.org,2002:str",
-                                        tag->handle, -1,
-                                        0, 1, YAML_DOUBLE_QUOTED_SCALAR_STYLE))
-                                goto event_error;
-                            if (!yaml_emitter_emit(&emitter, &output_event))
-                                goto emitter_error;
-
-                            /* Write 'prefix'. */
-
-                            if (!yaml_scalar_event_initialize(&output_event,
-                                        NULL, "tag:yaml.org,2002:str", "prefix", -1,
-                                        1, 1, YAML_PLAIN_SCALAR_STYLE))
-                                goto event_error;
-                            if (!yaml_emitter_emit(&emitter, &output_event))
-                                goto emitter_error;
-
-                            /* Write the tag directive prefix. */
-
-                            if (!yaml_scalar_event_initialize(&output_event,
-                                        NULL, "tag:yaml.org,2002:str",
-                                        tag->prefix, -1,
-                                        0, 1, YAML_DOUBLE_QUOTED_SCALAR_STYLE))
-                                goto event_error;
-                            if (!yaml_emitter_emit(&emitter, &output_event))
-                                goto emitter_error;
-
-                            /* Write '}'. */
-
-                            if (!yaml_mapping_end_event_initialize(&output_event))
-                                goto event_error;
-                            if (!yaml_emitter_emit(&emitter, &output_event))
-                                goto emitter_error;
-                        }
-
-                        /* End a block sequence. */
-
-                        if (!yaml_sequence_end_event_initialize(&output_event))
+                        if (!yaml_mapping_start_event_initialize(&output_event,
+                                    NULL, "tag:yaml.org,2002:map", 1,
+                                    YAML_FLOW_MAPPING_STYLE))
                             goto event_error;
                         if (!yaml_emitter_emit(&emitter, &output_event))
                             goto emitter_error;
+
+                        /* Write 'handle'. */
+
+                        if (!yaml_scalar_event_initialize(&output_event,
+                                    NULL, "tag:yaml.org,2002:str", "handle", -1,
+                                    1, 1, YAML_PLAIN_SCALAR_STYLE))
+                            goto event_error;
+                        if (!yaml_emitter_emit(&emitter, &output_event))
+                            goto emitter_error;
+
+                        /* Write the tag directive handle. */
+
+                        if (!yaml_scalar_event_initialize(&output_event,
+                                    NULL, "tag:yaml.org,2002:str",
+                                    tag->handle, -1,
+                                    0, 1, YAML_DOUBLE_QUOTED_SCALAR_STYLE))
+                            goto event_error;
+                        if (!yaml_emitter_emit(&emitter, &output_event))
+                            goto emitter_error;
+
+                        /* Write 'prefix'. */
+
+                        if (!yaml_scalar_event_initialize(&output_event,
+                                    NULL, "tag:yaml.org,2002:str", "prefix", -1,
+                                    1, 1, YAML_PLAIN_SCALAR_STYLE))
+                            goto event_error;
+                        if (!yaml_emitter_emit(&emitter, &output_event))
+                            goto emitter_error;
+
+                        /* Write the tag directive prefix. */
+
+                        if (!yaml_scalar_event_initialize(&output_event,
+                                    NULL, "tag:yaml.org,2002:str",
+                                    tag->prefix, -1,
+                                    0, 1, YAML_DOUBLE_QUOTED_SCALAR_STYLE))
+                            goto event_error;
+                        if (!yaml_emitter_emit(&emitter, &output_event))
+                            goto emitter_error;
+
+                        /* Write '}'. */
+
+                        if (!yaml_mapping_end_event_initialize(&output_event))
+                            goto event_error;
+                        if (!yaml_emitter_emit(&emitter, &output_event))
+                            goto emitter_error;
+                    }
+
+                    /* End a block sequence. */
+
+                    if (!yaml_sequence_end_event_initialize(&output_event))
+                        goto event_error;
+                    if (!yaml_emitter_emit(&emitter, &output_event))
+                        goto emitter_error;
                 }
 
                 /* Write 'implicit'. */

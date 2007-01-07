@@ -18,7 +18,7 @@ m4_define([YAML_BUGS], [http://pyyaml.org/newticket?component=libyaml])
 #       else:
 #           YAML_AGE = 0
 m4_define([YAML_RELEASE], 0)
-m4_define([YAML_CURRENT], 0)
+m4_define([YAML_CURRENT], 1)
 m4_define([YAML_REVISION], 0)
 m4_define([YAML_AGE], 0)
 

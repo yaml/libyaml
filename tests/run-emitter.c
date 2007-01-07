@@ -256,7 +256,7 @@ main(int argc, char *argv[])
         int error = 0;
         int k;
         memset(buffer, 0, BUFFER_SIZE);
-        memset(events, 0, MAX_EVENTS);
+        memset(events, 0, MAX_EVENTS*sizeof(yaml_event_t));
 
         printf("[%d] Parsing, emitting, and parsing again '%s': ", number, argv[number]);
         fflush(stdout);
