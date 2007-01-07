@@ -72,7 +72,7 @@ yaml_emitter_flush(yaml_emitter_t *emitter)
         unsigned char octet;
         unsigned int width;
         unsigned int value;
-        int k;
+        size_t k;
 
         /* 
          * See the "reader.c" code for more details on UTF-8 encoding.  Note
