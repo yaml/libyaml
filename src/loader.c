@@ -225,11 +225,12 @@ static int
 yaml_parser_register_anchor(yaml_parser_t *parser,
         int index, yaml_char_t *anchor)
 {
-    yaml_alias_data_t data = { anchor, index,
-        parser->document->nodes.start[index-1].start_mark };
+    yaml_alias_data_t data = { anchor, index, { 0, 0, 0 } };
     yaml_alias_data_t *alias_data;
 
     if (!anchor) return 1;
+
+    data.mark = parser->document->nodes.start[index-1].start_mark;
 
     for (alias_data = parser->aliases.start;
             alias_data != parser->aliases.top; alias_data ++) {

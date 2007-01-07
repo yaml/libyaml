@@ -74,7 +74,7 @@ YAML_DECLARE(int)
 yaml_string_extend(yaml_char_t **start,
         yaml_char_t **pointer, yaml_char_t **end)
 {
-    void *new_start = yaml_realloc(*start, (*end - *start)*2);
+    yaml_char_t *new_start = yaml_realloc(*start, (*end - *start)*2);
 
     if (!new_start) return 0;
 
@@ -117,12 +117,12 @@ yaml_string_join(
 YAML_DECLARE(int)
 yaml_stack_extend(void **start, void **top, void **end)
 {
-    void *new_start = yaml_realloc(*start, (*end - *start)*2);
+    void *new_start = yaml_realloc(*start, ((char *)*end - (char *)*start)*2);
 
     if (!new_start) return 0;
 
-    *top = new_start + (*top - *start);
-    *end = new_start + (*end - *start)*2;
+    *top = (char *)new_start + ((char *)*top - (char *)*start);
+    *end = (char *)new_start + ((char *)*end - (char *)*start)*2;
     *start = new_start;
 
     return 1;
@@ -138,13 +138,14 @@ yaml_queue_extend(void **start, void **head, void **tail, void **end)
     /* Check if we need to resize the queue. */
 
     if (*start == *head && *tail == *end) {
-        void *new_start = yaml_realloc(*start, (*end - *start)*2);
+        void *new_start = yaml_realloc(*start,
+                ((char *)*end - (char *)*start)*2);
 
         if (!new_start) return 0;
 
-        *head = new_start + (*head - *start);
-        *tail = new_start + (*tail - *start);
-        *end = new_start + (*end - *start)*2;
+        *head = (char *)new_start + ((char *)*head - (char *)*start);
+        *tail = (char *)new_start + ((char *)*tail - (char *)*start);
+        *end = (char *)new_start + ((char *)*end - (char *)*start)*2;
         *start = new_start;
     }
 
@@ -152,9 +153,9 @@ yaml_queue_extend(void **start, void **head, void **tail, void **end)
 
     if (*tail == *end) {
         if (*head != *tail) {
-            memmove(*start, *head, *tail - *head);
+            memmove(*start, *head, (char *)*tail - (char *)*head);
         }
-        *tail -= *head - *start;
+        *tail = (char *)*tail - (char *)*head + (char *)*start;
         *head = *start;
     }
 
@@ -249,7 +250,8 @@ yaml_string_read_handler(void *data, unsigned char *buffer, size_t size,
         return 1;
     }
 
-    if (size > (parser->input.string.end - parser->input.string.current)) {
+    if (size > (size_t)(parser->input.string.end
+                - parser->input.string.current)) {
         size = parser->input.string.end - parser->input.string.current;
     }
 
@@ -624,7 +626,7 @@ yaml_check_utf8(yaml_char_t *start, size_t length)
         unsigned char octet;
         unsigned int width;
         unsigned int value;
-        int k;
+        size_t k;
 
         octet = pointer[0];
         width = (octet & 0x80) == 0x00 ? 1 :
@@ -1116,7 +1118,7 @@ yaml_document_delete(yaml_document_t *document)
 {
     struct {
         yaml_error_type_t error;
-    } context;
+    } context = { YAML_NO_ERROR };
     yaml_tag_directive_t *tag_directive;
 
     assert(document);   /* Non-NULL document object is expected. */
@@ -1380,4 +1382,5 @@ yaml_document_append_mapping_pair(yaml_document_t *document,
 
     return 1;
 }
+
 

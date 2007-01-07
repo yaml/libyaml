@@ -1419,7 +1419,7 @@ yaml_emitter_analyze_tag(yaml_emitter_t *emitter,
     for (tag_directive = emitter->tag_directives.start;
             tag_directive != emitter->tag_directives.top; tag_directive ++) {
         size_t prefix_length = strlen((char *)tag_directive->prefix);
-        if (prefix_length < (string.end - string.start)
+        if (prefix_length < (size_t)(string.end - string.start)
                 && strncmp((char *)tag_directive->prefix, (char *)string.start,
                     prefix_length) == 0)
         {
@@ -2026,7 +2026,7 @@ yaml_emitter_write_double_quoted_scalar(yaml_emitter_t *emitter,
             unsigned char octet;
             unsigned int width;
             unsigned int value;
-            int k;
+            size_t k;
 
             octet = string.pointer[0];
             width = (octet & 0x80) == 0x00 ? 1 :
