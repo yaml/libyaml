@@ -2026,7 +2026,7 @@ yaml_emitter_write_double_quoted_scalar(yaml_emitter_t *emitter,
             unsigned char octet;
             unsigned int width;
             unsigned int value;
-            size_t k;
+            int k;
 
             octet = string.pointer[0];
             width = (octet & 0x80) == 0x00 ? 1 :
@@ -2037,7 +2037,7 @@ yaml_emitter_write_double_quoted_scalar(yaml_emitter_t *emitter,
                     (octet & 0xE0) == 0xC0 ? octet & 0x1F :
                     (octet & 0xF0) == 0xE0 ? octet & 0x0F :
                     (octet & 0xF8) == 0xF0 ? octet & 0x07 : 0;
-            for (k = 1; k < width; k ++) {
+            for (k = 1; k < (int)width; k ++) {
                 octet = string.pointer[k];
                 value = (value << 6) + (octet & 0x3F);
             }
