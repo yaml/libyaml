@@ -2,6 +2,10 @@
 
 #include <stdlib.h>
 #include <stdio.h>
+
+#ifdef NDEBUG
+#undef NDEBUG
+#endif
 #include <assert.h>
 
 int
