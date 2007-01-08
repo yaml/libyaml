@@ -750,8 +750,9 @@ yaml_parser_parse_block_sequence_entry(yaml_parser_t *parser,
 
     else if (token->type == YAML_BLOCK_END_TOKEN)
     {
+        yaml_mark_t dummy_mark;     /* Used to eliminate a compiler warning. */
         parser->state = POP(parser, parser->states);
-        POP(parser, parser->marks);
+        dummy_mark = POP(parser, parser->marks);
         SEQUENCE_END_EVENT_INIT(*event, token->start_mark, token->end_mark);
         SKIP_TOKEN(parser);
         return 1;
@@ -859,8 +860,9 @@ yaml_parser_parse_block_mapping_key(yaml_parser_t *parser,
 
     else if (token->type == YAML_BLOCK_END_TOKEN)
     {
+        yaml_mark_t dummy_mark;     /* Used to eliminate a compiler warning. */
         parser->state = POP(parser, parser->states);
-        POP(parser, parser->marks);
+        dummy_mark = POP(parser, parser->marks);
         MAPPING_END_EVENT_INIT(*event, token->start_mark, token->end_mark);
         SKIP_TOKEN(parser);
         return 1;
@@ -941,6 +943,7 @@ yaml_parser_parse_flow_sequence_entry(yaml_parser_t *parser,
         yaml_event_t *event, int first)
 {
     yaml_token_t *token;
+    yaml_mark_t dummy_mark;     /* Used to eliminate a compiler warning. */
 
     if (first) {
         token = PEEK_TOKEN(parser);
@@ -985,7 +988,7 @@ yaml_parser_parse_flow_sequence_entry(yaml_parser_t *parser,
     }
 
     parser->state = POP(parser, parser->states);
-    POP(parser, parser->marks);
+    dummy_mark = POP(parser, parser->marks);
     SEQUENCE_END_EVENT_INIT(*event, token->start_mark, token->end_mark);
     SKIP_TOKEN(parser);
     return 1;
@@ -1092,6 +1095,7 @@ yaml_parser_parse_flow_mapping_key(yaml_parser_t *parser,
         yaml_event_t *event, int first)
 {
     yaml_token_t *token;
+    yaml_mark_t dummy_mark;     /* Used to eliminate a compiler warning. */
 
     if (first) {
         token = PEEK_TOKEN(parser);
@@ -1145,7 +1149,7 @@ yaml_parser_parse_flow_mapping_key(yaml_parser_t *parser,
     }
 
     parser->state = POP(parser, parser->states);
-    POP(parser, parser->marks);
+    dummy_mark = POP(parser, parser->marks);
     MAPPING_END_EVENT_INIT(*event, token->start_mark, token->end_mark);
     SKIP_TOKEN(parser);
     return 1;

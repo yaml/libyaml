@@ -1118,8 +1118,10 @@ yaml_document_delete(yaml_document_t *document)
 {
     struct {
         yaml_error_type_t error;
-    } context = { YAML_NO_ERROR };
+    } context;
     yaml_tag_directive_t *tag_directive;
+
+    context.error = YAML_NO_ERROR;  /* Eliminate a compliler warning. */
 
     assert(document);   /* Non-NULL document object is expected. */
 
@@ -1159,12 +1161,12 @@ yaml_document_delete(yaml_document_t *document)
  */
 
 YAML_DECLARE(yaml_node_t *)
-yaml_document_get_node(yaml_document_t *document, int node)
+yaml_document_get_node(yaml_document_t *document, int index)
 {
     assert(document);   /* Non-NULL document object is expected. */
 
-    if (node > 0 && document->nodes.start + node <= document->nodes.top) {
-        return document->nodes.start + node - 1;
+    if (index > 0 && document->nodes.start + index <= document->nodes.top) {
+        return document->nodes.start + index - 1;
     }
     return NULL;
 }
@@ -1205,7 +1207,7 @@ yaml_document_add_scalar(yaml_document_t *document,
     assert(value);      /* Non-NULL value is expected. */
 
     if (!tag) {
-        tag = YAML_DEFAULT_SCALAR_TAG;
+        tag = (yaml_char_t *)YAML_DEFAULT_SCALAR_TAG;
     }
 
     if (!yaml_check_utf8(tag, strlen((char *)tag))) goto error;
@@ -1257,7 +1259,7 @@ yaml_document_add_sequence(yaml_document_t *document,
     assert(document);   /* Non-NULL document object is expected. */
 
     if (!tag) {
-        tag = YAML_DEFAULT_SEQUENCE_TAG;
+        tag = (yaml_char_t *)YAML_DEFAULT_SEQUENCE_TAG;
     }
 
     if (!yaml_check_utf8(tag, strlen((char *)tag))) goto error;
@@ -1302,7 +1304,7 @@ yaml_document_add_mapping(yaml_document_t *document,
     assert(document);   /* Non-NULL document object is expected. */
 
     if (!tag) {
-        tag = YAML_DEFAULT_MAPPING_TAG;
+        tag = (yaml_char_t *)YAML_DEFAULT_MAPPING_TAG;
     }
 
     if (!yaml_check_utf8(tag, strlen((char *)tag))) goto error;
