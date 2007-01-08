@@ -2,8 +2,12 @@
 
 #include <stdlib.h>
 #include <stdio.h>
-#include <assert.h>
 #include <string.h>
+
+#ifdef NDEBUG
+#undef NDEBUG
+#endif
+#include <assert.h>
 
 #define BUFFER_SIZE 65536
 #define MAX_EVENTS  1024

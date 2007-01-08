@@ -5,6 +5,10 @@ yaml_parser_update_buffer(yaml_parser_t *parser, size_t length);
 
 #include <stdlib.h>
 #include <stdio.h>
+
+#ifdef NDEBUG
+#undef NDEBUG
+#endif
 #include <assert.h>
 
 /*

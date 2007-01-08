@@ -2,8 +2,12 @@
 
 #include <stdlib.h>
 #include <stdio.h>
-#include <assert.h>
 #include <string.h>
+
+#ifdef NDEBUG
+#undef NDEBUG
+#endif
+#include <assert.h>
 
 #define BUFFER_SIZE 65536
 #define MAX_DOCUMENTS  16
@@ -114,7 +118,9 @@ int compare_nodes(yaml_document_t *document1, int index1,
                             document2, node2->data.mapping.pairs.start[k].value)) return 0;
             }
             break;
-
+        default:
+            assert(0);
+            break;
     }
     return 1;
 }
