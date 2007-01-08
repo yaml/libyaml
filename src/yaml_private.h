@@ -586,7 +586,7 @@ yaml_queue_extend(void **start, void **head, void **tail, void **end);
 #define DOCUMENT_INIT(document,document_nodes_start,document_nodes_end,         \
         document_version_directive,document_tag_directives_start,               \
         document_tag_directives_end,document_start_implicit,                    \
-        document_end_implicit,start_mark,end_mark)                              \
+        document_end_implicit,document_start_mark,document_end_mark)            \
     (memset(&(document), 0, sizeof(yaml_document_t)),                           \
      (document).nodes.start = (document_nodes_start),                           \
      (document).nodes.end = (document_nodes_end),                               \
@@ -595,7 +595,9 @@ yaml_queue_extend(void **start, void **head, void **tail, void **end);
      (document).tag_directives.start = (document_tag_directives_start),         \
      (document).tag_directives.end = (document_tag_directives_end),             \
      (document).start_implicit = (document_start_implicit),                     \
-     (document).end_implicit = (document_end_implicit))
+     (document).end_implicit = (document_end_implicit),                         \
+     (document).start_mark = (document_start_mark),                             \
+     (document).end_mark = (document_end_mark))
 
 /*
  * Node initializers.

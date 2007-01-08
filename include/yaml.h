@@ -95,33 +95,49 @@ typedef struct yaml_tag_directive_s {
 
 /** The stream encoding. */
 typedef enum yaml_encoding_e {
+    /** Let the parser choose the encoding. */
     YAML_ANY_ENCODING,
+    /** The default UTF-8 encoding. */
     YAML_UTF8_ENCODING,
+    /** The UTF-16-LE encoding with BOM. */
     YAML_UTF16LE_ENCODING,
+    /** The UTF-16-BE encoding with BOM. */
     YAML_UTF16BE_ENCODING
 } yaml_encoding_t;
 
 /** Line break types. */
 
 typedef enum yaml_break_e {
+    /** Let the parser choose the break type. */
     YAML_ANY_BREAK,
+    /** Use CR for line breaks (Mac style). */
     YAML_CR_BREAK,
+    /** Use LN for line breaks (Unix style). */
     YAML_LN_BREAK,
+    /** Use CR LN for line breaks (DOS style). */
     YAML_CRLN_BREAK
 } yaml_break_t;
 
 /** Many bad things could happen with the parser and emitter. */
 typedef enum yaml_error_type_e {
+    /** No error is produced. */
     YAML_NO_ERROR,
 
+    /** Cannot allocate or reallocate a block of memory. */
     YAML_MEMORY_ERROR,
 
+    /** Cannot read or decode the input stream. */
     YAML_READER_ERROR,
+    /** Cannot scan the input stream. */
     YAML_SCANNER_ERROR,
+    /** Cannot parse the input stream. */
     YAML_PARSER_ERROR,
+    /** Cannot compose a YAML document. */
     YAML_COMPOSER_ERROR,
 
+    /** Cannot write to the output stream. */
     YAML_WRITER_ERROR,
+    /** Cannot emit a YAML stream. */
     YAML_EMITTER_ERROR
 } yaml_error_type_t;
 
@@ -146,30 +162,42 @@ typedef struct yaml_mark_s {
 
 /** Scalar styles. */
 typedef enum yaml_scalar_style_e {
+    /** Let the emitter choose the style. */
     YAML_ANY_SCALAR_STYLE,
 
+    /** The plain scalar style. */
     YAML_PLAIN_SCALAR_STYLE,
 
+    /** The single-quoted scalar style. */
     YAML_SINGLE_QUOTED_SCALAR_STYLE,
+    /** The double-quoted scalar style. */
     YAML_DOUBLE_QUOTED_SCALAR_STYLE,
 
+    /** The literal scalar style. */
     YAML_LITERAL_SCALAR_STYLE,
+    /** The folded scalar style. */
     YAML_FOLDED_SCALAR_STYLE
 } yaml_scalar_style_t;
 
 /** Sequence styles. */
 typedef enum yaml_sequence_style_e {
+    /** Let the emitter choose the style. */
     YAML_ANY_SEQUENCE_STYLE,
 
+    /** The block sequence style. */
     YAML_BLOCK_SEQUENCE_STYLE,
+    /** The flow sequence style. */
     YAML_FLOW_SEQUENCE_STYLE
 } yaml_sequence_style_t;
 
 /** Mapping styles. */
 typedef enum yaml_mapping_style_e {
+    /** Let the emitter choose the style. */
     YAML_ANY_MAPPING_STYLE,
 
+    /** The block mapping style. */
     YAML_BLOCK_MAPPING_STYLE,
+    /** The flow mapping style. */
     YAML_FLOW_MAPPING_STYLE
 /*    YAML_FLOW_SET_MAPPING_STYLE   */
 } yaml_mapping_style_t;
@@ -183,33 +211,55 @@ typedef enum yaml_mapping_style_e {
 
 /** Token types. */
 typedef enum yaml_token_type_e {
+    /** An empty token. */
     YAML_NO_TOKEN,
 
+    /** A STREAM-START token. */
     YAML_STREAM_START_TOKEN,
+    /** A STREAM-END token. */
     YAML_STREAM_END_TOKEN,
 
+    /** A VERSION-DIRECTIVE token. */
     YAML_VERSION_DIRECTIVE_TOKEN,
+    /** A TAG-DIRECTIVE token. */
     YAML_TAG_DIRECTIVE_TOKEN,
+    /** A DOCUMENT-START token. */
     YAML_DOCUMENT_START_TOKEN,
+    /** A DOCUMENT-END token. */
     YAML_DOCUMENT_END_TOKEN,
 
+    /** A BLOCK-SEQUENCE-START token. */
     YAML_BLOCK_SEQUENCE_START_TOKEN,
+    /** A BLOCK-SEQUENCE-END token. */
     YAML_BLOCK_MAPPING_START_TOKEN,
+    /** A BLOCK-END token. */
     YAML_BLOCK_END_TOKEN,
 
+    /** A FLOW-SEQUENCE-START token. */
     YAML_FLOW_SEQUENCE_START_TOKEN,
+    /** A FLOW-SEQUENCE-END token. */
     YAML_FLOW_SEQUENCE_END_TOKEN,
+    /** A FLOW-MAPPING-START token. */
     YAML_FLOW_MAPPING_START_TOKEN,
+    /** A FLOW-MAPPING-END token. */
     YAML_FLOW_MAPPING_END_TOKEN,
 
+    /** A BLOCK-ENTRY token. */
     YAML_BLOCK_ENTRY_TOKEN,
+    /** A FLOW-ENTRY token. */
     YAML_FLOW_ENTRY_TOKEN,
+    /** A KEY token. */
     YAML_KEY_TOKEN,
+    /** A VALUE token. */
     YAML_VALUE_TOKEN,
 
+    /** An ALIAS token. */
     YAML_ALIAS_TOKEN,
+    /** An ANCHOR token. */
     YAML_ANCHOR_TOKEN,
+    /** A TAG token. */
     YAML_TAG_TOKEN,
+    /** A SCALAR token. */
     YAML_SCALAR_TOKEN
 } yaml_token_type_t;
 
@@ -301,21 +351,32 @@ yaml_token_delete(yaml_token_t *token);
 
 /** Event types. */
 typedef enum yaml_event_type_e {
+    /** An empty event. */
     YAML_NO_EVENT,
 
+    /** A STREAM-START event. */
     YAML_STREAM_START_EVENT,
+    /** A STREAM-END event. */
     YAML_STREAM_END_EVENT,
 
+    /** A DOCUMENT-START event. */
     YAML_DOCUMENT_START_EVENT,
+    /** A DOCUMENT-END event. */
     YAML_DOCUMENT_END_EVENT,
 
+    /** An ALIAS event. */
     YAML_ALIAS_EVENT,
+    /** A SCALAR event. */
     YAML_SCALAR_EVENT,
 
+    /** A SEQUENCE-START event. */
     YAML_SEQUENCE_START_EVENT,
+    /** A SEQUENCE-END event. */
     YAML_SEQUENCE_END_EVENT,
 
+    /** A MAPPING-START event. */
     YAML_MAPPING_START_EVENT,
+    /** A MAPPING-END event. */
     YAML_MAPPING_END_EVENT
 } yaml_event_type_t;
 
@@ -593,31 +654,48 @@ yaml_mapping_end_event_initialize(yaml_event_t *event);
 YAML_DECLARE(void)
 yaml_event_delete(yaml_event_t *event);
 
+/** @} */
+
 /**
  * @defgroup nodes Nodes
  * @{
  */
 
+/** The tag @c !!null with the only possible value: @c null. */
 #define YAML_NULL_TAG       "tag:yaml.org,2002:null"
+/** The tag @c !!bool with the values: @c true and @c falce. */
 #define YAML_BOOL_TAG       "tag:yaml.org,2002:bool"
+/** The tag @c !!str for string values. */
 #define YAML_STR_TAG        "tag:yaml.org,2002:str"
+/** The tag @c !!int for integer values. */
 #define YAML_INT_TAG        "tag:yaml.org,2002:int"
+/** The tag @c !!float for float values. */
 #define YAML_FLOAT_TAG      "tag:yaml.org,2002:float"
+/** The tag @c !!timestamp for date and time values. */
 #define YAML_TIMESTAMP_TAG  "tag:yaml.org,2002:timestamp"
 
+/** The tag @c !!seq is used to denote sequences. */
 #define YAML_SEQ_TAG        "tag:yaml.org,2002:seq"
+/** The tag @c !!map is used to denote mapping. */
 #define YAML_MAP_TAG        "tag:yaml.org,2002:map"
 
+/** The default scalar tag is @c !!str. */
 #define YAML_DEFAULT_SCALAR_TAG     YAML_STR_TAG
+/** The default sequence tag is @c !!seq. */
 #define YAML_DEFAULT_SEQUENCE_TAG   YAML_SEQ_TAG
+/** The default mapping tag is @c !!map. */
 #define YAML_DEFAULT_MAPPING_TAG    YAML_MAP_TAG
 
 /** Node types. */
 typedef enum yaml_node_type_e {
+    /** An empty node. */
     YAML_NO_NODE,
 
+    /** A scalar node. */
     YAML_SCALAR_NODE,
+    /** A sequence node. */
     YAML_SEQUENCE_NODE,
+    /** A mapping node. */
     YAML_MAPPING_NODE
 } yaml_node_type_t;
 
@@ -773,13 +851,13 @@ yaml_document_delete(yaml_document_t *document);
  * modifying the documents are called.
  *
  * @param[in]       document        A document object.
- * @param[in]       node            The node id.
+ * @param[in]       index           The node id.
  *
  * @returns the node objct or @c NULL if @c node_id is out of range.
  */
 
 YAML_DECLARE(yaml_node_t *)
-yaml_document_get_node(yaml_document_t *document, int node_id);
+yaml_document_get_node(yaml_document_t *document, int index);
 
 /**
  * Get the root of a YAML document node.
@@ -930,29 +1008,53 @@ typedef struct yaml_simple_key_s {
  * The states of the parser.
  */
 typedef enum yaml_parser_state_e {
+    /** Expect STREAM-START. */
     YAML_PARSE_STREAM_START_STATE,
+    /** Expect the beginning of an implicit document. */
     YAML_PARSE_IMPLICIT_DOCUMENT_START_STATE,
+    /** Expect DOCUMENT-START. */
     YAML_PARSE_DOCUMENT_START_STATE,
+    /** Expect the content of a document. */
     YAML_PARSE_DOCUMENT_CONTENT_STATE,
+    /** Expect DOCUMENT-END. */
     YAML_PARSE_DOCUMENT_END_STATE,
+    /** Expect a block node. */
     YAML_PARSE_BLOCK_NODE_STATE,
+    /** Expect a block node or indentless sequence. */
     YAML_PARSE_BLOCK_NODE_OR_INDENTLESS_SEQUENCE_STATE,
+    /** Expect a flow node. */
     YAML_PARSE_FLOW_NODE_STATE,
+    /** Expect the first entry of a block sequence. */
     YAML_PARSE_BLOCK_SEQUENCE_FIRST_ENTRY_STATE,
+    /** Expect an entry of a block sequence. */
     YAML_PARSE_BLOCK_SEQUENCE_ENTRY_STATE,
+    /** Expect an entry of an indentless sequence. */
     YAML_PARSE_INDENTLESS_SEQUENCE_ENTRY_STATE,
+    /** Expect the first key of a block mapping. */
     YAML_PARSE_BLOCK_MAPPING_FIRST_KEY_STATE,
+    /** Expect a block mapping key. */
     YAML_PARSE_BLOCK_MAPPING_KEY_STATE,
+    /** Expect a block mapping value. */
     YAML_PARSE_BLOCK_MAPPING_VALUE_STATE,
+    /** Expect the first entry of a flow sequence. */
     YAML_PARSE_FLOW_SEQUENCE_FIRST_ENTRY_STATE,
+    /** Expect an entry of a flow sequence. */
     YAML_PARSE_FLOW_SEQUENCE_ENTRY_STATE,
+    /** Expect a key of an ordered mapping. */
     YAML_PARSE_FLOW_SEQUENCE_ENTRY_MAPPING_KEY_STATE,
+    /** Expect a value of an ordered mapping. */
     YAML_PARSE_FLOW_SEQUENCE_ENTRY_MAPPING_VALUE_STATE,
+    /** Expect the and of an ordered mapping entry. */
     YAML_PARSE_FLOW_SEQUENCE_ENTRY_MAPPING_END_STATE,
+    /** Expect the first key of a flow mapping. */
     YAML_PARSE_FLOW_MAPPING_FIRST_KEY_STATE,
+    /** Expect a key of a flow mapping. */
     YAML_PARSE_FLOW_MAPPING_KEY_STATE,
+    /** Expect a value of a flow mapping. */
     YAML_PARSE_FLOW_MAPPING_VALUE_STATE,
+    /** Expect an empty value of a flow mapping. */
     YAML_PARSE_FLOW_MAPPING_EMPTY_VALUE_STATE,
+    /** Expect nothing. */
     YAML_PARSE_END_STATE
 } yaml_parser_state_t;
 
@@ -1375,23 +1477,41 @@ typedef int yaml_write_handler_t(void *data, unsigned char *buffer, size_t size)
 
 /** The emitter states. */
 typedef enum yaml_emitter_state_e {
+    /** Expect STREAM-START. */
     YAML_EMIT_STREAM_START_STATE,
+    /** Expect the first DOCUMENT-START or STREAM-END. */
     YAML_EMIT_FIRST_DOCUMENT_START_STATE,
+    /** Expect DOCUMENT-START or STREAM-END. */
     YAML_EMIT_DOCUMENT_START_STATE,
+    /** Expect the content of a document. */
     YAML_EMIT_DOCUMENT_CONTENT_STATE,
+    /** Expect DOCUMENT-END. */
     YAML_EMIT_DOCUMENT_END_STATE,
+    /** Expect the first item of a flow sequence. */
     YAML_EMIT_FLOW_SEQUENCE_FIRST_ITEM_STATE,
+    /** Expect an item of a flow sequence. */
     YAML_EMIT_FLOW_SEQUENCE_ITEM_STATE,
+    /** Expect the first key of a flow mapping. */
     YAML_EMIT_FLOW_MAPPING_FIRST_KEY_STATE,
+    /** Expect a key of a flow mapping. */
     YAML_EMIT_FLOW_MAPPING_KEY_STATE,
+    /** Expect a value for a simple key of a flow mapping. */
     YAML_EMIT_FLOW_MAPPING_SIMPLE_VALUE_STATE,
+    /** Expect a value of a flow mapping. */
     YAML_EMIT_FLOW_MAPPING_VALUE_STATE,
+    /** Expect the first item of a block sequence. */
     YAML_EMIT_BLOCK_SEQUENCE_FIRST_ITEM_STATE,
+    /** Expect an item of a block sequence. */
     YAML_EMIT_BLOCK_SEQUENCE_ITEM_STATE,
+    /** Expect the first key of a block mapping. */
     YAML_EMIT_BLOCK_MAPPING_FIRST_KEY_STATE,
+    /** Expect the key of a block mapping. */
     YAML_EMIT_BLOCK_MAPPING_KEY_STATE,
+    /** Expect a value for a simple key of a block mapping. */
     YAML_EMIT_BLOCK_MAPPING_SIMPLE_VALUE_STATE,
+    /** Expect a value of a block mapping. */
     YAML_EMIT_BLOCK_MAPPING_VALUE_STATE,
+    /** Expect nothing. */
     YAML_EMIT_END_STATE
 } yaml_emitter_state_t;
 
@@ -1785,7 +1905,7 @@ yaml_emitter_set_break(yaml_emitter_t *emitter, yaml_break_t line_break);
 YAML_DECLARE(int)
 yaml_emitter_emit(yaml_emitter_t *emitter, yaml_event_t *event);
 
-/*
+/**
  * Start a YAML stream.
  *
  * This function should be used before yaml_emitter_dump() is called.
@@ -1798,7 +1918,7 @@ yaml_emitter_emit(yaml_emitter_t *emitter, yaml_event_t *event);
 YAML_DECLARE(int)
 yaml_emitter_open(yaml_emitter_t *emitter);
 
-/*
+/**
  * Finish a YAML stream.
  *
  * This function should be used after yaml_emitter_dump() is called.
@@ -1811,7 +1931,7 @@ yaml_emitter_open(yaml_emitter_t *emitter);
 YAML_DECLARE(int)
 yaml_emitter_close(yaml_emitter_t *emitter);
 
-/*
+/**
  * Emit a YAML document.
  *
  * The documen object may be generated using the yaml_parser_load() function

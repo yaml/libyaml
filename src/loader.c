@@ -13,11 +13,11 @@ yaml_parser_load(yaml_parser_t *parser, yaml_document_t *document);
  */
 
 static int
-yaml_parser_set_parser_error(yaml_parser_t *parser,
+yaml_parser_set_composer_error(yaml_parser_t *parser,
         const char *problem, yaml_mark_t problem_mark);
 
 static int
-yaml_parser_set_parser_error_context(yaml_parser_t *parser,
+yaml_parser_set_composer_error_context(yaml_parser_t *parser,
         const char *context, yaml_mark_t context_mark,
         const char *problem, yaml_mark_t problem_mark);
 
@@ -286,7 +286,7 @@ yaml_parser_load_scalar(yaml_parser_t *parser, yaml_event_t *first_event)
 
     if (!tag || strcmp((char *)tag, "!") == 0) {
         yaml_free(tag);
-        tag = yaml_strdup(YAML_DEFAULT_SCALAR_TAG);
+        tag = yaml_strdup((yaml_char_t *)YAML_DEFAULT_SCALAR_TAG);
         if (!tag) goto error;
     }
 
@@ -329,7 +329,7 @@ yaml_parser_load_sequence(yaml_parser_t *parser, yaml_event_t *first_event)
 
     if (!tag || strcmp((char *)tag, "!") == 0) {
         yaml_free(tag);
-        tag = yaml_strdup(YAML_DEFAULT_SEQUENCE_TAG);
+        tag = yaml_strdup((yaml_char_t *)YAML_DEFAULT_SEQUENCE_TAG);
         if (!tag) goto error;
     }
 
@@ -387,7 +387,7 @@ yaml_parser_load_mapping(yaml_parser_t *parser, yaml_event_t *first_event)
 
     if (!tag || strcmp((char *)tag, "!") == 0) {
         yaml_free(tag);
-        tag = yaml_strdup(YAML_DEFAULT_MAPPING_TAG);
+        tag = yaml_strdup((yaml_char_t *)YAML_DEFAULT_MAPPING_TAG);
         if (!tag) goto error;
     }
 
