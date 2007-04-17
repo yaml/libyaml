@@ -352,6 +352,17 @@ yaml_parser_parse_document_start(yaml_parser_t *parser, yaml_event_t *event,
     token = PEEK_TOKEN(parser);
     if (!token) return 0;
 
+    /* Parse extra document end indicators. */
+
+    if (!implicit)
+    {
+        while (token->type == YAML_DOCUMENT_END_TOKEN) {
+            SKIP_TOKEN(parser);
+            token = PEEK_TOKEN(parser);
+            if (!token) return 0;
+        }
+    }
+
     /* Parse an implicit document. */
 
     if (implicit && token->type != YAML_VERSION_DIRECTIVE_TOKEN &&
@@ -467,11 +478,9 @@ yaml_parser_parse_document_end(yaml_parser_t *parser, yaml_event_t *event)
 
     start_mark = end_mark = token->start_mark;
 
-    while (token->type == YAML_DOCUMENT_END_TOKEN) {
+    if (token->type == YAML_DOCUMENT_END_TOKEN) {
         end_mark = token->end_mark;
         SKIP_TOKEN(parser);
-        token = PEEK_TOKEN(parser);
-        if (!token) return 0;
         implicit = 0;
     }
 
