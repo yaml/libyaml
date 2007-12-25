@@ -70,6 +70,114 @@ yaml_get_version(int *major, int *minor, int *patch);
 /** @} */
 
 /**
+ * @defgroup styles Error Handling
+ * @{
+ */
+
+/** Many bad things could happen with the parser and the emitter. */
+typedef enum yaml_error_type_e {
+    /** No error is produced. */
+    YAML_NO_ERROR,
+
+    /** Cannot allocate or reallocate a block of memory. */
+    YAML_MEMORY_ERROR,
+
+    /** Cannot read from the input stream. */
+    YAML_READER_ERROR,
+    /** Cannot decode the input stream. */
+    YAML_DECODER_ERROR,
+
+    /** Cannot scan a YAML token. */
+    YAML_SCANNER_ERROR,
+    /** Cannot parse a YAML production. */
+    YAML_PARSER_ERROR,
+    /** Cannot compose a YAML document. */
+    YAML_COMPOSER_ERROR,
+
+    /** Cannot write into the output stream. */
+    YAML_WRITER_ERROR,
+
+    /** Cannot emit a YAML event. */
+    YAML_EMITTER_ERROR,
+    /** Cannot serialize a YAML document. */
+    YAML_SERIALIZER_ERROR
+} yaml_error_type_t;
+
+/** The pointer position. */
+typedef struct yaml_mark_s {
+    /** The character number (starting from zero). */
+    size_t index;
+
+    /** The mark line (starting from zero). */
+    size_t line;
+
+    /** The mark column (starting from zero). */
+    size_t column;
+} yaml_mark_t;
+
+/** The error details. */
+typedef struct yaml_error_s {
+
+    /** The error type. */
+    yaml_error_type_t type;
+
+    /** The detailed error information. */
+    union {
+
+        /**
+         * A problem while reading the stream (@c YAML_READER_ERROR or
+         * @c YAML_DECODER_ERROR).
+         */
+        struct {
+            /** The problem description. */
+            const char *problem;
+            /** The stream offset. */
+            size_t offset;
+            /** The problematic octet or character (@c -1 if not applicable). */
+            int value;
+        } reading;
+
+        /**
+         * A problem while loading the stream (@c YAML_SCANNER_ERROR,
+         * @c YAML_PARSER_ERROR, or @c YAML_COMPOSER_ERROR).
+         */
+        struct {
+            /** The problem description. */
+            const char *problem;
+            /** The problem mark. */
+            yaml_mark_t problem_mark;
+            /** The context in which the problem occured
+             * (@c NULL if not applicable).
+             */
+            const char *context;
+            /** The context mark (if @c problem_mark is not @c NULL). **/
+            yaml_mark_t context_mark;
+        } loading;
+
+        /** A problem while writing into the stream (@c YAML_WRITER_ERROR). */
+        struct {
+            /** The problem description. */
+            const char *problem;
+            /** The stream offset. */
+            size_t offset;
+        } writing;
+
+        /** A problem while dumping into the stream (@c YAML_EMITTER_ERROR and
+         * @c YAML_SERIALIZER_ERROR).
+         */
+        struct {
+            /** The problem description. */
+            const char *problem;
+        } dumping;
+
+    } data;
+
+} yaml_error_t;
+
+
+/** @} */
+
+/**
  * @defgroup basic Basic Types
  * @{
  */
@@ -106,7 +214,6 @@ typedef enum yaml_encoding_e {
 } yaml_encoding_t;
 
 /** Line break types. */
-
 typedef enum yaml_break_e {
     /** Let the parser choose the break type. */
     YAML_ANY_BREAK,
@@ -117,41 +224,6 @@ typedef enum yaml_break_e {
     /** Use CR LN for line breaks (DOS style). */
     YAML_CRLN_BREAK
 } yaml_break_t;
-
-/** Many bad things could happen with the parser and emitter. */
-typedef enum yaml_error_type_e {
-    /** No error is produced. */
-    YAML_NO_ERROR,
-
-    /** Cannot allocate or reallocate a block of memory. */
-    YAML_MEMORY_ERROR,
-
-    /** Cannot read or decode the input stream. */
-    YAML_READER_ERROR,
-    /** Cannot scan the input stream. */
-    YAML_SCANNER_ERROR,
-    /** Cannot parse the input stream. */
-    YAML_PARSER_ERROR,
-    /** Cannot compose a YAML document. */
-    YAML_COMPOSER_ERROR,
-
-    /** Cannot write to the output stream. */
-    YAML_WRITER_ERROR,
-    /** Cannot emit a YAML stream. */
-    YAML_EMITTER_ERROR
-} yaml_error_type_t;
-
-/** The pointer position. */
-typedef struct yaml_mark_s {
-    /** The position index. */
-    size_t index;
-
-    /** The position line. */
-    size_t line;
-
-    /** The position column. */
-    size_t column;
-} yaml_mark_t;
 
 /** @} */
 
@@ -278,6 +350,22 @@ typedef struct yaml_token_s {
             yaml_encoding_t encoding;
         } stream_start;
 
+        /** The version directive (for @c YAML_VERSION_DIRECTIVE_TOKEN). */
+        struct {
+            /** The major version number. */
+            int major;
+            /** The minor version number. */
+            int minor;
+        } version_directive;
+
+        /** The tag directive (for @c YAML_TAG_DIRECTIVE_TOKEN). */
+        struct {
+            /** The tag handle. */
+            yaml_char_t *handle;
+            /** The tag prefix. */
+            yaml_char_t *prefix;
+        } tag_directive;
+
         /** The alias (for @c YAML_ALIAS_TOKEN). */
         struct {
             /** The alias value. */
@@ -308,22 +396,6 @@ typedef struct yaml_token_s {
             yaml_scalar_style_t style;
         } scalar;
 
-        /** The version directive (for @c YAML_VERSION_DIRECTIVE_TOKEN). */
-        struct {
-            /** The major version number. */
-            int major;
-            /** The minor version number. */
-            int minor;
-        } version_directive;
-
-        /** The tag directive (for @c YAML_TAG_DIRECTIVE_TOKEN). */
-        struct {
-            /** The tag handle. */
-            yaml_char_t *handle;
-            /** The tag prefix. */
-            yaml_char_t *prefix;
-        } tag_directive;
-
     } data;
 
     /** The beginning of the token. */
@@ -334,13 +406,43 @@ typedef struct yaml_token_s {
 } yaml_token_t;
 
 /**
- * Free any memory allocated for a token object.
+ * Allocate a new empty token object.
+ *
+ * @returns a new token object or @c NULL on error.
+ */
+
+YAML_DECLARE(yaml_token_t *)
+yaml_token_new(void);
+
+/**
+ * Delete and deallocate a token object.
  *
  * @param[in,out]   token   A token object.
  */
 
 YAML_DECLARE(void)
 yaml_token_delete(yaml_token_t *token);
+
+/**
+ * Duplicate a token object.
+ *
+ * @param[in,out]   token   An empty token object.
+ * @param[in]       model   A token to copy.
+ *
+ * @returns @c 1 if the function succeeded, @c 0 on error.
+ */
+
+YAML_DECLARE(int)
+yaml_token_duplicate(yaml_token_t *token, yaml_token_t *model);
+
+/**
+ * Free any memory allocated for a token object.
+ *
+ * @param[in,out]   token   A token object.
+ */
+
+YAML_DECLARE(void)
+yaml_token_destroy(yaml_token_t *token);
 
 /** @} */
 
@@ -402,20 +504,22 @@ typedef struct yaml_event_s {
 
             /** The list of tag directives. */
             struct {
-                /** The beginning of the tag directives list. */
-                yaml_tag_directive_t *start;
-                /** The end of the tag directives list. */
-                yaml_tag_directive_t *end;
+                /** The beginning of the list. */
+                yaml_tag_directive_t *list;
+                /** The length of the list. */
+                size_t length;
+                /** The capacity of the list. */
+                size_t capacity;
             } tag_directives;
 
             /** Is the document indicator implicit? */
-            int implicit;
+            int is_implicit;
         } document_start;
 
         /** The document end parameters (for @c YAML_DOCUMENT_END_EVENT). */
         struct {
             /** Is the document end indicator implicit? */
-            int implicit;
+            int is_implicit;
         } document_end;
 
         /** The alias parameters (for @c YAML_ALIAS_EVENT). */
@@ -435,9 +539,9 @@ typedef struct yaml_event_s {
             /** The length of the scalar value. */
             size_t length;
             /** Is the tag optional for the plain style? */
-            int plain_implicit;
+            int is_plain_implicit;
             /** Is the tag optional for any non-plain style? */
-            int quoted_implicit;
+            int is_quoted_implicit;
             /** The scalar style. */
             yaml_scalar_style_t style;
         } scalar;
@@ -449,7 +553,7 @@ typedef struct yaml_event_s {
             /** The tag. */
             yaml_char_t *tag;
             /** Is the tag optional? */
-            int implicit;
+            int is_implicit;
             /** The sequence style. */
             yaml_sequence_style_t style;
         } sequence_start;
@@ -461,7 +565,7 @@ typedef struct yaml_event_s {
             /** The tag. */
             yaml_char_t *tag;
             /** Is the tag optional? */
-            int implicit;
+            int is_implicit;
             /** The mapping style. */
             yaml_mapping_style_t style;
         } mapping_start;
@@ -476,7 +580,39 @@ typedef struct yaml_event_s {
 } yaml_event_t;
 
 /**
- * Create the STREAM-START event.
+ * Allocate a new empty event object.
+ *
+ * @returns a new event object or @c NULL on error.
+ */
+
+YAML_DECLARE(yaml_event_t *)
+yaml_event_new(void);
+
+/**
+ * Delete and deallocate an event object.
+ *
+ * @param[in,out]   event   An event object.
+ */
+
+YAML_DECLARE(void)
+yaml_event_delete(yaml_event_t *event);
+
+/**
+ * Duplicate a event object.
+ *
+ * @param[in,out]   event   An empty event object.
+ * @param[in]       model   An event to copy.
+ *
+ * @returns @c 1 if the function succeeded, @c 0 on error.
+ */
+
+YAML_DECLARE(int)
+yaml_event_duplicate(yaml_event_t *event, yaml_event_t *model);
+
+/**
+ * Create a STREAM-START event.
+ *
+ * This function never fails.
  *
  * @param[out]      event       An empty event object.
  * @param[in]       encoding    The stream encoding.
@@ -485,11 +621,13 @@ typedef struct yaml_event_s {
  */
 
 YAML_DECLARE(int)
-yaml_stream_start_event_initialize(yaml_event_t *event,
+yaml_event_create_stream_start(yaml_event_t *event,
         yaml_encoding_t encoding);
 
 /**
- * Create the STREAM-END event.
+ * Create a STREAM-END event.
+ *
+ * This function never fails.
  *
  * @param[out]      event       An empty event object.
  *
@@ -497,48 +635,44 @@ yaml_stream_start_event_initialize(yaml_event_t *event,
  */
 
 YAML_DECLARE(int)
-yaml_stream_end_event_initialize(yaml_event_t *event);
+yaml_event_create_stream_end(yaml_event_t *event);
 
 /**
  * Create the DOCUMENT-START event.
  *
- * The @a implicit argument is considered as a stylistic parameter and may be
- * ignored by the emitter.
- *
  * @param[out]      event                   An empty event object.
  * @param[in]       version_directive       The %YAML directive value or
  *                                          @c NULL.
- * @param[in]       tag_directives_start    The beginning of the %TAG
- *                                          directives list.
- * @param[in]       tag_directives_end      The end of the %TAG directives
- *                                          list.
- * @param[in]       implicit                If the document start indicator is
- *                                          implicit.
+ * @param[in]       tag_directives_list     The beginning of the %TAG
+ *                                          directives list or @c NULL.  The
+ *                                          list ends with @c (NULL,NULL).
+ * @param[in]       is_implicit             Set if the document start
+ *                                          indicator is optional.  This
+ *                                          parameter is stylistic and may be
+ *                                          ignored by the parser.
  *
  * @returns @c 1 if the function succeeded, @c 0 on error.
  */
 
 YAML_DECLARE(int)
-yaml_document_start_event_initialize(yaml_event_t *event,
-        yaml_version_directive_t *version_directive,
-        yaml_tag_directive_t *tag_directives_start,
-        yaml_tag_directive_t *tag_directives_end,
-        int implicit);
+yaml_event_create_document_start(yaml_event_t *event,
+        const yaml_version_directive_t *version_directive,
+        const yaml_tag_directive_t *tag_directives,
+        int is_implicit);
 
 /**
  * Create the DOCUMENT-END event.
  *
- * The @a implicit argument is considered as a stylistic parameter and may be
- * ignored by the emitter.
- *
  * @param[out]      event       An empty event object.
- * @param[in]       implicit    If the document end indicator is implicit.
+ * @param[in]       is_implicit Set if the document end indicator is optional.
+ *                              This parameter is stylistic and may be ignored
+ *                              by the parser.
  *
  * @returns @c 1 if the function succeeded, @c 0 on error.
  */
 
 YAML_DECLARE(int)
-yaml_document_end_event_initialize(yaml_event_t *event, int implicit);
+yaml_event_create_document_end(yaml_event_t *event, int is_implicit);
 
 /**
  * Create an ALIAS event.
@@ -550,57 +684,55 @@ yaml_document_end_event_initialize(yaml_event_t *event, int implicit);
  */
 
 YAML_DECLARE(int)
-yaml_alias_event_initialize(yaml_event_t *event, yaml_char_t *anchor);
+yaml_event_create_alias(yaml_event_t *event, const yaml_char_t *anchor);
 
 /**
  * Create a SCALAR event.
  *
- * The @a style argument may be ignored by the emitter.
- *
- * Either the @a tag attribute or one of the @a plain_implicit and
- * @a quoted_implicit flags must be set.
- *
- * @param[out]      event           An empty event object.
- * @param[in]       anchor          The scalar anchor or @c NULL.
- * @param[in]       tag             The scalar tag or @c NULL.
- * @param[in]       value           The scalar value.
- * @param[in]       length          The length of the scalar value.
- * @param[in]       plain_implicit  If the tag may be omitted for the plain
- *                                  style.
- * @param[in]       quoted_implicit If the tag may be omitted for any
- *                                  non-plain style.
- * @param[in]       style           The scalar style.
+ * @param[out]      event                   An empty event object.
+ * @param[in]       anchor                  The scalar anchor or @c NULL.
+ * @param[in]       tag                     The scalar tag or @c NULL.  If
+ *                                          latter, one of the
+ *                                          @a is_plain_implicit and
+ *                                          @a is_quoted_implicit flags must
+ *                                          be set.
+ * @param[in]       value                   The scalar value.
+ * @param[in]       length                  The length of the scalar value.
+ * @param[in]       is_plain_implicit       Set if the tag may be omitted for
+ *                                          the plain style.
+ * @param[in]       is_quoted_implicit      Set if the tag may be omitted for
+ *                                          any non-plain style.
+ * @param[in]       style                   The scalar style.  This attribute
+ *                                          may be ignored by the emitter.
  *
  * @returns @c 1 if the function succeeded, @c 0 on error.
  */
 
 YAML_DECLARE(int)
-yaml_scalar_event_initialize(yaml_event_t *event,
-        yaml_char_t *anchor, yaml_char_t *tag,
-        yaml_char_t *value, int length,
-        int plain_implicit, int quoted_implicit,
+yaml_event_create_scalar(yaml_event_t *event,
+        const yaml_char_t *anchor, const yaml_char_t *tag,
+        const yaml_char_t *value, size_t length,
+        int is_plain_implicit, int is_quoted_implicit,
         yaml_scalar_style_t style);
 
 /**
  * Create a SEQUENCE-START event.
  *
- * The @a style argument may be ignored by the emitter.
- *
- * Either the @a tag attribute or the @a implicit flag must be set.
- *
  * @param[out]      event       An empty event object.
  * @param[in]       anchor      The sequence anchor or @c NULL.
- * @param[in]       tag         The sequence tag or @c NULL.
- * @param[in]       implicit    If the tag may be omitted.
- * @param[in]       style       The sequence style.
+ * @param[in]       tag         The sequence tag or @c NULL.  If latter, the
+ *                              @a is_implicit flag must be set.
+ * @param[in]       is_implicit Set if the tag may be omitted.
+ * @param[in]       style       The sequence style.  This attribute may be
+ *                              ignored by the parser.
  *
  * @returns @c 1 if the function succeeded, @c 0 on error.
  */
 
 YAML_DECLARE(int)
-yaml_sequence_start_event_initialize(yaml_event_t *event,
-        yaml_char_t *anchor, yaml_char_t *tag, int implicit,
-        yaml_sequence_style_t style);
+yaml_event_create_sequence_start(yaml_event_t *event,
+        const yaml_char_t *anchor, const yaml_char_t *tag,
+        int is_implicit, yaml_sequence_style_t style);
 
 /**
  * Create a SEQUENCE-END event.
@@ -611,28 +743,25 @@ yaml_sequence_start_event_initialize(yaml_event_t *event,
  */
 
 YAML_DECLARE(int)
-yaml_sequence_end_event_initialize(yaml_event_t *event);
+yaml_event_create_sequence_end(yaml_event_t *event);
 
 /**
  * Create a MAPPING-START event.
  *
- * The @a style argument may be ignored by the emitter.
- *
- * Either the @a tag attribute or the @a implicit flag must be set.
- *
  * @param[out]      event       An empty event object.
  * @param[in]       anchor      The mapping anchor or @c NULL.
- * @param[in]       tag         The mapping tag or @c NULL.
- * @param[in]       implicit    If the tag may be omitted.
+ * @param[in]       tag         The mapping tag or @c NULL.  If latter, the
+ *                              @a is_implicit flag must be set.
+ * @param[in]       is_implicit Set if the tag may be omitted.
  * @param[in]       style       The mapping style.
  *
  * @returns @c 1 if the function succeeded, @c 0 on error.
  */
 
 YAML_DECLARE(int)
-yaml_mapping_start_event_initialize(yaml_event_t *event,
-        yaml_char_t *anchor, yaml_char_t *tag, int implicit,
-        yaml_mapping_style_t style);
+yaml_event_create_mapping_start(yaml_event_t *event,
+        const yaml_char_t *anchor, const yaml_char_t *tag,
+        int is_implicit, yaml_mapping_style_t style);
 
 /**
  * Create a MAPPING-END event.
@@ -643,7 +772,7 @@ yaml_mapping_start_event_initialize(yaml_event_t *event,
  */
 
 YAML_DECLARE(int)
-yaml_mapping_end_event_initialize(yaml_event_t *event);
+yaml_event_create_mapping_end(yaml_event_t *event);
 
 /**
  * Free any memory allocated for an event object.
@@ -652,7 +781,7 @@ yaml_mapping_end_event_initialize(yaml_event_t *event);
  */
 
 YAML_DECLARE(void)
-yaml_event_delete(yaml_event_t *event);
+yaml_event_destroy(yaml_event_t *event);
 
 /** @} */
 
@@ -671,8 +800,6 @@ yaml_event_delete(yaml_event_t *event);
 #define YAML_INT_TAG        "tag:yaml.org,2002:int"
 /** The tag @c !!float for float values. */
 #define YAML_FLOAT_TAG      "tag:yaml.org,2002:float"
-/** The tag @c !!timestamp for date and time values. */
-#define YAML_TIMESTAMP_TAG  "tag:yaml.org,2002:timestamp"
 
 /** The tag @c !!seq is used to denote sequences. */
 #define YAML_SEQ_TAG        "tag:yaml.org,2002:seq"
@@ -699,6 +826,19 @@ typedef enum yaml_node_type_e {
     YAML_MAPPING_NODE
 } yaml_node_type_t;
 
+/** Arc types. */
+typedef enum yaml_arc_type_e {
+    /** An empty arc. */
+    YAML_NO_ARC,
+
+    /** An item of a sequence. */
+    YAML_SEQUENCE_ITEM_ARC,
+    /** A key of a mapping. */
+    YAML_MAPPING_KEY_ARC,
+    /** A value of a mapping. */
+    YAML_MAPPING_VALUE_ARC
+} yaml_arc_type_t;
+
 /** The forward definition of a document node structure. */
 typedef struct yaml_node_s yaml_node_t;
 
@@ -713,12 +853,24 @@ typedef struct yaml_node_pair_s {
     int value;
 } yaml_node_pair_t;
 
+/** An element of a path in a YAML document. */
+typedef struct yaml_arc_s {
+    /** The arc type. */
+    yaml_arc_type_t type;
+    /** The collection node. */
+    int node;
+    /** A pointer in the collection node. */
+    int item;
+} yaml_arc_t;
+
 /** The node structure. */
 struct yaml_node_s {
 
     /** The node type. */
     yaml_node_type_t type;
 
+    /** The node anchor. */
+    yaml_char_t *anchor;
     /** The node tag. */
     yaml_char_t *tag;
 
@@ -737,14 +889,14 @@ struct yaml_node_s {
 
         /** The sequence parameters (for @c YAML_SEQUENCE_NODE). */
         struct {
-            /** The stack of sequence items. */
+            /** The list of sequence items. */
             struct {
-                /** The beginning of the stack. */
-                yaml_node_item_t *start;
-                /** The end of the stack. */
-                yaml_node_item_t *end;
-                /** The top of the stack. */
-                yaml_node_item_t *top;
+                /** The beginning of the list. */
+                yaml_node_item_t *list;
+                /** The length of the list. */
+                size_t length;
+                /** The capacity of the list. */
+                size_t capacity;
             } items;
             /** The sequence style. */
             yaml_sequence_style_t style;
@@ -752,14 +904,14 @@ struct yaml_node_s {
 
         /** The mapping parameters (for @c YAML_MAPPING_NODE). */
         struct {
-            /** The stack of mapping pairs (key, value). */
+            /** The list of mapping pairs (key, value). */
             struct {
-                /** The beginning of the stack. */
-                yaml_node_pair_t *start;
-                /** The end of the stack. */
-                yaml_node_pair_t *end;
-                /** The top of the stack. */
-                yaml_node_pair_t *top;
+                /** The beginning of the list. */
+                yaml_node_pair_t *list;
+                /** The length of the list. */
+                size_t length;
+                /** The capacity of the list. */
+                size_t capacity;
             } pairs;
             /** The mapping style. */
             yaml_mapping_style_t style;
@@ -774,17 +926,53 @@ struct yaml_node_s {
 
 };
 
+/** The incomplete node structure. */
+typedef struct yaml_incomplete_node_s {
+
+    /** The node type. */
+    yaml_node_type_t type;
+
+    /** The path to the new node. */
+    struct {
+        /** The beginning of the list. */
+        yaml_arc_t *list;
+        /** The length of the list. */
+        size_t length;
+        /** The capacity of the list. */
+        size_t capacity;
+    } path;
+
+    /** The node data. */
+    union {
+
+        /** The scalar parameters (for @c YAML_SCALAR_NODE). */
+        struct {
+            /** The scalar value. */
+            yaml_char_t *value;
+            /** The length of the scalar value. */
+            size_t length;
+            /** Set if the scalar is plain. */
+            int is_plain;
+        } scalar;
+
+    } data;
+
+    /** The position of the node. */
+    yaml_mark_t mark;
+
+} yaml_incomplete_node_t;
+
 /** The document structure. */
 typedef struct yaml_document_s {
 
     /** The document nodes. */
     struct {
-        /** The beginning of the stack. */
-        yaml_node_t *start;
-        /** The end of the stack. */
-        yaml_node_t *end;
-        /** The top of the stack. */
-        yaml_node_t *top;
+        /** The beginning of the list. */
+        yaml_node_t *list;
+        /** The length of the list. */
+        size_t length;
+        /** The capacity of the list. */
+        size_t capacity;
     } nodes;
 
     /** The version directive. */
@@ -792,16 +980,18 @@ typedef struct yaml_document_s {
 
     /** The list of tag directives. */
     struct {
-        /** The beginning of the tag directives list. */
-        yaml_tag_directive_t *start;
-        /** The end of the tag directives list. */
-        yaml_tag_directive_t *end;
+        /** The beginning of the tag directive list. */
+        yaml_tag_directive_t *list;
+        /** The length of the tag directive list. */
+        size_t length;
+        /** The capacity of the tag directive list. */
+        size_t capacity;
     } tag_directives;
 
     /** Is the document start indicator implicit? */
-    int start_implicit;
+    int is_start_implicit;
     /** Is the document end indicator implicit? */
-    int end_implicit;
+    int is_end_implicit;
 
     /** The beginning of the document. */
     yaml_mark_t start_mark;
@@ -810,30 +1000,60 @@ typedef struct yaml_document_s {
 
 } yaml_document_t;
 
+#if 0
+
+/**
+ * Allocate a new empty document object.
+ *
+ * @returns a new document object or @c NULL on error.
+ */
+
+YAML_DECLARE(yaml_document_t *)
+yaml_document_new(void);
+
+/**
+ * Delete and deallocatge a document object.
+ *
+ * @param[in,out]   document    A document object.
+ */
+
+YAML_DECLARE(void)
+yaml_document_delete(yaml_document_t *document);
+
+/**
+ * Duplicate a document object.
+ *
+ * @param[in,out]   document   An empty document object.
+ * @param[in]       model       A document to copy.
+ *
+ * @returns @c 1 if the function succeeded, @c 0 on error.
+ */
+
+YAML_DECLARE(int)
+yaml_document_duplicate(yaml_document_t *document, yaml_document_t *model);
+
 /**
  * Create a YAML document.
  *
  * @param[out]      document                An empty document object.
  * @param[in]       version_directive       The %YAML directive value or
  *                                          @c NULL.
- * @param[in]       tag_directives_start    The beginning of the %TAG
- *                                          directives list.
- * @param[in]       tag_directives_end      The end of the %TAG directives
- *                                          list.
- * @param[in]       start_implicit          If the document start indicator is
+ * @param[in]       tag_directives          The list of the %TAG directives or
+ *                                          @c NULL.  The list must end with
+ *                                          the pair @c (NULL,NULL).
+ * @param[in]       is_start_implicit       If the document start indicator is
  *                                          implicit.
- * @param[in]       end_implicit            If the document end indicator is
+ * @param[in]       is_end_implicit         If the document end indicator is
  *                                          implicit.
  *
  * @returns @c 1 if the function succeeded, @c 0 on error.
  */
 
 YAML_DECLARE(int)
-yaml_document_initialize(yaml_document_t *document,
+yaml_document_create(yaml_document_t *document,
         yaml_version_directive_t *version_directive,
-        yaml_tag_directive_t *tag_directives_start,
-        yaml_tag_directive_t *tag_directives_end,
-        int start_implicit, int end_implicit);
+        yaml_tag_directive_t *tag_directives,
+        int is_start_implicit, int is_end_implicit);
 
 /**
  * Delete a YAML document and all its nodes.
@@ -842,13 +1062,13 @@ yaml_document_initialize(yaml_document_t *document,
  */
 
 YAML_DECLARE(void)
-yaml_document_delete(yaml_document_t *document);
+yaml_document_destroy(yaml_document_t *document);
 
 /**
  * Get a node of a YAML document.
  *
  * The pointer returned by this function is valid until any of the functions
- * modifying the documents are called.
+ * modifying the documents is called.
  *
  * @param[in]       document        A document object.
  * @param[in]       index           The node id.
@@ -865,7 +1085,7 @@ yaml_document_get_node(yaml_document_t *document, int index);
  * The root object is the first object added to the document.
  *
  * The pointer returned by this function is valid until any of the functions
- * modifying the documents are called.
+ * modifying the documents is called.
  *
  * An empty document produced by the parser signifies the end of a YAML
  * stream.
@@ -884,6 +1104,7 @@ yaml_document_get_root_node(yaml_document_t *document);
  * The @a style argument may be ignored by the emitter.
  *
  * @param[in,out]   document        A document object.
+ * @param[in]       anchor          A preferred anchor for the node or @c NULL.
  * @param[in]       tag             The scalar tag.
  * @param[in]       value           The scalar value.
  * @param[in]       length          The length of the scalar value.
@@ -894,8 +1115,8 @@ yaml_document_get_root_node(yaml_document_t *document);
 
 YAML_DECLARE(int)
 yaml_document_add_scalar(yaml_document_t *document,
-        yaml_char_t *tag, yaml_char_t *value, int length,
-        yaml_scalar_style_t style);
+        yaml_char_t *anchor, yaml_char_t *tag, yaml_char_t *value,
+        size_t length, yaml_scalar_style_t style);
 
 /**
  * Create a SEQUENCE node and attach it to the document.
@@ -903,6 +1124,7 @@ yaml_document_add_scalar(yaml_document_t *document,
  * The @a style argument may be ignored by the emitter.
  *
  * @param[in,out]   document    A document object.
+ * @param[in]       anchor      A preferred anchor for the node or @c NULL.
  * @param[in]       tag         The sequence tag.
  * @param[in]       style       The sequence style.
  *
@@ -911,7 +1133,7 @@ yaml_document_add_scalar(yaml_document_t *document,
 
 YAML_DECLARE(int)
 yaml_document_add_sequence(yaml_document_t *document,
-        yaml_char_t *tag, yaml_sequence_style_t style);
+        yaml_char_t *anchor, yaml_char_t *tag, yaml_sequence_style_t style);
 
 /**
  * Create a MAPPING node and attach it to the document.
@@ -919,6 +1141,7 @@ yaml_document_add_sequence(yaml_document_t *document,
  * The @a style argument may be ignored by the emitter.
  *
  * @param[in,out]   document    A document object.
+ * @param[in]       anchor      A preferred anchor for the node or @c NULL.
  * @param[in]       tag         The sequence tag.
  * @param[in]       style       The sequence style.
  *
@@ -927,7 +1150,7 @@ yaml_document_add_sequence(yaml_document_t *document,
 
 YAML_DECLARE(int)
 yaml_document_add_mapping(yaml_document_t *document,
-        yaml_char_t *tag, yaml_mapping_style_t style);
+        yaml_char_t *anchor, yaml_char_t *tag, yaml_mapping_style_t style);
 
 /**
  * Add an item to a SEQUENCE node.
@@ -958,10 +1181,10 @@ YAML_DECLARE(int)
 yaml_document_append_mapping_pair(yaml_document_t *document,
         int mapping, int key, int value);
 
-/** @} */
+#endif
 
 /**
- * @defgroup parser Parser Definitions
+ * @defgroup callbacks Callback Definitions
  * @{
  */
 
@@ -969,352 +1192,86 @@ yaml_document_append_mapping_pair(yaml_document_t *document,
  * The prototype of a read handler.
  *
  * The read handler is called when the parser needs to read more bytes from the
- * source.  The handler should write not more than @a size bytes to the @a
- * buffer.  The number of written bytes should be set to the @a length variable.
+ * source.  The handler should read no more than @a size bytes and write them
+ * to the @a buffer.  The number of the read bytes should be returned using the
+ * @a size_read variable.  If the handler reaches the stream end, @a size_read
+ * must be set to @c 0.
  *
  * @param[in,out]   data        A pointer to an application data specified by
- *                              yaml_parser_set_input().
+ *                              @c yaml_parser_set_reader().
  * @param[out]      buffer      The buffer to write the data from the source.
- * @param[in]       size        The size of the buffer.
- * @param[out]      size_read   The actual number of bytes read from the source.
+ * @param[in]       capacity    The maximum number of bytes the buffer can hold.
+ * @param[out]      length      The actual number of bytes read from the source.
  *
  * @returns On success, the handler should return @c 1.  If the handler failed,
  * the returned value should be @c 0.  On EOF, the handler should set the
  * @a size_read to @c 0 and return @c 1.
  */
 
-typedef int yaml_read_handler_t(void *data, unsigned char *buffer, size_t size,
-        size_t *size_read);
+typedef int yaml_reader_t(void *data, unsigned char *buffer, size_t capacity,
+        size_t *length);
 
 /**
- * This structure holds information about a potential simple key.
- */
-
-typedef struct yaml_simple_key_s {
-    /** Is a simple key possible? */
-    int possible;
-
-    /** Is a simple key required? */
-    int required;
-
-    /** The number of the token. */
-    size_t token_number;
-
-    /** The position mark. */
-    yaml_mark_t mark;
-} yaml_simple_key_t;
-
-/**
- * The states of the parser.
- */
-typedef enum yaml_parser_state_e {
-    /** Expect STREAM-START. */
-    YAML_PARSE_STREAM_START_STATE,
-    /** Expect the beginning of an implicit document. */
-    YAML_PARSE_IMPLICIT_DOCUMENT_START_STATE,
-    /** Expect DOCUMENT-START. */
-    YAML_PARSE_DOCUMENT_START_STATE,
-    /** Expect the content of a document. */
-    YAML_PARSE_DOCUMENT_CONTENT_STATE,
-    /** Expect DOCUMENT-END. */
-    YAML_PARSE_DOCUMENT_END_STATE,
-    /** Expect a block node. */
-    YAML_PARSE_BLOCK_NODE_STATE,
-    /** Expect a block node or indentless sequence. */
-    YAML_PARSE_BLOCK_NODE_OR_INDENTLESS_SEQUENCE_STATE,
-    /** Expect a flow node. */
-    YAML_PARSE_FLOW_NODE_STATE,
-    /** Expect the first entry of a block sequence. */
-    YAML_PARSE_BLOCK_SEQUENCE_FIRST_ENTRY_STATE,
-    /** Expect an entry of a block sequence. */
-    YAML_PARSE_BLOCK_SEQUENCE_ENTRY_STATE,
-    /** Expect an entry of an indentless sequence. */
-    YAML_PARSE_INDENTLESS_SEQUENCE_ENTRY_STATE,
-    /** Expect the first key of a block mapping. */
-    YAML_PARSE_BLOCK_MAPPING_FIRST_KEY_STATE,
-    /** Expect a block mapping key. */
-    YAML_PARSE_BLOCK_MAPPING_KEY_STATE,
-    /** Expect a block mapping value. */
-    YAML_PARSE_BLOCK_MAPPING_VALUE_STATE,
-    /** Expect the first entry of a flow sequence. */
-    YAML_PARSE_FLOW_SEQUENCE_FIRST_ENTRY_STATE,
-    /** Expect an entry of a flow sequence. */
-    YAML_PARSE_FLOW_SEQUENCE_ENTRY_STATE,
-    /** Expect a key of an ordered mapping. */
-    YAML_PARSE_FLOW_SEQUENCE_ENTRY_MAPPING_KEY_STATE,
-    /** Expect a value of an ordered mapping. */
-    YAML_PARSE_FLOW_SEQUENCE_ENTRY_MAPPING_VALUE_STATE,
-    /** Expect the and of an ordered mapping entry. */
-    YAML_PARSE_FLOW_SEQUENCE_ENTRY_MAPPING_END_STATE,
-    /** Expect the first key of a flow mapping. */
-    YAML_PARSE_FLOW_MAPPING_FIRST_KEY_STATE,
-    /** Expect a key of a flow mapping. */
-    YAML_PARSE_FLOW_MAPPING_KEY_STATE,
-    /** Expect a value of a flow mapping. */
-    YAML_PARSE_FLOW_MAPPING_VALUE_STATE,
-    /** Expect an empty value of a flow mapping. */
-    YAML_PARSE_FLOW_MAPPING_EMPTY_VALUE_STATE,
-    /** Expect nothing. */
-    YAML_PARSE_END_STATE
-} yaml_parser_state_t;
-
-/**
- * This structure holds aliases data.
- */
-
-typedef struct yaml_alias_data_s {
-    /** The anchor. */
-    yaml_char_t *anchor;
-    /** The node id. */
-    int index;
-    /** The anchor mark. */
-    yaml_mark_t mark;
-} yaml_alias_data_t;
-
-/**
- * The parser structure.
+ * The prototype of a write handler.
  *
- * All members are internal.  Manage the structure using the @c yaml_parser_
- * family of functions.
+ * The write handler is called when the emitter needs to flush the accumulated
+ * characters to the output.  The handler should write @a size bytes of the
+ * @a buffer to the output.
+ *
+ * @param[in,out]   data        A pointer to an application data specified by
+ *                              @c yaml_emitter_set_writer().
+ * @param[in]       buffer      The buffer with bytes to be written.
+ * @param[in]       length      The number of bytes to be written.
+ *
+ * @returns On success, the handler should return @c 1.  If the handler failed,
+ * it should return @c 0.
  */
 
-typedef struct yaml_parser_s {
-
-    /**
-     * @name Error handling
-     * @{
-     */
-
-    /** Error type. */
-    yaml_error_type_t error;
-    /** Error description. */
-    const char *problem;
-    /** The byte about which the problem occured. */
-    size_t problem_offset;
-    /** The problematic value (@c -1 is none). */
-    int problem_value;
-    /** The problem position. */
-    yaml_mark_t problem_mark;
-    /** The error context. */
-    const char *context;
-    /** The context position. */
-    yaml_mark_t context_mark;
-
-    /**
-     * @}
-     */
-
-    /**
-     * @name Reader stuff
-     * @{
-     */
-
-    /** Read handler. */
-    yaml_read_handler_t *read_handler;
-
-    /** A pointer for passing to the read handler. */
-    void *read_handler_data;
-
-    /** Standard (string or file) input data. */
-    union {
-        /** String input data. */
-        struct {
-            /** The string start pointer. */
-            const unsigned char *start;
-            /** The string end pointer. */
-            const unsigned char *end;
-            /** The string current position. */
-            const unsigned char *current;
-        } string;
-
-        /** File input data. */
-        FILE *file;
-    } input;
-
-    /** EOF flag */
-    int eof;
-
-    /** The working buffer. */
-    struct {
-        /** The beginning of the buffer. */
-        yaml_char_t *start;
-        /** The end of the buffer. */
-        yaml_char_t *end;
-        /** The current position of the buffer. */
-        yaml_char_t *pointer;
-        /** The last filled position of the buffer. */
-        yaml_char_t *last;
-    } buffer;
-
-    /* The number of unread characters in the buffer. */
-    size_t unread;
-
-    /** The raw buffer. */
-    struct {
-        /** The beginning of the buffer. */
-        unsigned char *start;
-        /** The end of the buffer. */
-        unsigned char *end;
-        /** The current position of the buffer. */
-        unsigned char *pointer;
-        /** The last filled position of the buffer. */
-        unsigned char *last;
-    } raw_buffer;
-
-    /** The input encoding. */
-    yaml_encoding_t encoding;
-
-    /** The offset of the current position (in bytes). */
-    size_t offset;
-
-    /** The mark of the current position. */
-    yaml_mark_t mark;
-
-    /**
-     * @}
-     */
-
-    /**
-     * @name Scanner stuff
-     * @{
-     */
-
-    /** Have we started to scan the input stream? */
-    int stream_start_produced;
-
-    /** Have we reached the end of the input stream? */
-    int stream_end_produced;
-
-    /** The number of unclosed '[' and '{' indicators. */
-    int flow_level;
-
-    /** The tokens queue. */
-    struct {
-        /** The beginning of the tokens queue. */
-        yaml_token_t *start;
-        /** The end of the tokens queue. */
-        yaml_token_t *end;
-        /** The head of the tokens queue. */
-        yaml_token_t *head;
-        /** The tail of the tokens queue. */
-        yaml_token_t *tail;
-    } tokens;
-
-    /** The number of tokens fetched from the queue. */
-    size_t tokens_parsed;
-
-    /* Does the tokens queue contain a token ready for dequeueing. */
-    int token_available;
-
-    /** The indentation levels stack. */
-    struct {
-        /** The beginning of the stack. */
-        int *start;
-        /** The end of the stack. */
-        int *end;
-        /** The top of the stack. */
-        int *top;
-    } indents;
-
-    /** The current indentation level. */
-    int indent;
-
-    /** May a simple key occur at the current position? */
-    int simple_key_allowed;
-
-    /** The stack of simple keys. */
-    struct {
-        /** The beginning of the stack. */
-        yaml_simple_key_t *start;
-        /** The end of the stack. */
-        yaml_simple_key_t *end;
-        /** The top of the stack. */
-        yaml_simple_key_t *top;
-    } simple_keys;
-
-    /**
-     * @}
-     */
-
-    /**
-     * @name Parser stuff
-     * @{
-     */
-
-    /** The parser states stack. */
-    struct {
-        /** The beginning of the stack. */
-        yaml_parser_state_t *start;
-        /** The end of the stack. */
-        yaml_parser_state_t *end;
-        /** The top of the stack. */
-        yaml_parser_state_t *top;
-    } states;
-
-    /** The current parser state. */
-    yaml_parser_state_t state;
-
-    /** The stack of marks. */
-    struct {
-        /** The beginning of the stack. */
-        yaml_mark_t *start;
-        /** The end of the stack. */
-        yaml_mark_t *end;
-        /** The top of the stack. */
-        yaml_mark_t *top;
-    } marks;
-
-    /** The list of TAG directives. */
-    struct {
-        /** The beginning of the list. */
-        yaml_tag_directive_t *start;
-        /** The end of the list. */
-        yaml_tag_directive_t *end;
-        /** The top of the list. */
-        yaml_tag_directive_t *top;
-    } tag_directives;
-
-    /**
-     * @}
-     */
-
-    /**
-     * @name Dumper stuff
-     * @{
-     */
-
-    /** The alias data. */
-    struct {
-        /** The beginning of the list. */
-        yaml_alias_data_t *start;
-        /** The end of the list. */
-        yaml_alias_data_t *end;
-        /** The top of the list. */
-        yaml_alias_data_t *top;
-    } aliases;
-
-    /** The currently parsed document. */
-    yaml_document_t *document;
-
-    /**
-     * @}
-     */
-
-} yaml_parser_t;
+typedef int yaml_writer_t(void *data, unsigned char *buffer, size_t length);
 
 /**
- * Initialize a parser.
+ * The prototype of a tag resolver.
+ *
+ * The resolve handler is called when the parser encounters a new node without
+ * an explicit tag.  The handler should determine the correct tag of the node
+ * basing on the node kind, the path to the node from the document root and,
+ * in the case of the scalar node, the node value.  The handler is also called
+ * by the emitter to determine whether the node tag could be omitted.
+ *
+ * @param[in,out]   data        A pointer to an application data specified by
+ *                              @c yaml_parser_set_writter() or
+ *                              @c yaml_emitter_set_writer().
+ * @param[in]       node        Information about the new node.
+ * @param[out]      tag         The guessed node tag.
+ *
+ * @returns On success, the handler should return @c 1.  If the handler failed,
+ * it should return @c 0.
+ */
+
+typedef int yaml_resolver_t(void *data, yaml_incomplete_node_t *node,
+        yaml_char_t **tag);
+
+/** @} */
+
+/**
+ * @defgroup parser Parser Definitions
+ * @{
+ */
+
+/** The parser object. */
+typedef struct yaml_parser_s yaml_parser_t;
+
+/**
+ * Create a new parser object.
  *
  * This function creates a new parser object.  An application is responsible
- * for destroying the object using the yaml_parser_delete() function.
+ * for destroying the object using the @c yaml_parser_delete() function.
  *
- * @param[out]      parser  An empty parser object.
- *
- * @returns @c 1 if the function succeeded, @c 0 on error.
+ * @returns a new parser object or @c NULL on error.
  */
 
-YAML_DECLARE(int)
-yaml_parser_initialize(yaml_parser_t *parser);
+YAML_DECLARE(yaml_parser_t *)
+yaml_parser_new(void);
 
 /**
  * Destroy a parser.
@@ -1326,6 +1283,16 @@ YAML_DECLARE(void)
 yaml_parser_delete(yaml_parser_t *parser);
 
 /**
+ * Get a parser error.
+ *
+ * @param[in]   parser  A parser object.
+ * @param[out]  error   An error object.
+ */
+
+YAML_DECLARE(void)
+yaml_parser_get_error(yaml_parser_t *parser, yaml_error_t *error);
+
+/**
  * Set a string input.
  *
  * Note that the @a input pointer must be valid while the @a parser object
@@ -1333,13 +1300,13 @@ yaml_parser_delete(yaml_parser_t *parser);
  * destroying the @a parser.
  *
  * @param[in,out]   parser  A parser object.
- * @param[in]       input   A source data.
- * @param[in]       size    The length of the source data in bytes.
+ * @param[in]       buffer  A source data.
+ * @param[in]       length  The length of the source data in bytes.
  */
 
 YAML_DECLARE(void)
-yaml_parser_set_input_string(yaml_parser_t *parser,
-        const unsigned char *input, size_t size);
+yaml_parser_set_string_reader(yaml_parser_t *parser,
+        const unsigned char *buffer, size_t length);
 
 /**
  * Set a file input.
@@ -1352,20 +1319,52 @@ yaml_parser_set_input_string(yaml_parser_t *parser,
  */
 
 YAML_DECLARE(void)
-yaml_parser_set_input_file(yaml_parser_t *parser, FILE *file);
+yaml_parser_set_file_reader(yaml_parser_t *parser, FILE *file);
 
 /**
  * Set a generic input handler.
  *
  * @param[in,out]   parser  A parser object.
- * @param[in]       handler A read handler.
+ * @param[in]       reader  A read handler.
  * @param[in]       data    Any application data for passing to the read
  *                          handler.
  */
 
 YAML_DECLARE(void)
-yaml_parser_set_input(yaml_parser_t *parser,
-        yaml_read_handler_t *handler, void *data);
+yaml_parser_set_reader(yaml_parser_t *parser,
+        yaml_reader_t *reader, void *data);
+
+#if 0
+
+/**
+ * Set the standard resolve handler.
+ *
+ * The standard resolver recognize the following scalar kinds: !!null, !!bool,
+ * !!str, !!int and !!float.
+ *
+ * @param[in,out]   parser  A parser object.
+ */
+
+YAML_DECLARE(void)
+yaml_parser_set_standard_resolver(yaml_parser_t *parser);
+
+/**
+ * Set the resolve handler.
+ *
+ * The standard resolver recognize the following scalar kinds: !!null, !!bool,
+ * !!str, !!int and !!float.
+ *
+ * @param[in,out]   parser      A parser object.
+ * @param[in]       resolver    A resolve handler.
+ * @param[in]       data        Any application data for passing to the resolve
+ *                              handler.
+ */
+
+YAML_DECLARE(void)
+yaml_parser_set_resolver(yaml_parser_t *parser,
+        yaml_resolver_t *resolver, void *data);
+
+#endif
 
 /**
  * Set the source encoding.
@@ -1386,11 +1385,11 @@ yaml_parser_set_encoding(yaml_parser_t *parser, yaml_encoding_t encoding);
  * @c YAML_STREAM_END_TOKEN.
  *
  * An application is responsible for freeing any buffers associated with the
- * produced token object using the @c yaml_token_delete function.
+ * produced token object using the @c yaml_token_delete() function.
  *
- * An application must not alternate the calls of yaml_parser_scan() with the
- * calls of yaml_parser_parse() or yaml_parser_load(). Doing this will break
- * the parser.
+ * An application must not alternate the calls of @c yaml_parser_scan() with
+ * the calls of @c yaml_parser_parse() or @c yaml_parser_load(). Doing this
+ * will break the parser.
  *
  * @param[in,out]   parser      A parser object.
  * @param[out]      token       An empty token object.
@@ -1410,11 +1409,11 @@ yaml_parser_scan(yaml_parser_t *parser, yaml_token_t *token);
  * @c YAML_STREAM_END_EVENT.
  *
  * An application is responsible for freeing any buffers associated with the
- * produced event object using the yaml_event_delete() function.
+ * produced event object using the @c yaml_event_delete() function.
  *
- * An application must not alternate the calls of yaml_parser_parse() with the
- * calls of yaml_parser_scan() or yaml_parser_load(). Doing this will break the
- * parser.
+ * An application must not alternate the calls of @c yaml_parser_parse() with
+ * the calls of @c yaml_parser_scan() or @c yaml_parser_load(). Doing this will
+ * break the parser.
  *
  * @param[in,out]   parser      A parser object.
  * @param[out]      event       An empty event object.
@@ -1424,6 +1423,8 @@ yaml_parser_scan(yaml_parser_t *parser, yaml_token_t *token);
 
 YAML_DECLARE(int)
 yaml_parser_parse(yaml_parser_t *parser, yaml_event_t *event);
+
+#if 0
 
 /**
  * Parse the input stream and produce the next YAML document.
@@ -1435,11 +1436,11 @@ yaml_parser_parse(yaml_parser_t *parser, yaml_event_t *event);
  * end has been reached.
  *
  * An application is responsible for freeing any data associated with the
- * produced document object using the yaml_document_delete() function.
+ * produced document object using the @c yaml_document_delete() function.
  *
- * An application must not alternate the calls of yaml_parser_load() with the
- * calls of yaml_parser_scan() or yaml_parser_parse(). Doing this will break
- * the parser.
+ * An application must not alternate the calls of @c yaml_parser_load() with
+ * the calls of @c yaml_parser_scan() or @c yaml_parser_parse(). Doing this
+ * will break the parser.
  *
  * @param[in,out]   parser      A parser object.
  * @param[out]      document    An empty document object.
@@ -1450,6 +1451,8 @@ yaml_parser_parse(yaml_parser_t *parser, yaml_event_t *event);
 YAML_DECLARE(int)
 yaml_parser_load(yaml_parser_t *parser, yaml_document_t *document);
 
+#endif
+
 /** @} */
 
 /**
@@ -1457,321 +1460,20 @@ yaml_parser_load(yaml_parser_t *parser, yaml_document_t *document);
  * @{
  */
 
-/**
- * The prototype of a write handler.
- *
- * The write handler is called when the emitter needs to flush the accumulated
- * characters to the output.  The handler should write @a size bytes of the
- * @a buffer to the output.
- *
- * @param[in,out]   data        A pointer to an application data specified by
- *                              yaml_emitter_set_output().
- * @param[in]       buffer      The buffer with bytes to be written.
- * @param[in]       size        The size of the buffer.
- *
- * @returns On success, the handler should return @c 1.  If the handler failed,
- * the returned value should be @c 0.
- */
-
-typedef int yaml_write_handler_t(void *data, unsigned char *buffer, size_t size);
-
-/** The emitter states. */
-typedef enum yaml_emitter_state_e {
-    /** Expect STREAM-START. */
-    YAML_EMIT_STREAM_START_STATE,
-    /** Expect the first DOCUMENT-START or STREAM-END. */
-    YAML_EMIT_FIRST_DOCUMENT_START_STATE,
-    /** Expect DOCUMENT-START or STREAM-END. */
-    YAML_EMIT_DOCUMENT_START_STATE,
-    /** Expect the content of a document. */
-    YAML_EMIT_DOCUMENT_CONTENT_STATE,
-    /** Expect DOCUMENT-END. */
-    YAML_EMIT_DOCUMENT_END_STATE,
-    /** Expect the first item of a flow sequence. */
-    YAML_EMIT_FLOW_SEQUENCE_FIRST_ITEM_STATE,
-    /** Expect an item of a flow sequence. */
-    YAML_EMIT_FLOW_SEQUENCE_ITEM_STATE,
-    /** Expect the first key of a flow mapping. */
-    YAML_EMIT_FLOW_MAPPING_FIRST_KEY_STATE,
-    /** Expect a key of a flow mapping. */
-    YAML_EMIT_FLOW_MAPPING_KEY_STATE,
-    /** Expect a value for a simple key of a flow mapping. */
-    YAML_EMIT_FLOW_MAPPING_SIMPLE_VALUE_STATE,
-    /** Expect a value of a flow mapping. */
-    YAML_EMIT_FLOW_MAPPING_VALUE_STATE,
-    /** Expect the first item of a block sequence. */
-    YAML_EMIT_BLOCK_SEQUENCE_FIRST_ITEM_STATE,
-    /** Expect an item of a block sequence. */
-    YAML_EMIT_BLOCK_SEQUENCE_ITEM_STATE,
-    /** Expect the first key of a block mapping. */
-    YAML_EMIT_BLOCK_MAPPING_FIRST_KEY_STATE,
-    /** Expect the key of a block mapping. */
-    YAML_EMIT_BLOCK_MAPPING_KEY_STATE,
-    /** Expect a value for a simple key of a block mapping. */
-    YAML_EMIT_BLOCK_MAPPING_SIMPLE_VALUE_STATE,
-    /** Expect a value of a block mapping. */
-    YAML_EMIT_BLOCK_MAPPING_VALUE_STATE,
-    /** Expect nothing. */
-    YAML_EMIT_END_STATE
-} yaml_emitter_state_t;
+/** The emitter object. */
+typedef struct yaml_emitter_s yaml_emitter_t;
 
 /**
- * The emitter structure.
- *
- * All members are internal.  Manage the structure using the @c yaml_emitter_
- * family of functions.
- */
-
-typedef struct yaml_emitter_s {
-
-    /**
-     * @name Error handling
-     * @{
-     */
-
-    /** Error type. */
-    yaml_error_type_t error;
-    /** Error description. */
-    const char *problem;
-
-    /**
-     * @}
-     */
-
-    /**
-     * @name Writer stuff
-     * @{
-     */
-
-    /** Write handler. */
-    yaml_write_handler_t *write_handler;
-
-    /** A pointer for passing to the white handler. */
-    void *write_handler_data;
-
-    /** Standard (string or file) output data. */
-    union {
-        /** String output data. */
-        struct {
-            /** The buffer pointer. */
-            unsigned char *buffer;
-            /** The buffer size. */
-            size_t size;
-            /** The number of written bytes. */
-            size_t *size_written;
-        } string;
-
-        /** File output data. */
-        FILE *file;
-    } output;
-
-    /** The working buffer. */
-    struct {
-        /** The beginning of the buffer. */
-        yaml_char_t *start;
-        /** The end of the buffer. */
-        yaml_char_t *end;
-        /** The current position of the buffer. */
-        yaml_char_t *pointer;
-        /** The last filled position of the buffer. */
-        yaml_char_t *last;
-    } buffer;
-
-    /** The raw buffer. */
-    struct {
-        /** The beginning of the buffer. */
-        unsigned char *start;
-        /** The end of the buffer. */
-        unsigned char *end;
-        /** The current position of the buffer. */
-        unsigned char *pointer;
-        /** The last filled position of the buffer. */
-        unsigned char *last;
-    } raw_buffer;
-
-    /** The stream encoding. */
-    yaml_encoding_t encoding;
-
-    /**
-     * @}
-     */
-
-    /**
-     * @name Emitter stuff
-     * @{
-     */
-
-    /** If the output is in the canonical style? */
-    int canonical;
-    /** The number of indentation spaces. */
-    int best_indent;
-    /** The preferred width of the output lines. */
-    int best_width;
-    /** Allow unescaped non-ASCII characters? */
-    int unicode;
-    /** The preferred line break. */
-    yaml_break_t line_break;
-
-    /** The stack of states. */
-    struct {
-        /** The beginning of the stack. */
-        yaml_emitter_state_t *start;
-        /** The end of the stack. */
-        yaml_emitter_state_t *end;
-        /** The top of the stack. */
-        yaml_emitter_state_t *top;
-    } states;
-
-    /** The current emitter state. */
-    yaml_emitter_state_t state;
-
-    /** The event queue. */
-    struct {
-        /** The beginning of the event queue. */
-        yaml_event_t *start;
-        /** The end of the event queue. */
-        yaml_event_t *end;
-        /** The head of the event queue. */
-        yaml_event_t *head;
-        /** The tail of the event queue. */
-        yaml_event_t *tail;
-    } events;
-
-    /** The stack of indentation levels. */
-    struct {
-        /** The beginning of the stack. */
-        int *start;
-        /** The end of the stack. */
-        int *end;
-        /** The top of the stack. */
-        int *top;
-    } indents;
-
-    /** The list of tag directives. */
-    struct {
-        /** The beginning of the list. */
-        yaml_tag_directive_t *start;
-        /** The end of the list. */
-        yaml_tag_directive_t *end;
-        /** The top of the list. */
-        yaml_tag_directive_t *top;
-    } tag_directives;
-
-    /** The current indentation level. */
-    int indent;
-
-    /** The current flow level. */
-    int flow_level;
-
-    /** Is it the document root context? */
-    int root_context;
-    /** Is it a sequence context? */
-    int sequence_context;
-    /** Is it a mapping context? */
-    int mapping_context;
-    /** Is it a simple mapping key context? */
-    int simple_key_context;
-
-    /** The current line. */
-    int line;
-    /** The current column. */
-    int column;
-    /** If the last character was a whitespace? */
-    int whitespace;
-    /** If the last character was an indentation character (' ', '-', '?', ':')? */
-    int indention;
-
-    /** Anchor analysis. */
-    struct {
-        /** The anchor value. */
-        yaml_char_t *anchor;
-        /** The anchor length. */
-        size_t anchor_length;
-        /** Is it an alias? */
-        int alias;
-    } anchor_data;
-
-    /** Tag analysis. */
-    struct {
-        /** The tag handle. */
-        yaml_char_t *handle;
-        /** The tag handle length. */
-        size_t handle_length;
-        /** The tag suffix. */
-        yaml_char_t *suffix;
-        /** The tag suffix length. */
-        size_t suffix_length;
-    } tag_data;
-
-    /** Scalar analysis. */
-    struct {
-        /** The scalar value. */
-        yaml_char_t *value;
-        /** The scalar length. */
-        size_t length;
-        /** Does the scalar contain line breaks? */
-        int multiline;
-        /** Can the scalar be expessed in the flow plain style? */
-        int flow_plain_allowed;
-        /** Can the scalar be expressed in the block plain style? */
-        int block_plain_allowed;
-        /** Can the scalar be expressed in the single quoted style? */
-        int single_quoted_allowed;
-        /** Can the scalar be expressed in the literal or folded styles? */
-        int block_allowed;
-        /** The output style. */
-        yaml_scalar_style_t style;
-    } scalar_data;
-
-    /**
-     * @}
-     */
-
-    /**
-     * @name Dumper stuff
-     * @{
-     */
-
-    /** If the stream was already opened? */
-    int opened;
-    /** If the stream was already closed? */
-    int closed;
-
-    /** The information associated with the document nodes. */
-    struct {
-        /** The number of references. */
-        int references;
-        /** The anchor id. */
-        int anchor;
-        /** If the node has been emitted? */
-        int serialized;
-    } *anchors;
-
-    /** The last assigned anchor id. */
-    int last_anchor_id;
-
-    /** The currently emitted document. */
-    yaml_document_t *document;
-
-    /**
-     * @}
-     */
-
-} yaml_emitter_t;
-
-/**
- * Initialize an emitter.
+ * Create a new emitter object.
  *
  * This function creates a new emitter object.  An application is responsible
- * for destroying the object using the yaml_emitter_delete() function.
+ * for destroying the object using the @c yaml_emitter_delete() function.
  *
- * @param[out]      emitter     An empty parser object.
- *
- * @returns @c 1 if the function succeeded, @c 0 on error.
+ * @returns a new emitter object or @c NULL on error.
  */
 
-YAML_DECLARE(int)
-yaml_emitter_initialize(yaml_emitter_t *emitter);
+YAML_DECLARE(yaml_emitter_t *)
+yaml_emitter_new(void);
 
 /**
  * Destroy an emitter.
@@ -1783,23 +1485,33 @@ YAML_DECLARE(void)
 yaml_emitter_delete(yaml_emitter_t *emitter);
 
 /**
+ * Get an emitter error.
+ *
+ * @param[in]   emitter An emitter object.
+ * @param[out]  error   An error object.
+ */
+
+YAML_DECLARE(void)
+yaml_emitter_get_error(yaml_emitter_t *emitter, yaml_error_t *error);
+
+/**
  * Set a string output.
  *
  * The emitter will write the output characters to the @a output buffer of the
  * size @a size.  The emitter will set @a size_written to the number of written
  * bytes.  If the buffer is smaller than required, the emitter produces the
- * YAML_WRITE_ERROR error.
+ * @c YAML_WRITE_ERROR error.
  *
  * @param[in,out]   emitter         An emitter object.
- * @param[in]       output          An output buffer.
- * @param[in]       size            The buffer size.
- * @param[in]       size_written    The pointer to save the number of written
+ * @param[in]       buffer          An output buffer.
+ * @param[in]       length          The pointer to save the number of written
  *                                  bytes.
+ * @param[in]       capacity        The buffer size.
  */
 
 YAML_DECLARE(void)
-yaml_emitter_set_output_string(yaml_emitter_t *emitter,
-        unsigned char *output, size_t size, size_t *size_written);
+yaml_emitter_set_string_writer(yaml_emitter_t *emitter,
+        unsigned char *buffer, size_t *length, size_t capacity);
 
 /**
  * Set a file output.
@@ -1812,20 +1524,52 @@ yaml_emitter_set_output_string(yaml_emitter_t *emitter,
  */
 
 YAML_DECLARE(void)
-yaml_emitter_set_output_file(yaml_emitter_t *emitter, FILE *file);
+yaml_emitter_set_file_writer(yaml_emitter_t *emitter, FILE *file);
 
 /**
  * Set a generic output handler.
  *
  * @param[in,out]   emitter     An emitter object.
- * @param[in]       handler     A write handler.
+ * @param[in]       writer      A write handler.
  * @param[in]       data        Any application data for passing to the write
  *                              handler.
  */
 
 YAML_DECLARE(void)
-yaml_emitter_set_output(yaml_emitter_t *emitter,
-        yaml_write_handler_t *handler, void *data);
+yaml_emitter_set_writer(yaml_emitter_t *emitter,
+        yaml_writer_t *writer, void *data);
+
+#if 0
+
+/**
+ * Set the standard resolve handler.
+ *
+ * The standard resolver recognize the following scalar kinds: !!null, !!bool,
+ * !!str, !!int and !!float.
+ *
+ * @param[in,out]   emitter An emitter object.
+ */
+
+YAML_DECLARE(void)
+yaml_emitter_set_standard_resolver(yaml_emitter_t *emitter);
+
+/**
+ * Set the resolve handler.
+ *
+ * The standard resolver recognize the following scalar kinds: !!null, !!bool,
+ * !!str, !!int and !!float.
+ *
+ * @param[in,out]   emitter     An emitter object.
+ * @param[in]       resolver    A resolve handler.
+ * @param[in]       data        Any application data for passing to the resolve
+ *                              handler.
+ */
+
+YAML_DECLARE(void)
+yaml_emitter_set_resolver(yaml_emitter_t *emitter,
+        yaml_resolver_t *resolver, void *data);
+
+#endif
 
 /**
  * Set the output encoding.
@@ -1841,12 +1585,12 @@ yaml_emitter_set_encoding(yaml_emitter_t *emitter, yaml_encoding_t encoding);
  * Set if the output should be in the "canonical" format as in the YAML
  * specification.
  *
- * @param[in,out]   emitter     An emitter object.
- * @param[in]       canonical   If the output is canonical.
+ * @param[in,out]   emitter         An emitter object.
+ * @param[in]       is_canonical    If the output is canonical.
  */
 
 YAML_DECLARE(void)
-yaml_emitter_set_canonical(yaml_emitter_t *emitter, int canonical);
+yaml_emitter_set_canonical(yaml_emitter_t *emitter, int is_canonical);
 
 /**
  * Set the intendation increment.
@@ -1872,11 +1616,11 @@ yaml_emitter_set_width(yaml_emitter_t *emitter, int width);
  * Set if unescaped non-ASCII characters are allowed.
  *
  * @param[in,out]   emitter     An emitter object.
- * @param[in]       unicode     If unescaped Unicode characters are allowed.
+ * @param[in]       is_unicode  If unescaped Unicode characters are allowed.
  */
 
 YAML_DECLARE(void)
-yaml_emitter_set_unicode(yaml_emitter_t *emitter, int unicode);
+yaml_emitter_set_unicode(yaml_emitter_t *emitter, int is_unicode);
 
 /**
  * Set the preferred line break.
@@ -1905,10 +1649,13 @@ yaml_emitter_set_break(yaml_emitter_t *emitter, yaml_break_t line_break);
 YAML_DECLARE(int)
 yaml_emitter_emit(yaml_emitter_t *emitter, yaml_event_t *event);
 
+#if 0
+
 /**
  * Start a YAML stream.
  *
- * This function should be used before yaml_emitter_dump() is called.
+ * This function should be used before the first @c yaml_emitter_dump() is
+ * called.
  *
  * @param[in,out]   emitter     An emitter object.
  *
@@ -1921,7 +1668,8 @@ yaml_emitter_open(yaml_emitter_t *emitter);
 /**
  * Finish a YAML stream.
  *
- * This function should be used after yaml_emitter_dump() is called.
+ * This function should be used after the last @c yaml_emitter_dump() is
+ * called.
  *
  * @param[in,out]   emitter     An emitter object.
  *
@@ -1934,10 +1682,10 @@ yaml_emitter_close(yaml_emitter_t *emitter);
 /**
  * Emit a YAML document.
  *
- * The documen object may be generated using the yaml_parser_load() function
- * or the yaml_document_initialize() function.  The emitter takes the
- * responsibility for the document object and destoys its content after
- * it is emitted. The document object is destroyedeven if the function fails.
+ * The document object may be generated using the @c yaml_parser_load()
+ * function or the @c yaml_document_initialize() function.  The emitter takes
+ * the responsibility for the document object and destoys its content after
+ * it is emitted. The document object is destroyed even if the function fails.
  *
  * @param[in,out]   emitter     An emitter object.
  * @param[in,out]   document    A document object.
@@ -1948,8 +1696,10 @@ yaml_emitter_close(yaml_emitter_t *emitter);
 YAML_DECLARE(int)
 yaml_emitter_dump(yaml_emitter_t *emitter, yaml_document_t *document);
 
+#endif
+
 /**
- * Flush the accumulated characters to the output.
+ * Flush the accumulated characters to the output stream.
  *
  * @param[in,out]   emitter     An emitter object.
  *
