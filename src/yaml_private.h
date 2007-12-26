@@ -28,9 +28,9 @@ yaml_strdup(const yaml_char_t *);
  * Error management.
  */
 
-#define MEMORY_ERROR_INIT(error)                                                \
+#define ERROR_INIT(error,error_type)                                            \
     (memset(&(error), 0, sizeof(error)),                                        \
-     (error).type = YAML_MEMORY_ERROR,                                          \
+     (error).type = (error_type),                                               \
      0)
 
 #define READING_ERROR_INIT(error,error_type,error_problem,error_offset,error_value) \
@@ -74,38 +74,41 @@ yaml_strdup(const yaml_char_t *);
      (error).type.dumping.problem = (error_problem),                            \
      0)
 
-#define READER_ERROR_INIT(error,problem,offset)                                 \
-    READING_ERROR_INIT(error,YAML_READER_ERROR,problem,offset,-1)
+#define MEMORY_ERROR_INIT(self)                                                 \
+    ERROR_INIT((self)->error,YAML_MEMORY_ERROR)
 
-#define DECODER_ERROR_INIT(error,problem,offset,value)                          \
-    READING_ERROR_INIT(error,YAML_DECODER_ERROR,problem,offset,value)
+#define READER_ERROR_INIT(self,problem,offset)                                  \
+    READING_ERROR_INIT((self)->error,YAML_READER_ERROR,problem,offset,-1)
 
-#define SCANNER_ERROR_INIT(error,problem,problem_mark)                          \
-    LOADING_ERROR_INIT(error,YAML_SCANNER_ERROR,problem,problem_mark)
+#define DECODER_ERROR_INIT(self,problem,offset,value)                           \
+    READING_ERROR_INIT((self)->error,YAML_DECODER_ERROR,problem,offset,value)
 
-#define SCANNER_ERROR_WITH_CONTEXT_INIT(error,context,context_mark,problem,problem_mark)    \
-    LOADING_ERROR_WITH_CONTEXT_INIT(error,YAML_SCANNER_ERROR,context,context_mark,problem,problem_mark)
+#define SCANNER_ERROR_INIT(self,problem,problem_mark)                           \
+    LOADING_ERROR_INIT((self)->error,YAML_SCANNER_ERROR,problem,problem_mark)
 
-#define PARSER_ERROR_INIT(error,problem,problem_mark)                           \
-    LOADING_ERROR_INIT(error,YAML_PARSER_ERROR,problem,problem_mark)
+#define SCANNER_ERROR_WITH_CONTEXT_INIT(self,context,context_mark,problem,problem_mark) \
+    LOADING_ERROR_WITH_CONTEXT_INIT((self)->error,YAML_SCANNER_ERROR,context,context_mark,problem,problem_mark)
 
-#define PARSER_ERROR_WITH_CONTEXT_INIT(error,context,context_mark,problem,problem_mark)     \
-    LOADING_ERROR_WITH_CONTEXT_INIT(error,YAML_PARSER_ERROR,context,context_mark,problem,problem_mark)
+#define PARSER_ERROR_INIT(self,problem,problem_mark)                            \
+    LOADING_ERROR_INIT((self)->error,YAML_PARSER_ERROR,problem,problem_mark)
 
-#define COMPOSER_ERROR_INIT(error,problem,problem_mark)                         \
-    LOADING_ERROR_INIT(error,YAML_COMPOSER_ERROR,problem,problem_mark)
+#define PARSER_ERROR_WITH_CONTEXT_INIT(self,context,context_mark,problem,problem_mark)  \
+    LOADING_ERROR_WITH_CONTEXT_INIT((self)->error,YAML_PARSER_ERROR,context,context_mark,problem,problem_mark)
 
-#define COMPOSER_ERROR_WITH_CONTEXT_INIT(error,context,context_mark,problem,problem_mark)   \
-    LOADING_ERROR_WITH_CONTEXT_INIT(error,YAML_COMPOSER_ERROR,context,context_mark,problem,problem_mark)
+#define COMPOSER_ERROR_INIT(self,problem,problem_mark)                          \
+    LOADING_ERROR_INIT((self)->error,YAML_COMPOSER_ERROR,problem,problem_mark)
 
-#define WRITER_ERROR_INIT(error,problem,offset)                                 \
-    WRITING_ERROR_INIT(error,YAML_WRITER_ERROR,problem,offset)
+#define COMPOSER_ERROR_WITH_CONTEXT_INIT(self,context,context_mark,problem,problem_mark)    \
+    LOADING_ERROR_WITH_CONTEXT_INIT((self)->error,YAML_COMPOSER_ERROR,context,context_mark,problem,problem_mark)
 
-#define EMITTER_ERROR_INIT(error,context,problem)                               \
-    DUMPING_ERROR_INIT(error,YAML_EMITTER_ERROR,problem)
+#define WRITER_ERROR_INIT(self,problem,offset)                                  \
+    WRITING_ERROR_INIT((self)->error,YAML_WRITER_ERROR,problem,offset)
 
-#define SERIALIZER_ERROR_INIT(error,context)                                    \
-    DUMPING_ERROR_INIT(error,YAML_SERIALIZER_ERROR,problem)
+#define EMITTER_ERROR_INIT(self,context,problem)                                \
+    DUMPING_ERROR_INIT((self)->error,YAML_EMITTER_ERROR,problem)
+
+#define SERIALIZER_ERROR_INIT(self,context)                                     \
+    DUMPING_ERROR_INIT((self)->error,YAML_SERIALIZER_ERROR,problem)
 
 /*
  * The size of the input raw buffer.
