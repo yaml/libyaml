@@ -27,9 +27,9 @@ yaml_emitter_flush(yaml_emitter_t *emitter)
         return 1;
     }
 
-    /* Switch the pointer to the beginning of the buffer. */
+    /* Switch the buffer into the input mode. */
 
-    emitter->output.capacity = emitter->output.pointer;
+    emitter->output.length = emitter->output.pointer;
     emitter->output.pointer = 0;
 
     /* If the output encoding is UTF-8, we don't need to recode the buffer. */
@@ -37,13 +37,14 @@ yaml_emitter_flush(yaml_emitter_t *emitter)
     if (emitter->encoding == YAML_UTF8_ENCODING)
     {
         if (emitter->writer(emitter->writer_data,
-                    emitter->output.buffer, emitter->output.capacity)) {
-            emitter->offset += emitter->output.capacity;
-            emitter->output.capacity = OUTPUT_BUFFER_CAPACITY;
+                    emitter->output.buffer, emitter->output.length)) {
+            emitter->offset += emitter->output.length;
+            emitter->output.length = 0;
             return 1;
         }
         else {
-            return WRITER_ERROR_INIT(emitter, "Write error", emitter->offset);
+            return WRITER_ERROR_INIT(emitter,
+                    "write handler error", emitter->offset);
         }
     }
 
@@ -52,7 +53,7 @@ yaml_emitter_flush(yaml_emitter_t *emitter)
     low = (emitter->encoding == YAML_UTF16LE_ENCODING ? 0 : 1);
     high = (emitter->encoding == YAML_UTF16LE_ENCODING ? 1 : 0);
 
-    while (emitter->output.pointer != emitter->output.capacity)
+    while (emitter->output.pointer < emitter->output.length)
     {
         unsigned char octet;
         unsigned int width;
@@ -113,13 +114,14 @@ yaml_emitter_flush(yaml_emitter_t *emitter)
     if (emitter->writer(emitter->writer_data,
                 emitter->raw_output.buffer, emitter->raw_output.pointer)) {
         emitter->output.pointer = 0;
-        emitter->output.capacity = OUTPUT_BUFFER_CAPACITY;
+        emitter->output.length = 0;
         emitter->offset += emitter->raw_output.pointer;
         emitter->raw_output.pointer = 0;
         return 1;
     }
     else {
-        return WRITER_ERROR_INIT(emitter, "Write error", emitter->offset);
+        return WRITER_ERROR_INIT(emitter,
+                "write handler error", emitter->offset);
     }
 }
 

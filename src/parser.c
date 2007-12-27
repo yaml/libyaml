@@ -47,7 +47,7 @@
 
 #define PEEK_TOKEN(parser)                                                      \
     ((parser->is_token_available || yaml_parser_fetch_more_tokens(parser)) ?    \
-        parser->tokens.list + parser->tokens.head : NULL)
+        QUEUE_ITER(parser, parser->tokens, 0) : NULL)
 
 /*
  * Remove the next token from the queue (must be called after PEEK_TOKEN).
@@ -57,7 +57,7 @@
     (parser->is_token_available = 0,                                            \
      parser->tokens_parsed ++,                                                  \
      parser->is_stream_end_produced =                                           \
-        (parser->tokens.list[parser->tokens.head].type == YAML_STREAM_END_TOKEN),   \
+        (QUEUE_ITER(parser, parser->tokens, 0)->type == YAML_STREAM_END_TOKEN), \
      parser->tokens.head ++)
 
 /*
@@ -65,7 +65,7 @@
  */
 
 YAML_DECLARE(int)
-yaml_parser_parse(yaml_parser_t *parser, yaml_event_t *event);
+yaml_parser_parse_event(yaml_parser_t *parser, yaml_event_t *event);
 
 /*
  * State functions.
@@ -155,7 +155,7 @@ yaml_parser_append_tag_directive(yaml_parser_t *parser,
  */
 
 YAML_DECLARE(int)
-yaml_parser_parse(yaml_parser_t *parser, yaml_event_t *event)
+yaml_parser_parse_event(yaml_parser_t *parser, yaml_event_t *event)
 {
     assert(parser);     /* Non-NULL parser object is expected. */
     assert(event);      /* Non-NULL event object is expected. */
@@ -255,7 +255,7 @@ yaml_parser_state_machine(yaml_parser_t *parser, yaml_event_t *event)
             return yaml_parser_parse_flow_mapping_value(parser, event, 1);
 
         default:
-            assert(1);      /* Invalid state. */
+            assert(0);      /* Invalid state. */
     }
 
     return 0;
@@ -562,7 +562,8 @@ yaml_parser_parse_node(yaml_parser_t *parser, yaml_event_t *event,
             else {
                 int idx;
                 for (idx = 0; idx < parser->tag_directives.length; idx++) {
-                    yaml_tag_directive_t *tag_directive = parser->tag_directives.list + idx;
+                    yaml_tag_directive_t *tag_directive =
+                        STACK_ITER(parser, parser->tag_directives, idx);
                     if (strcmp((char *)tag_directive->handle, (char *)tag_handle) == 0) {
                         size_t prefix_len = strlen((char *)tag_directive->prefix);
                         size_t suffix_len = strlen((char *)tag_suffix);
@@ -1310,7 +1311,8 @@ yaml_parser_append_tag_directive(yaml_parser_t *parser,
     int idx;
 
     for (idx = 0; idx < parser->tag_directives.length; idx++) {
-        yaml_tag_directive_t *tag_directive = parser->tag_directives.list + idx;
+        yaml_tag_directive_t *tag_directive =
+            STACK_ITER(parser, parser->tag_directives, idx);
         if (strcmp((char *)value.handle, (char *)tag_directive->handle) == 0) {
             if (allow_duplicates)
                 return 1;

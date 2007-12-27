@@ -28,87 +28,105 @@ yaml_strdup(const yaml_char_t *);
  * Error management.
  */
 
-#define ERROR_INIT(error,error_type)                                            \
-    (memset(&(error), 0, sizeof(error)),                                        \
-     (error).type = (error_type),                                               \
+/*
+ * Generic error initializers; not to be used directly.
+ */
+
+#define ERROR_INIT(error, _type)                                                \
+    (memset(&(error), 0, sizeof(yaml_error_t)),                                 \
+     (error).type = (_type),                                                    \
      0)
 
-#define READING_ERROR_INIT(error,error_type,error_problem,error_offset,error_value) \
-    (memset(&(error), 0, sizeof(error)),                                        \
-     (error).type = (error_type),                                               \
-     (error).data.reading.problem = (error_problem),                            \
-     (error).data.reading.offset = (error_offset),                              \
-     (error).data.reading.value = (error_value),                                \
+#define READING_ERROR_INIT(error, _type, _problem, _offset, _value)             \
+    (ERROR_INIT(error, _type),                                                  \
+     (error).data.reading.problem = (_problem),                                 \
+     (error).data.reading.offset = (_offset),                                   \
+     (error).data.reading.value = (_value),                                     \
      0)
 
-#define LOADING_ERROR_INIT(error,error_type,error_problem,error_problem_mark)   \
-    (memset(&(error), 0, sizeof(error)),                                        \
-     (error).type = (error_type),                                               \
+#define LOADING_ERROR_INIT(error, _type, _problem, _problem_mark)               \
+    (ERROR_INIT(error, _type),                                                  \
      (error).data.loading.context = NULL,                                       \
      (error).data.loading.context_mark.index = 0,                               \
      (error).data.loading.context_mark.line = 0,                                \
      (error).data.loading.context_mark.column = 0,                              \
-     (error).data.loading.problem = (error_problem),                            \
-     (error).data.loading.problem_mark = (error_problem_mark),                  \
+     (error).data.loading.problem = (_problem),                                 \
+     (error).data.loading.problem_mark = (_problem_mark),                       \
      0)
 
-#define LOADING_ERROR_WITH_CONTEXT_INIT(error,error_type,error_context,error_context_mark,error_problem,error_problem_mark) \
-    (memset(&(error), 0, sizeof(error)),                                        \
-     (error).type = (error_type),                                               \
-     (error).data.loading.context = (error_context),                            \
-     (error).data.loading.context_mark = (error_context_mark),                  \
-     (error).data.loading.problem = (error_problem),                            \
-     (error).data.loading.problem_mark = (error_problem_mark),                  \
+#define LOADING_ERROR_WITH_CONTEXT_INIT(error, _type, _context, _context_mark,  \
+        _problem, _problem_mark)                                                \
+    (ERROR_INIT(error, _type),                                                  \
+     (error).data.loading.context = (_context),                                 \
+     (error).data.loading.context_mark = (_context_mark),                       \
+     (error).data.loading.problem = (_problem),                                 \
+     (error).data.loading.problem_mark = (_problem_mark),                       \
      0)
 
-#define WRITING_ERROR_INIT(error,error_type,error_problem,error_offset)         \
-    (memset(&(error), 0, sizeof(error)),                                        \
-     (error).type = (error_type),                                               \
-     (error).data.writing.problem = (error_problem),                            \
-     (error).data.writing.offset = (error_offset),                              \
+#define WRITING_ERROR_INIT(error, _type, _problem, _offset)                     \
+    (ERROR_INIT(error, _type),                                                  \
+     (error).data.writing.problem = (_problem),                                 \
+     (error).data.writing.offset = (_offset),                                   \
      0)
 
-#define DUMPING_ERROR_INIT(error,error_type,error_problem)                      \
-    (memset(&(error), 0, sizeof(error)),                                        \
-     (error).type = (error_type),                                               \
-     (error).data.dumping.problem = (error_problem),                            \
+#define DUMPING_ERROR_INIT(error, _type, _problem)                              \
+    (ERROR_INIT(error, _type),                                                  \
+     (error).data.dumping.problem = (_problem),                                 \
      0)
+
+#define RESOLVING_ERROR_INIT(error, _type, _problem)                            \
+    (ERROR_INIT(error, _type),                                                  \
+     (error).data.resolving.problem = (_problem),                               \
+     0)
+
+/*
+ * Specific error initializers.
+ */
 
 #define MEMORY_ERROR_INIT(self)                                                 \
-    ERROR_INIT((self)->error,YAML_MEMORY_ERROR)
+    ERROR_INIT((self)->error, YAML_MEMORY_ERROR)
 
-#define READER_ERROR_INIT(self,problem,offset)                                  \
-    READING_ERROR_INIT((self)->error,YAML_READER_ERROR,problem,offset,-1)
+#define READER_ERROR_INIT(self, _problem, _offset)                              \
+    READING_ERROR_INIT((self)->error, YAML_READER_ERROR, _problem, _offset, -1)
 
-#define DECODER_ERROR_INIT(self,problem,offset,value)                           \
-    READING_ERROR_INIT((self)->error,YAML_DECODER_ERROR,problem,offset,value)
+#define DECODER_ERROR_INIT(self, _problem, _offset, _value)                     \
+    READING_ERROR_INIT((self)->error, YAML_DECODER_ERROR, _problem, _offset, _value)
 
-#define SCANNER_ERROR_INIT(self,problem,problem_mark)                           \
-    LOADING_ERROR_INIT((self)->error,YAML_SCANNER_ERROR,problem,problem_mark)
+#define SCANNER_ERROR_INIT(self, _problem, _problem_mark)                       \
+    LOADING_ERROR_INIT((self)->error, YAML_SCANNER_ERROR, _problem, _problem_mark)
 
-#define SCANNER_ERROR_WITH_CONTEXT_INIT(self,context,context_mark,problem,problem_mark) \
-    LOADING_ERROR_WITH_CONTEXT_INIT((self)->error,YAML_SCANNER_ERROR,context,context_mark,problem,problem_mark)
+#define SCANNER_ERROR_WITH_CONTEXT_INIT(self, _context, _context_mark,          \
+        _problem, _problem_mark)                                                \
+    LOADING_ERROR_WITH_CONTEXT_INIT((self)->error, YAML_SCANNER_ERROR,          \
+            _context, _context_mark, _problem, _problem_mark)
 
-#define PARSER_ERROR_INIT(self,problem,problem_mark)                            \
-    LOADING_ERROR_INIT((self)->error,YAML_PARSER_ERROR,problem,problem_mark)
+#define PARSER_ERROR_INIT(self, _problem, _problem_mark)                        \
+    LOADING_ERROR_INIT((self)->error, YAML_PARSER_ERROR, _problem, _problem_mark)
 
-#define PARSER_ERROR_WITH_CONTEXT_INIT(self,context,context_mark,problem,problem_mark)  \
-    LOADING_ERROR_WITH_CONTEXT_INIT((self)->error,YAML_PARSER_ERROR,context,context_mark,problem,problem_mark)
+#define PARSER_ERROR_WITH_CONTEXT_INIT(self, _context, _context_mark,           \
+        _problem, _problem_mark)                                                \
+    LOADING_ERROR_WITH_CONTEXT_INIT((self)->error, YAML_PARSER_ERROR,           \
+            _context, _context_mark, _problem, _problem_mark)
 
-#define COMPOSER_ERROR_INIT(self,problem,problem_mark)                          \
-    LOADING_ERROR_INIT((self)->error,YAML_COMPOSER_ERROR,problem,problem_mark)
+#define COMPOSER_ERROR_INIT(self, _problem, _problem_mark)                      \
+    LOADING_ERROR_INIT((self)->error, YAML_COMPOSER_ERROR, _problem, _problem_mark)
 
-#define COMPOSER_ERROR_WITH_CONTEXT_INIT(self,context,context_mark,problem,problem_mark)    \
-    LOADING_ERROR_WITH_CONTEXT_INIT((self)->error,YAML_COMPOSER_ERROR,context,context_mark,problem,problem_mark)
+#define COMPOSER_ERROR_WITH_CONTEXT_INIT(self, _context, _context_mark,         \
+        _problem, _problem_mark)                                                \
+    LOADING_ERROR_WITH_CONTEXT_INIT((self)->error, YAML_COMPOSER_ERROR,         \
+            _context, _context_mark, _problem, _problem_mark)
 
-#define WRITER_ERROR_INIT(self,problem,offset)                                  \
-    WRITING_ERROR_INIT((self)->error,YAML_WRITER_ERROR,problem,offset)
+#define WRITER_ERROR_INIT(self, _problem, _offset)                              \
+    WRITING_ERROR_INIT((self)->error, YAML_WRITER_ERROR, _problem, _offset)
 
-#define EMITTER_ERROR_INIT(self,problem)                                        \
-    DUMPING_ERROR_INIT((self)->error,YAML_EMITTER_ERROR,problem)
+#define EMITTER_ERROR_INIT(self, _problem)                                      \
+    DUMPING_ERROR_INIT((self)->error, YAML_EMITTER_ERROR, _problem)
 
-#define SERIALIZER_ERROR_INIT(self,context)                                     \
-    DUMPING_ERROR_INIT((self)->error,YAML_SERIALIZER_ERROR,problem)
+#define SERIALIZER_ERROR_INIT(self, _problem)                                   \
+    DUMPING_ERROR_INIT((self)->error, YAML_SERIALIZER_ERROR, _problem)
+
+#define RESOLVER_ERROR_INIT(self, _problem)                                     \
+    RESOLVER_ERROR_INIT((self)->error, YAML_RESOLVER_ERROR, _problem)
 
 /*
  * The size of the input raw buffer.
@@ -152,53 +170,103 @@ yaml_strdup(const yaml_char_t *);
  * String management.
  */
 
-typedef struct yaml_string_s {
+/*
+ * An immutable string used as an input buffer.
+ */
+
+typedef struct yaml_istring_s {
+    const yaml_char_t *buffer;
+    size_t pointer;
+    size_t length;
+} yaml_istring_t;
+
+/*
+ * A string that is used as an output buffer.
+ */
+
+typedef struct yaml_ostring_s {
     yaml_char_t *buffer;
     size_t pointer;
     size_t capacity;
-} yaml_string_t;
+} yaml_ostring_t;
+
+/*
+ * A string that could be used both as an input and an output buffer.
+ */
+
+typedef struct yaml_iostring_s {
+    yaml_char_t *buffer;
+    size_t pointer;
+    size_t length;
+    size_t capacity;
+} yaml_iostring_t;
+
+/*
+ * Separate type for non-UTF-8 i/o strings.
+ */
+
+typedef struct yaml_raw_iostring_s {
+    unsigned char *buffer;
+    size_t pointer;
+    size_t length;
+    size_t capacity;
+} yaml_raw_iostring_t;
 
 YAML_DECLARE(int)
-yaml_string_extend(yaml_char_t **buffer, size_t *capacity);
+yaml_ostring_extend(yaml_char_t **buffer, size_t *capacity);
 
 YAML_DECLARE(int)
-yaml_string_join(
+yaml_ostring_join(
         yaml_char_t **base_buffer, size_t *base_pointer, size_t *base_capacity,
-        yaml_char_t *adj_buffer, size_t adj_pointer, size_t adj_capacity);
+        yaml_char_t *adj_buffer, size_t adj_pointer);
 
-#define NULL_STRING { NULL, 0, 0 }
+#define ISTRING(buffer, length) { (buffer), 0, (length) }
 
-#define STRING(string,capacity)   { (string), 0, (capacity) }
+#define NULL_OSTRING { NULL, 0, 0 }
 
-#define STRING_INIT(self,string,string_capacity)                                \
-    (((string).buffer = yaml_malloc(string_capacity)) ?                         \
-        ((string).pointer = 0,                                                  \
-         (string).capacity = (string_capacity),                                 \
-         memset((string).buffer, 0, (string_capacity)),                         \
+#define IOSTRING_INIT(self, string, _capacity)                                  \
+    (((string).buffer = yaml_malloc(_capacity)) ?                               \
+        ((string).pointer = (string).length = 0,                                \
+         (string).capacity = (_capacity),                                       \
+         memset((string).buffer, 0, (_capacity)),                               \
          1) :                                                                   \
         ((self)->error.type = YAML_MEMORY_ERROR,                                \
          0))
 
-#define STRING_DEL(self,string)                                                 \
+#define IOSTRING_DEL(self, string)                                              \
+    (yaml_free((string).buffer),                                                \
+     (string).buffer = NULL,                                                    \
+     ((string).pointer = (string).length = (string).capacity = 0))
+
+#define OSTRING_INIT(self, string, _capacity)                                   \
+    (((string).buffer = yaml_malloc(_capacity)) ?                               \
+        ((string).pointer = 0,                                                  \
+         (string).capacity = (_capacity),                                       \
+         memset((string).buffer, 0, (_capacity)),                               \
+         1) :                                                                   \
+        ((self)->error.type = YAML_MEMORY_ERROR,                                \
+         0))
+
+#define OSTRING_DEL(self, string)                                               \
     (yaml_free((string).buffer),                                                \
      (string).buffer = NULL,                                                    \
      ((string).pointer = (string).capacity = 0))
 
-#define STRING_EXTEND(self,string)                                              \
+#define OSTRING_EXTEND(self, string)                                            \
     ((((string).pointer+5 < (string).capacity)                                  \
-        || yaml_string_extend(&(string).buffer, &(string).capacity)) ?          \
+        || yaml_ostring_extend(&(string).buffer, &(string).capacity)) ?         \
      1 :                                                                        \
      ((self)->error.type = YAML_MEMORY_ERROR,                                   \
       0))
 
-#define CLEAR(self,string)                                                      \
+#define CLEAR(self, string)                                                     \
     ((string).pointer = 0,                                                      \
      memset((string).buffer, 0, (string).capacity))
 
-#define JOIN(self,base_string,adj_string)                                       \
-    ((yaml_string_join(&(base_string).buffer, &(base_string).pointer,           \
-                       &(base_string).capacity, (adj_string).buffer,            \
-                       (adj_string).pointer, (adj_string).capacity)) ?          \
+#define JOIN(self, base_string, adj_string)                                     \
+    ((yaml_ostring_join(&(base_string).buffer, &(base_string).pointer,          \
+                       &(base_string).capacity,                                 \
+                       (adj_string).buffer, (adj_string).pointer)) ?            \
         ((adj_string).pointer = 0,                                              \
          1) :                                                                   \
         ((self)->error.type = YAML_MEMORY_ERROR,                                \
@@ -212,231 +280,231 @@ yaml_string_join(
  * Get the octet at the specified position.
  */
 
-#define OCTET_AT(string,offset)                                                 \
+#define OCTET_AT(string, offset)                                                \
     ((string).buffer[(string).pointer+(offset)])
 
 /*
  * Get the current offset.
  */
 
-#define OCTET(string)   OCTET_AT((string),0)
+#define OCTET(string)   OCTET_AT((string), 0)
 
 /*
  * Check the octet at the specified position.
  */
 
-#define CHECK_AT(string,octet,offset)                                           \
-    (OCTET_AT((string),(offset)) == (yaml_char_t)(octet))
+#define CHECK_AT(string, octet, offset)                                         \
+    (OCTET_AT((string), (offset)) == (yaml_char_t)(octet))
 
 /*
  * Check the current octet in the buffer.
  */
 
-#define CHECK(string,octet) CHECK_AT((string),(octet),0)
+#define CHECK(string, octet)    CHECK_AT((string), (octet), 0)
 
 /*
  * Check if the character at the specified position is an alphabetical
  * character, a digit, '_', or '-'.
  */
 
-#define IS_ALPHA_AT(string,offset)                                              \
-     ((OCTET_AT((string),(offset)) >= (yaml_char_t) '0' &&                      \
-       OCTET_AT((string),(offset)) <= (yaml_char_t) '9') ||                     \
-      (OCTET_AT((string),(offset)) >= (yaml_char_t) 'A' &&                      \
-       OCTET_AT((string),(offset)) <= (yaml_char_t) 'Z') ||                     \
-      (OCTET_AT((string),(offset)) >= (yaml_char_t) 'a' &&                      \
-       OCTET_AT((string),(offset)) <= (yaml_char_t) 'z') ||                     \
-      OCTET_AT((string),(offset)) == '_' ||                                     \
-      OCTET_AT((string),(offset)) == '-')
+#define IS_ALPHA_AT(string, offset)                                             \
+     ((OCTET_AT((string), (offset)) >= (yaml_char_t) '0' &&                     \
+       OCTET_AT((string), (offset)) <= (yaml_char_t) '9') ||                    \
+      (OCTET_AT((string), (offset)) >= (yaml_char_t) 'A' &&                     \
+       OCTET_AT((string), (offset)) <= (yaml_char_t) 'Z') ||                    \
+      (OCTET_AT((string), (offset)) >= (yaml_char_t) 'a' &&                     \
+       OCTET_AT((string), (offset)) <= (yaml_char_t) 'z') ||                    \
+      OCTET_AT((string), (offset)) == '_' ||                                    \
+      OCTET_AT((string), (offset)) == '-')
 
-#define IS_ALPHA(string)    IS_ALPHA_AT((string),0)
+#define IS_ALPHA(string)    IS_ALPHA_AT((string), 0)
 
 /*
  * Check if the character at the specified position is a digit.
  */
 
-#define IS_DIGIT_AT(string,offset)                                              \
-     ((OCTET_AT((string),(offset)) >= (yaml_char_t) '0' &&                      \
-       OCTET_AT((string),(offset)) <= (yaml_char_t) '9'))
+#define IS_DIGIT_AT(string, offset)                                             \
+     ((OCTET_AT((string), (offset)) >= (yaml_char_t) '0' &&                     \
+       OCTET_AT((string), (offset)) <= (yaml_char_t) '9'))
 
-#define IS_DIGIT(string)    IS_DIGIT_AT((string),0)
+#define IS_DIGIT(string)    IS_DIGIT_AT((string), 0)
 
 /*
  * Get the value of a digit.
  */
 
-#define AS_DIGIT_AT(string,offset)                                              \
-     (OCTET_AT((string),(offset)) - (yaml_char_t) '0')
+#define AS_DIGIT_AT(string, offset)                                             \
+     (OCTET_AT((string), (offset)) - (yaml_char_t) '0')
 
-#define AS_DIGIT(string)    AS_DIGIT_AT((string),0)
+#define AS_DIGIT(string)    AS_DIGIT_AT((string), 0)
 
 /*
  * Check if the character at the specified position is a hex-digit.
  */
 
-#define IS_HEX_AT(string,offset)                                                \
-     ((OCTET_AT((string),(offset)) >= (yaml_char_t) '0' &&                      \
-       OCTET_AT((string),(offset)) <= (yaml_char_t) '9') ||                     \
-      (OCTET_AT((string),(offset)) >= (yaml_char_t) 'A' &&                      \
-       OCTET_AT((string),(offset)) <= (yaml_char_t) 'F') ||                     \
-      (OCTET_AT((string),(offset)) >= (yaml_char_t) 'a' &&                      \
-       OCTET_AT((string),(offset)) <= (yaml_char_t) 'f'))
+#define IS_HEX_AT(string, offset)                                               \
+     ((OCTET_AT((string), (offset)) >= (yaml_char_t) '0' &&                     \
+       OCTET_AT((string), (offset)) <= (yaml_char_t) '9') ||                    \
+      (OCTET_AT((string), (offset)) >= (yaml_char_t) 'A' &&                     \
+       OCTET_AT((string), (offset)) <= (yaml_char_t) 'F') ||                    \
+      (OCTET_AT((string), (offset)) >= (yaml_char_t) 'a' &&                     \
+       OCTET_AT((string), (offset)) <= (yaml_char_t) 'f'))
 
-#define IS_HEX(string)    IS_HEX_AT((string),0)
+#define IS_HEX(string)    IS_HEX_AT((string), 0)
 
 /*
  * Get the value of a hex-digit.
  */
 
-#define AS_HEX_AT(string,offset)                                                \
-      ((OCTET_AT((string),(offset)) >= (yaml_char_t) 'A' &&                     \
-        OCTET_AT((string),(offset)) <= (yaml_char_t) 'F') ?                     \
-       (OCTET_AT((string),(offset)) - (yaml_char_t) 'A' + 10) :                 \
-       (OCTET_AT((string),(offset)) >= (yaml_char_t) 'a' &&                     \
-        OCTET_AT((string),(offset)) <= (yaml_char_t) 'f') ?                     \
-       (OCTET_AT((string),(offset)) - (yaml_char_t) 'a' + 10) :                 \
-       (OCTET_AT((string),(offset)) - (yaml_char_t) '0'))
+#define AS_HEX_AT(string, offset)                                               \
+      ((OCTET_AT((string), (offset)) >= (yaml_char_t) 'A' &&                    \
+        OCTET_AT((string), (offset)) <= (yaml_char_t) 'F') ?                    \
+       (OCTET_AT((string), (offset)) - (yaml_char_t) 'A' + 10) :                \
+       (OCTET_AT((string), (offset)) >= (yaml_char_t) 'a' &&                    \
+        OCTET_AT((string), (offset)) <= (yaml_char_t) 'f') ?                    \
+       (OCTET_AT((string), (offset)) - (yaml_char_t) 'a' + 10) :                \
+       (OCTET_AT((string), (offset)) - (yaml_char_t) '0'))
  
-#define AS_HEX(string)  AS_HEX_AT((string),0)
+#define AS_HEX(string)  AS_HEX_AT((string), 0)
  
 /*
  * Check if the character is ASCII.
  */
 
-#define IS_ASCII_AT(string,offset)                                              \
-    (OCTET_AT((string),(offset)) <= (yaml_char_t) '\x7F')
+#define IS_ASCII_AT(string, offset)                                             \
+    (OCTET_AT((string), (offset)) <= (yaml_char_t) '\x7F')
 
-#define IS_ASCII(string)    IS_ASCII_AT((string),0)
+#define IS_ASCII(string)    IS_ASCII_AT((string), 0)
 
 /*
  * Check if the character can be printed unescaped.
  */
 
-#define IS_PRINTABLE_AT(string,offset)                                          \
-    ((OCTET_AT((string),(offset)) == 0x0A)          /* . == #x0A */             \
-     || (OCTET_AT((string),(offset)) >= 0x20        /* #x20 <= . <= #x7E */     \
-         && OCTET_AT((string),(offset)) <= 0x7E)                                \
-     || (OCTET_AT((string),(offset)) == 0xC2        /* #0xA0 <= . <= #xD7FF */  \
-         && OCTET_AT((string),(offset)+1) >= 0xA0)                              \
-     || (OCTET_AT((string),(offset)) > 0xC2                                     \
-         && OCTET_AT((string),(offset)) < 0xED)                                 \
-     || (OCTET_AT((string),(offset)) == 0xED                                    \
-         && OCTET_AT((string),(offset)+1) < 0xA0)                               \
-     || (OCTET_AT((string),(offset)) == 0xEE)                                   \
-     || (OCTET_AT((string),(offset)) == 0xEF        /* #xE000 <= . <= #xFFFD */ \
-         && !(OCTET_AT((string),(offset)+1) == 0xBB        /* && . != #xFEFF */ \
-             && OCTET_AT((string),(offset)+2) == 0xBF)                          \
-         && !(OCTET_AT((string),(offset)+1) == 0xBF                             \
-             && (OCTET_AT((string),(offset)+2) == 0xBE                          \
-                 || OCTET_AT((string),(offset)+2) == 0xBF))))
+#define IS_PRINTABLE_AT(string, offset)                                         \
+    ((OCTET_AT((string), (offset)) == 0x0A)         /* . == #x0A */             \
+     || (OCTET_AT((string), (offset)) >= 0x20       /* #x20 <= . <= #x7E */     \
+         && OCTET_AT((string), (offset)) <= 0x7E)                               \
+     || (OCTET_AT((string), (offset)) == 0xC2       /* #0xA0 <= . <= #xD7FF */  \
+         && OCTET_AT((string), (offset)+1) >= 0xA0)                             \
+     || (OCTET_AT((string), (offset)) > 0xC2                                    \
+         && OCTET_AT((string), (offset)) < 0xED)                                \
+     || (OCTET_AT((string), (offset)) == 0xED                                   \
+         && OCTET_AT((string), (offset)+1) < 0xA0)                              \
+     || (OCTET_AT((string), (offset)) == 0xEE)                                  \
+     || (OCTET_AT((string), (offset)) == 0xEF       /* #xE000 <= . <= #xFFFD */ \
+         && !(OCTET_AT((string), (offset)+1) == 0xBB       /* && . != #xFEFF */ \
+             && OCTET_AT((string), (offset)+2) == 0xBF)                         \
+         && !(OCTET_AT((string), (offset)+1) == 0xBF                            \
+             && (OCTET_AT((string), (offset)+2) == 0xBE                         \
+                 || OCTET_AT((string), (offset)+2) == 0xBF))))
 
-#define IS_PRINTABLE(string)    IS_PRINTABLE_AT((string),0)
+#define IS_PRINTABLE(string)    IS_PRINTABLE_AT((string), 0)
 
 /*
  * Check if the character at the specified position is NUL.
  */
 
-#define IS_Z_AT(string,offset)    CHECK_AT((string),'\0',(offset))
+#define IS_Z_AT(string, offset)   CHECK_AT((string), '\0', (offset))
 
-#define IS_Z(string)    IS_Z_AT((string),0)
+#define IS_Z(string)    IS_Z_AT((string), 0)
 
 /*
  * Check if the character at the specified position is BOM.
  */
 
-#define IS_BOM_AT(string,offset)                                                \
-     (CHECK_AT((string),'\xEF',(offset))                                        \
-      && CHECK_AT((string),'\xBB',(offset)+1)                                   \
-      && CHECK_AT((string),'\xBF',(offset)+2))  /* BOM (#xFEFF) */
+#define IS_BOM_AT(string, offset)                                               \
+     (CHECK_AT((string), '\xEF', (offset))                                      \
+      && CHECK_AT((string), '\xBB', (offset)+1)                                 \
+      && CHECK_AT((string), '\xBF', (offset)+2))    /* BOM (#xFEFF) */
 
-#define IS_BOM(string)  IS_BOM_AT(string,0)
+#define IS_BOM(string)  IS_BOM_AT(string, 0)
 
 /*
  * Check if the character at the specified position is space.
  */
 
-#define IS_SPACE_AT(string,offset)  CHECK_AT((string),' ',(offset))
+#define IS_SPACE_AT(string, offset) CHECK_AT((string), ' ', (offset))
 
-#define IS_SPACE(string)    IS_SPACE_AT((string),0)
+#define IS_SPACE(string)    IS_SPACE_AT((string), 0)
 
 /*
  * Check if the character at the specified position is tab.
  */
 
-#define IS_TAB_AT(string,offset)    CHECK_AT((string),'\t',(offset))
+#define IS_TAB_AT(string, offset)   CHECK_AT((string), '\t', (offset))
 
-#define IS_TAB(string)  IS_TAB_AT((string),0)
+#define IS_TAB(string)  IS_TAB_AT((string), 0)
 
 /*
  * Check if the character at the specified position is blank (space or tab).
  */
 
-#define IS_BLANK_AT(string,offset)                                              \
-    (IS_SPACE_AT((string),(offset)) || IS_TAB_AT((string),(offset)))
+#define IS_BLANK_AT(string, offset)                                             \
+    (IS_SPACE_AT((string), (offset)) || IS_TAB_AT((string), (offset)))
 
-#define IS_BLANK(string)    IS_BLANK_AT((string),0)
+#define IS_BLANK(string)    IS_BLANK_AT((string), 0)
 
 /*
  * Check if the character at the specified position is a line break.
  */
 
-#define IS_BREAK_AT(string,offset)                                              \
-    (CHECK_AT((string),'\r',(offset))               /* CR (#xD)*/               \
-     || CHECK_AT((string),'\n',(offset))            /* LF (#xA) */              \
-     || (CHECK_AT((string),'\xC2',(offset))                                     \
-         && CHECK_AT((string),'\x85',(offset)+1))   /* NEL (#x85) */            \
-     || (CHECK_AT((string),'\xE2',(offset))                                     \
-         && CHECK_AT((string),'\x80',(offset)+1)                                \
-         && CHECK_AT((string),'\xA8',(offset)+2))   /* LS (#x2028) */           \
-     || (CHECK_AT((string),'\xE2',(offset))                                     \
-         && CHECK_AT((string),'\x80',(offset)+1)                                \
-         && CHECK_AT((string),'\xA9',(offset)+2)))  /* PS (#x2029) */
+#define IS_BREAK_AT(string, offset)                                             \
+    (CHECK_AT((string), '\r', (offset))                 /* CR (#xD)*/           \
+     || CHECK_AT((string), '\n', (offset))              /* LF (#xA) */          \
+     || (CHECK_AT((string), '\xC2', (offset))                                   \
+         && CHECK_AT((string), '\x85', (offset)+1))     /* NEL (#x85) */        \
+     || (CHECK_AT((string), '\xE2', (offset))                                   \
+         && CHECK_AT((string), '\x80', (offset)+1)                              \
+         && CHECK_AT((string), '\xA8', (offset)+2))     /* LS (#x2028) */       \
+     || (CHECK_AT((string), '\xE2', (offset))                                   \
+         && CHECK_AT((string), '\x80', (offset)+1)                              \
+         && CHECK_AT((string), '\xA9', (offset)+2)))    /* PS (#x2029) */
 
-#define IS_BREAK(string)    IS_BREAK_AT((string),0)
+#define IS_BREAK(string)    IS_BREAK_AT((string), 0)
 
-#define IS_CRLF_AT(string,offset)                                               \
-     (CHECK_AT((string),'\r',(offset)) && CHECK_AT((string),'\n',(offset)+1))
+#define IS_CRLF_AT(string, offset)                                              \
+     (CHECK_AT((string), '\r', (offset)) && CHECK_AT((string), '\n', (offset)+1))
 
-#define IS_CRLF(string) IS_CRLF_AT((string),0)
+#define IS_CRLF(string) IS_CRLF_AT((string), 0)
 
 /*
  * Check if the character is a line break or NUL.
  */
 
-#define IS_BREAKZ_AT(string,offset)                                             \
-    (IS_BREAK_AT((string),(offset)) || IS_Z_AT((string),(offset)))
+#define IS_BREAKZ_AT(string, offset)                                            \
+    (IS_BREAK_AT((string), (offset)) || IS_Z_AT((string), (offset)))
 
-#define IS_BREAKZ(string)   IS_BREAKZ_AT((string),0)
+#define IS_BREAKZ(string)   IS_BREAKZ_AT((string), 0)
 
 /*
  * Check if the character is a line break, space, or NUL.
  */
 
-#define IS_SPACEZ_AT(string,offset)                                             \
-    (IS_SPACE_AT((string),(offset)) || IS_BREAKZ_AT((string),(offset)))
+#define IS_SPACEZ_AT(string, offset)                                            \
+    (IS_SPACE_AT((string), (offset)) || IS_BREAKZ_AT((string), (offset)))
 
-#define IS_SPACEZ(string)   IS_SPACEZ_AT((string),0)
+#define IS_SPACEZ(string)   IS_SPACEZ_AT((string), 0)
 
 /*
  * Check if the character is a line break, space, tab, or NUL.
  */
 
-#define IS_BLANKZ_AT(string,offset)                                             \
-    (IS_BLANK_AT((string),(offset)) || IS_BREAKZ_AT((string),(offset)))
+#define IS_BLANKZ_AT(string, offset)                                            \
+    (IS_BLANK_AT((string), (offset)) || IS_BREAKZ_AT((string), (offset)))
 
-#define IS_BLANKZ(string)   IS_BLANKZ_AT((string),0)
+#define IS_BLANKZ(string)   IS_BLANKZ_AT((string), 0)
 
 /*
  * Determine the width of the character.
  */
 
-#define WIDTH_AT(string,offset)                                                 \
-     ((OCTET_AT((string),(offset)) & 0x80) == 0x00 ? 1 :                        \
-      (OCTET_AT((string),(offset)) & 0xE0) == 0xC0 ? 2 :                        \
-      (OCTET_AT((string),(offset)) & 0xF0) == 0xE0 ? 3 :                        \
-      (OCTET_AT((string),(offset)) & 0xF8) == 0xF0 ? 4 : 0)
+#define WIDTH_AT(string, offset)                                                \
+     ((OCTET_AT((string), (offset)) & 0x80) == 0x00 ? 1 :                       \
+      (OCTET_AT((string), (offset)) & 0xE0) == 0xC0 ? 2 :                       \
+      (OCTET_AT((string), (offset)) & 0xF0) == 0xE0 ? 3 :                       \
+      (OCTET_AT((string), (offset)) & 0xF8) == 0xF0 ? 4 : 0)
 
-#define WIDTH(string)   WIDTH_AT((string),0)
+#define WIDTH(string)   WIDTH_AT((string), 0)
 
 /*
  * Move the string pointer to the next character.
@@ -448,36 +516,36 @@ yaml_string_join(
  * Write a single octet and bump the pointer.
  */
 
-#define JOIN_OCTET(string,octet)                                                \
+#define JOIN_OCTET(string, octet)                                               \
     ((string).buffer[(string).pointer++] = (octet))
 
 /*
  * Copy a single octet and bump the pointers.
  */
 
-#define COPY_OCTET(string_a,string_b)                                           \
-    ((string_a).buffer[(string_a).pointer++]                                    \
-     = (string_b).buffer[(string_b).pointer++])
+#define COPY_OCTET(target_string, source_string)                                \
+    ((target_string).buffer[(target_string).pointer++]                          \
+     = (source_string).buffer[(source_string).pointer++])
 
 /*
  * Copy a character and move the pointers of both strings.
  */
 
-#define COPY(string_a,string_b)                                                 \
-    ((OCTET(string_b) & 0x80) == 0x00 ?                                         \
-     COPY_OCTET((string_a),(string_b)) :                                        \
-     (OCTET(string_b) & 0xE0) == 0xC0 ?                                         \
-     (COPY_OCTET((string_a),(string_b)),                                        \
-      COPY_OCTET((string_a),(string_b))) :                                      \
-     (OCTET(string_b) & 0xF0) == 0xE0 ?                                         \
-     (COPY_OCTET((string_a),(string_b)),                                        \
-      COPY_OCTET((string_a),(string_b)),                                        \
-      COPY_OCTET((string_a),(string_b))) :                                      \
-     (OCTET(string_b) & 0xF8) == 0xF0 ?                                         \
-     (COPY_OCTET((string_a),(string_b)),                                        \
-      COPY_OCTET((string_a),(string_b)),                                        \
-      COPY_OCTET((string_a),(string_b)),                                        \
-      COPY_OCTET((string_a),(string_b))) : 0)                                   \
+#define COPY(target_string, source_string)                                      \
+    ((OCTET(source_string) & 0x80) == 0x00 ?                                    \
+     COPY_OCTET((target_string), (source_string)) :                             \
+     (OCTET(source_string) & 0xE0) == 0xC0 ?                                    \
+     (COPY_OCTET((target_string), (source_string)),                             \
+      COPY_OCTET((target_string), (source_string))) :                           \
+     (OCTET(source_string) & 0xF0) == 0xE0 ?                                    \
+     (COPY_OCTET((target_string), (source_string)),                             \
+      COPY_OCTET((target_string), (source_string)),                             \
+      COPY_OCTET((target_string), (source_string))) :                           \
+     (OCTET(source_string) & 0xF8) == 0xF0 ?                                    \
+     (COPY_OCTET((target_string), (source_string)),                             \
+      COPY_OCTET((target_string), (source_string)),                             \
+      COPY_OCTET((target_string), (source_string)),                             \
+      COPY_OCTET((target_string), (source_string))) : 0)
 
 /*
  * Stack and queue management.
@@ -490,23 +558,26 @@ YAML_DECLARE(int)
 yaml_queue_extend(void **list, size_t size,
         size_t *head, size_t *tail, size_t *capacity);
 
-#define STACK_INIT(self,stack,stack_capacity)                                   \
-    (((stack).list = yaml_malloc((stack_capacity)*sizeof(*(stack).list))) ?     \
+#define STACK_INIT(self, stack, _capacity)                                      \
+    (((stack).list = yaml_malloc((_capacity)*sizeof(*(stack).list))) ?          \
         ((stack).length = 0,                                                    \
-         (stack).capacity = (stack_capacity),                                   \
+         (stack).capacity = (_capacity),                                        \
          1) :                                                                   \
         ((self)->error.type = YAML_MEMORY_ERROR,                                \
          0))
 
-#define STACK_DEL(self,stack)                                                   \
+#define STACK_DEL(self, stack)                                                  \
     (yaml_free((stack).list),                                                   \
      (stack).list = NULL,                                                       \
      (stack).length = (stack).capacity = 0)
 
-#define STACK_EMPTY(self,stack)                                                 \
+#define STACK_EMPTY(self, stack)                                                \
     ((stack).length == 0)
 
-#define PUSH(self,stack,value)                                                  \
+#define STACK_ITER(self, stack, index)                                          \
+    ((stack).list + index)
+
+#define PUSH(self, stack, value)                                                \
     (((stack).length < (stack).capacity                                         \
       || yaml_stack_extend((void **)&(stack).list, sizeof(*(stack).list),       \
               &(stack).length, &(stack).capacity)) ?                            \
@@ -515,26 +586,29 @@ yaml_queue_extend(void **list, size_t size,
         ((self)->error.type = YAML_MEMORY_ERROR,                                \
          0))
 
-#define POP(self,stack)                                                         \
+#define POP(self, stack)                                                        \
     ((stack).list[--(stack).length])
 
-#define QUEUE_INIT(self,queue,queue_capacity)                                   \
-    (((queue).list = yaml_malloc((queue_capacity)*sizeof(*(queue).list))) ?     \
+#define QUEUE_INIT(self, queue, _capacity)                                      \
+    (((queue).list = yaml_malloc((_capacity)*sizeof(*(queue).list))) ?          \
         ((queue).head = (queue).tail = 0,                                       \
-         (queue).capacity = (queue_capacity),                                   \
+         (queue).capacity = (_capacity),                                        \
          1) :                                                                   \
         ((self)->error.type = YAML_MEMORY_ERROR,                                \
          0))
 
-#define QUEUE_DEL(self,queue)                                                   \
+#define QUEUE_DEL(self, queue)                                                  \
     (yaml_free((queue).list),                                                   \
      (queue).list = NULL,                                                       \
      (queue).head = (queue).tail = (queue).capacity = 0)
 
-#define QUEUE_EMPTY(self,queue)                                                 \
+#define QUEUE_EMPTY(self, queue)                                                \
     ((queue).head == (queue).tail)
 
-#define ENQUEUE(self,queue,value)                                               \
+#define QUEUE_ITER(self, queue, index)                                          \
+    ((queue).list + (queue).head + index)
+
+#define ENQUEUE(self, queue, value)                                             \
     (((queue).tail != (queue).capacity                                          \
       || yaml_queue_extend((void **)&(queue).list, sizeof(*(queue).list),       \
           &(queue).head, &(queue).tail, &(queue).capacity)) ?                   \
@@ -543,10 +617,10 @@ yaml_queue_extend(void **list, size_t size,
         ((self)->error.type = YAML_MEMORY_ERROR,                                \
          0))
 
-#define DEQUEUE(self,queue)                                                     \
+#define DEQUEUE(self, queue)                                                    \
     ((queue).list[(queue).head++])
 
-#define QUEUE_INSERT(self,queue,index,value)                                    \
+#define QUEUE_INSERT(self, queue, index, value)                                 \
     (((queue).tail != (queue).capacity                                          \
       || yaml_queue_extend((void **)&(queue).list, sizeof(*(queue).list),       \
           &(queue).head, &(queue).tail, &(queue).capacity)) ?                   \
@@ -563,116 +637,117 @@ yaml_queue_extend(void **list, size_t size,
  * Token initializers.
  */
 
-#define TOKEN_INIT(token,token_type,token_start_mark,token_end_mark)            \
+#define TOKEN_INIT(token, _type, _start_mark, _end_mark)                        \
     (memset(&(token), 0, sizeof(yaml_token_t)),                                 \
-     (token).type = (token_type),                                               \
-     (token).start_mark = (token_start_mark),                                   \
-     (token).end_mark = (token_end_mark))
+     (token).type = (_type),                                                    \
+     (token).start_mark = (_start_mark),                                        \
+     (token).end_mark = (_end_mark))
 
-#define STREAM_START_TOKEN_INIT(token,token_encoding,start_mark,end_mark)       \
-    (TOKEN_INIT((token),YAML_STREAM_START_TOKEN,(start_mark),(end_mark)),       \
-     (token).data.stream_start.encoding = (token_encoding))
+#define STREAM_START_TOKEN_INIT(token, _encoding, _start_mark, _end_mark)       \
+    (TOKEN_INIT((token), YAML_STREAM_START_TOKEN, (_start_mark), (_end_mark)),  \
+     (token).data.stream_start.encoding = (_encoding))
 
-#define STREAM_END_TOKEN_INIT(token,start_mark,end_mark)                        \
-    (TOKEN_INIT((token),YAML_STREAM_END_TOKEN,(start_mark),(end_mark)))
+#define STREAM_END_TOKEN_INIT(token, _start_mark, _end_mark)                    \
+    (TOKEN_INIT((token), YAML_STREAM_END_TOKEN, (_start_mark), (_end_mark)))
 
-#define ALIAS_TOKEN_INIT(token,token_value,start_mark,end_mark)                 \
-    (TOKEN_INIT((token),YAML_ALIAS_TOKEN,(start_mark),(end_mark)),              \
-     (token).data.alias.value = (token_value))
+#define ALIAS_TOKEN_INIT(token, _value, _start_mark, _end_mark)                 \
+    (TOKEN_INIT((token), YAML_ALIAS_TOKEN, (_start_mark), (_end_mark)),         \
+     (token).data.alias.value = (_value))
 
-#define ANCHOR_TOKEN_INIT(token,token_value,start_mark,end_mark)                \
-    (TOKEN_INIT((token),YAML_ANCHOR_TOKEN,(start_mark),(end_mark)),             \
-     (token).data.anchor.value = (token_value))
+#define ANCHOR_TOKEN_INIT(token, _value, _start_mark, _end_mark)                \
+    (TOKEN_INIT((token), YAML_ANCHOR_TOKEN, (_start_mark), (_end_mark)),        \
+     (token).data.anchor.value = (_value))
 
-#define TAG_TOKEN_INIT(token,token_handle,token_suffix,start_mark,end_mark)     \
-    (TOKEN_INIT((token),YAML_TAG_TOKEN,(start_mark),(end_mark)),                \
-     (token).data.tag.handle = (token_handle),                                  \
-     (token).data.tag.suffix = (token_suffix))
+#define TAG_TOKEN_INIT(token, _handle, _suffix, _start_mark, _end_mark)         \
+    (TOKEN_INIT((token), YAML_TAG_TOKEN, (_start_mark), (_end_mark)),           \
+     (token).data.tag.handle = (_handle),                                       \
+     (token).data.tag.suffix = (_suffix))
 
-#define SCALAR_TOKEN_INIT(token,token_value,token_length,token_style,start_mark,end_mark)   \
-    (TOKEN_INIT((token),YAML_SCALAR_TOKEN,(start_mark),(end_mark)),             \
-     (token).data.scalar.value = (token_value),                                 \
-     (token).data.scalar.length = (token_length),                               \
-     (token).data.scalar.style = (token_style))
+#define SCALAR_TOKEN_INIT(token, _value, _length, _style, _start_mark, _end_mark)   \
+    (TOKEN_INIT((token), YAML_SCALAR_TOKEN, (_start_mark), (_end_mark)),        \
+     (token).data.scalar.value = (_value),                                      \
+     (token).data.scalar.length = (_length),                                    \
+     (token).data.scalar.style = (_style))
 
-#define VERSION_DIRECTIVE_TOKEN_INIT(token,token_major,token_minor,start_mark,end_mark)     \
-    (TOKEN_INIT((token),YAML_VERSION_DIRECTIVE_TOKEN,(start_mark),(end_mark)),  \
-     (token).data.version_directive.major = (token_major),                      \
-     (token).data.version_directive.minor = (token_minor))
+#define VERSION_DIRECTIVE_TOKEN_INIT(token, _major, _minor, _start_mark, _end_mark) \
+    (TOKEN_INIT((token), YAML_VERSION_DIRECTIVE_TOKEN, (_start_mark), (_end_mark)), \
+     (token).data.version_directive.major = (_major),                           \
+     (token).data.version_directive.minor = (_minor))
 
-#define TAG_DIRECTIVE_TOKEN_INIT(token,token_handle,token_prefix,start_mark,end_mark)       \
-    (TOKEN_INIT((token),YAML_TAG_DIRECTIVE_TOKEN,(start_mark),(end_mark)),      \
-     (token).data.tag_directive.handle = (token_handle),                        \
-     (token).data.tag_directive.prefix = (token_prefix))
+#define TAG_DIRECTIVE_TOKEN_INIT(token, _handle, _prefix, _start_mark, _end_mark)   \
+    (TOKEN_INIT((token), YAML_TAG_DIRECTIVE_TOKEN, (_start_mark), (_end_mark)), \
+     (token).data.tag_directive.handle = (_handle),                             \
+     (token).data.tag_directive.prefix = (_prefix))
 
 /*
  * Event initializers.
  */
 
-#define EVENT_INIT(event,event_type,event_start_mark,event_end_mark)            \
+#define EVENT_INIT(event, _type, _start_mark, _end_mark)                        \
     (memset(&(event), 0, sizeof(yaml_event_t)),                                 \
-     (event).type = (event_type),                                               \
-     (event).start_mark = (event_start_mark),                                   \
-     (event).end_mark = (event_end_mark))
+     (event).type = (_type),                                                    \
+     (event).start_mark = (_start_mark),                                        \
+     (event).end_mark = (_end_mark))
 
-#define STREAM_START_EVENT_INIT(event,event_encoding,start_mark,end_mark)       \
-    (EVENT_INIT((event),YAML_STREAM_START_EVENT,(start_mark),(end_mark)),       \
-     (event).data.stream_start.encoding = (event_encoding))
+#define STREAM_START_EVENT_INIT(event, _encoding, _start_mark, _end_mark)       \
+    (EVENT_INIT((event), YAML_STREAM_START_EVENT, (_start_mark), (_end_mark)),  \
+     (event).data.stream_start.encoding = (_encoding))
 
-#define STREAM_END_EVENT_INIT(event,start_mark,end_mark)                        \
-    (EVENT_INIT((event),YAML_STREAM_END_EVENT,(start_mark),(end_mark)))
+#define STREAM_END_EVENT_INIT(event, _start_mark, _end_mark)                    \
+    (EVENT_INIT((event), YAML_STREAM_END_EVENT, (_start_mark), (_end_mark)))
 
-#define DOCUMENT_START_EVENT_INIT(event,event_version_directive,                \
-        event_tag_directives_list,event_tag_directives_length,                  \
-        event_tag_directives_capacity,event_is_implicit,start_mark,end_mark)    \
-    (EVENT_INIT((event),YAML_DOCUMENT_START_EVENT,(start_mark),(end_mark)),     \
-     (event).data.document_start.version_directive = (event_version_directive), \
-     (event).data.document_start.tag_directives.list = (event_tag_directives_list), \
-     (event).data.document_start.tag_directives.length = (event_tag_directives_length), \
-     (event).data.document_start.tag_directives.capacity = (event_tag_directives_capacity), \
-     (event).data.document_start.is_implicit = (event_is_implicit))
+#define DOCUMENT_START_EVENT_INIT(event, _version_directive,                    \
+        _tag_directives_list, _tag_directives_length, _tag_directives_capacity, \
+        _is_implicit, _start_mark, _end_mark)                                   \
+    (EVENT_INIT((event), YAML_DOCUMENT_START_EVENT, (_start_mark),(_end_mark)), \
+     (event).data.document_start.version_directive = (_version_directive),      \
+     (event).data.document_start.tag_directives.list = (_tag_directives_list),  \
+     (event).data.document_start.tag_directives.length = (_tag_directives_length),  \
+     (event).data.document_start.tag_directives.capacity = (_tag_directives_capacity),  \
+     (event).data.document_start.is_implicit = (_is_implicit))
 
-#define DOCUMENT_END_EVENT_INIT(event,event_is_implicit,start_mark,end_mark)    \
-    (EVENT_INIT((event),YAML_DOCUMENT_END_EVENT,(start_mark),(end_mark)),       \
-     (event).data.document_end.is_implicit = (event_is_implicit))
+#define DOCUMENT_END_EVENT_INIT(event, _is_implicit, _start_mark, _end_mark)    \
+    (EVENT_INIT((event), YAML_DOCUMENT_END_EVENT, (_start_mark), (_end_mark)),  \
+     (event).data.document_end.is_implicit = (_is_implicit))
 
-#define ALIAS_EVENT_INIT(event,event_anchor,start_mark,end_mark)                \
-    (EVENT_INIT((event),YAML_ALIAS_EVENT,(start_mark),(end_mark)),              \
-     (event).data.alias.anchor = (event_anchor))
+#define ALIAS_EVENT_INIT(event, _anchor, _start_mark, _end_mark)                \
+    (EVENT_INIT((event), YAML_ALIAS_EVENT, (_start_mark), (_end_mark)),         \
+     (event).data.alias.anchor = (_anchor))
 
-#define SCALAR_EVENT_INIT(event,event_anchor,event_tag,event_value,             \
-        event_length,event_is_plain_implicit,event_is_quoted_implicit,          \
-        event_style,start_mark,end_mark)                                        \
-    (EVENT_INIT((event),YAML_SCALAR_EVENT,(start_mark),(end_mark)),             \
-     (event).data.scalar.anchor = (event_anchor),                               \
-     (event).data.scalar.tag = (event_tag),                                     \
-     (event).data.scalar.value = (event_value),                                 \
-     (event).data.scalar.length = (event_length),                               \
-     (event).data.scalar.is_plain_implicit = (event_is_plain_implicit),         \
-     (event).data.scalar.is_quoted_implicit = (event_is_quoted_implicit),       \
-     (event).data.scalar.style = (event_style))
+#define SCALAR_EVENT_INIT(event, _anchor, _tag, _value, _length,                \
+        _is_plain_implicit, _is_quoted_implicit, _style, _start_mark, _end_mark)    \
+    (EVENT_INIT((event), YAML_SCALAR_EVENT, (_start_mark), (_end_mark)),        \
+     (event).data.scalar.anchor = (_anchor),                                    \
+     (event).data.scalar.tag = (_tag),                                          \
+     (event).data.scalar.value = (_value),                                      \
+     (event).data.scalar.length = (_length),                                    \
+     (event).data.scalar.is_plain_implicit = (_is_plain_implicit),              \
+     (event).data.scalar.is_quoted_implicit = (_is_quoted_implicit),            \
+     (event).data.scalar.style = (_style))
 
-#define SEQUENCE_START_EVENT_INIT(event,event_anchor,event_tag,                 \
-        event_is_implicit,event_style,start_mark,end_mark)                      \
-    (EVENT_INIT((event),YAML_SEQUENCE_START_EVENT,(start_mark),(end_mark)),     \
-     (event).data.sequence_start.anchor = (event_anchor),                       \
-     (event).data.sequence_start.tag = (event_tag),                             \
-     (event).data.sequence_start.is_implicit = (event_is_implicit),             \
-     (event).data.sequence_start.style = (event_style))
+#define SEQUENCE_START_EVENT_INIT(event, _anchor, _tag, _is_implicit, _style,   \
+        _start_mark, _end_mark)                                                 \
+    (EVENT_INIT((event), YAML_SEQUENCE_START_EVENT, (_start_mark), (_end_mark)),    \
+     (event).data.sequence_start.anchor = (_anchor),                            \
+     (event).data.sequence_start.tag = (_tag),                                  \
+     (event).data.sequence_start.is_implicit = (_is_implicit),                  \
+     (event).data.sequence_start.style = (_style))
 
-#define SEQUENCE_END_EVENT_INIT(event,start_mark,end_mark)                      \
-    (EVENT_INIT((event),YAML_SEQUENCE_END_EVENT,(start_mark),(end_mark)))
+#define SEQUENCE_END_EVENT_INIT(event, _start_mark, _end_mark)                  \
+    (EVENT_INIT((event), YAML_SEQUENCE_END_EVENT, (_start_mark), (_end_mark)))
 
-#define MAPPING_START_EVENT_INIT(event,event_anchor,event_tag,                  \
-        event_is_implicit,event_style,start_mark,end_mark)                      \
-    (EVENT_INIT((event),YAML_MAPPING_START_EVENT,(start_mark),(end_mark)),      \
-     (event).data.mapping_start.anchor = (event_anchor),                        \
-     (event).data.mapping_start.tag = (event_tag),                              \
-     (event).data.mapping_start.is_implicit = (event_is_implicit),              \
-     (event).data.mapping_start.style = (event_style))
+#define MAPPING_START_EVENT_INIT(event, _anchor, _tag, _is_implicit, _style,    \
+        _start_mark, _end_mark)                                                 \
+    (EVENT_INIT((event), YAML_MAPPING_START_EVENT, (_start_mark), (_end_mark)), \
+     (event).data.mapping_start.anchor = (_anchor),                             \
+     (event).data.mapping_start.tag = (_tag),                                   \
+     (event).data.mapping_start.is_implicit = (_is_implicit),                   \
+     (event).data.mapping_start.style = (_style))
 
-#define MAPPING_END_EVENT_INIT(event,start_mark,end_mark)                       \
-    (EVENT_INIT((event),YAML_MAPPING_END_EVENT,(start_mark),(end_mark)))
+#define MAPPING_END_EVENT_INIT(event, _start_mark, _end_mark)                   \
+    (EVENT_INIT((event), YAML_MAPPING_END_EVENT, (_start_mark), (_end_mark)))
+
+#if 0
 
 /*
  * Document initializer.
@@ -727,6 +802,8 @@ yaml_queue_extend(void **list, size_t size,
      (node).data.mapping.pairs.end = (node_pairs_end),                          \
      (node).data.mapping.pairs.top = (node_pairs_start),                        \
      (node).data.mapping.style = (node_style))
+
+#endif
 
 /*
  * This structure holds information about a potential simple key.
@@ -817,7 +894,7 @@ typedef struct yaml_alias_data_s {
 
 typedef union yaml_standard_reader_data_u {
     /* String input data. */
-    yaml_string_t string;
+    yaml_istring_t string;
     /* File input data. */
     FILE *file;
 } yaml_standard_reader_data_t;
@@ -851,21 +928,13 @@ struct yaml_parser_s {
     int is_eof;
 
     /* The working buffer. */
-    struct {
-        yaml_char_t *buffer;
-        size_t pointer;
-        size_t capacity;
-    } input;
+    yaml_iostring_t input;
 
     /* The number of unread characters in the buffer. */
     size_t unread;
 
     /* The raw buffer. */
-    struct {
-        unsigned char *buffer;
-        size_t pointer;
-        size_t capacity;
-    } raw_input;
+    yaml_raw_iostring_t raw_input;
 
     /* The input encoding. */
     yaml_encoding_t encoding;
@@ -1022,7 +1091,7 @@ typedef enum yaml_emitter_state_e {
 
 typedef union yaml_standard_writer_data_u {
     /* String output data. */
-    yaml_string_t string;
+    yaml_ostring_t string;
     size_t *length;
     /* File output data. */
     FILE *file;
@@ -1054,18 +1123,10 @@ struct yaml_emitter_s {
     yaml_standard_writer_data_t standard_writer_data;
 
     /* The working buffer. */
-    struct {
-        yaml_char_t *buffer;
-        size_t pointer;
-        size_t capacity;
-    } output;
+    yaml_iostring_t output;
 
     /* The raw buffer. */
-    struct {
-        yaml_char_t *buffer;
-        size_t pointer;
-        size_t capacity;
-    } raw_output;
+    yaml_raw_iostring_t raw_output;
 
     /* The offset of the current position (in bytes). */
     size_t offset;
@@ -1147,7 +1208,7 @@ struct yaml_emitter_s {
     /* Anchor analysis. */
     struct {
         /* The anchor value. */
-        yaml_char_t *anchor;
+        const yaml_char_t *anchor;
         /* The anchor length. */
         size_t anchor_length;
         /* Is it an alias? */
@@ -1157,11 +1218,11 @@ struct yaml_emitter_s {
     /* Tag analysis. */
     struct {
         /* The tag handle. */
-        yaml_char_t *handle;
+        const yaml_char_t *handle;
         /* The tag handle length. */
         size_t handle_length;
         /* The tag suffix. */
-        yaml_char_t *suffix;
+        const yaml_char_t *suffix;
         /* The tag suffix length. */
         size_t suffix_length;
     } tag_data;
@@ -1169,7 +1230,7 @@ struct yaml_emitter_s {
     /* Scalar analysis. */
     struct {
         /* The scalar value. */
-        yaml_char_t *value;
+        const yaml_char_t *value;
         /* The scalar length. */
         size_t length;
         /* Does the scalar contain line breaks? */

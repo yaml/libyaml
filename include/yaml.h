@@ -45,19 +45,25 @@ extern "C" {
  * @{
  */
 
-/**
- * Get the library version as a string.
- *
- * @returns The function returns the pointer to a static string of the form
- * @c "X.Y.Z", where @c X is the major version number, @c Y is a minor version
- * number, and @c Z is the patch version number.
- */
+/** The major version number. */
+#define YAML_VERSION_MAJOR  0
 
-YAML_DECLARE(const char *)
-yaml_get_version_string(void);
+/** The minor version number. */
+#define YAML_VERSION_MINOR  2
+
+/** The patch version number. */
+#define YAML_VERSION_PATCH  0
+
+/** The version string generator macro. */
+#define YAML_VERSION_STRING_GENERATOR(major,minor,patch)                        \
+    (#major "." #minor "." #patch)
+
+/** The version string. */
+#define YAML_VERSION_STRING                                                     \
+    YAML_VERSION_STRING_GENERATOR(YAML_VERSION_MAJOR,YAML_VERSION_MINOR,YAML_VERSION_PATCH)
 
 /**
- * Get the library version numbers.
+ * Get the library version numbers at runtime.
  *
  * @param[out]      major   Major version number.
  * @param[out]      minor   Minor version number.
@@ -66,6 +72,17 @@ yaml_get_version_string(void);
 
 YAML_DECLARE(void)
 yaml_get_version(int *major, int *minor, int *patch);
+
+/**
+ * Get the library version as a string at runtime.
+ *
+ * @returns The function returns the pointer to a static string of the form
+ * @c "X.Y.Z", where @c X is the major version number, @c Y is the minor version
+ * number, and @c Z is the patch version number.
+ */
+
+YAML_DECLARE(const char *)
+yaml_get_version_string(void);
 
 /** @} */
 
@@ -86,7 +103,6 @@ typedef enum yaml_error_type_e {
     YAML_READER_ERROR,
     /** Cannot decode the input stream. */
     YAML_DECODER_ERROR,
-
     /** Cannot scan a YAML token. */
     YAML_SCANNER_ERROR,
     /** Cannot parse a YAML production. */
@@ -96,11 +112,13 @@ typedef enum yaml_error_type_e {
 
     /** Cannot write into the output stream. */
     YAML_WRITER_ERROR,
-
     /** Cannot emit a YAML event. */
     YAML_EMITTER_ERROR,
     /** Cannot serialize a YAML document. */
-    YAML_SERIALIZER_ERROR
+    YAML_SERIALIZER_ERROR,
+
+    /** Cannot resolve an implicit tag. */
+    YAML_RESOLVER_ERROR
 } yaml_error_type_t;
 
 /** The pointer position. */
@@ -142,16 +160,16 @@ typedef struct yaml_error_s {
          * @c YAML_PARSER_ERROR, or @c YAML_COMPOSER_ERROR).
          */
         struct {
-            /** The problem description. */
-            const char *problem;
-            /** The problem mark. */
-            yaml_mark_t problem_mark;
             /** The context in which the problem occured
              * (@c NULL if not applicable).
              */
             const char *context;
             /** The context mark (if @c problem_mark is not @c NULL). **/
             yaml_mark_t context_mark;
+            /** The problem description. */
+            const char *problem;
+            /** The problem mark. */
+            yaml_mark_t problem_mark;
         } loading;
 
         /** A problem while writing into the stream (@c YAML_WRITER_ERROR). */
@@ -170,10 +188,28 @@ typedef struct yaml_error_s {
             const char *problem;
         } dumping;
 
+        /** A problem while resolving an implicit tag (@c YAML_RESOLVER_ERROR). */
+        struct {
+            /** The problem description. */
+            const char *problem;
+        } resolving;
+
     } data;
 
 } yaml_error_t;
 
+/**
+ * Create an error message.
+ *
+ * @param[in]   error   An error object.
+ * @param[out]  buffer         model   A token to copy.
+ *
+ * @returns @c 1 if the function succeeded, @c 0 on error.  The function may
+ * fail if the buffer is not large enough to contain the whole message.
+ */
+
+YAML_DECLARE(int)
+yaml_error_message(yaml_error_t *error, char *buffer, size_t capacity);
 
 /** @} */
 
@@ -433,7 +469,7 @@ yaml_token_delete(yaml_token_t *token);
  */
 
 YAML_DECLARE(int)
-yaml_token_duplicate(yaml_token_t *token, yaml_token_t *model);
+yaml_token_duplicate(yaml_token_t *token, const yaml_token_t *model);
 
 /**
  * Free any memory allocated for a token object.
@@ -607,7 +643,7 @@ yaml_event_delete(yaml_event_t *event);
  */
 
 YAML_DECLARE(int)
-yaml_event_duplicate(yaml_event_t *event, yaml_event_t *model);
+yaml_event_duplicate(yaml_event_t *event, const yaml_event_t *model);
 
 /**
  * Create a STREAM-START event.
@@ -791,20 +827,20 @@ yaml_event_destroy(yaml_event_t *event);
  */
 
 /** The tag @c !!null with the only possible value: @c null. */
-#define YAML_NULL_TAG       "tag:yaml.org,2002:null"
+#define YAML_NULL_TAG       ((const yaml_char_t *) "tag:yaml.org,2002:null")
 /** The tag @c !!bool with the values: @c true and @c falce. */
-#define YAML_BOOL_TAG       "tag:yaml.org,2002:bool"
+#define YAML_BOOL_TAG       ((const yaml_char_t *) "tag:yaml.org,2002:bool")
 /** The tag @c !!str for string values. */
-#define YAML_STR_TAG        "tag:yaml.org,2002:str"
+#define YAML_STR_TAG        ((const yaml_char_t *) "tag:yaml.org,2002:str")
 /** The tag @c !!int for integer values. */
-#define YAML_INT_TAG        "tag:yaml.org,2002:int"
+#define YAML_INT_TAG        ((const yaml_char_t *) "tag:yaml.org,2002:int")
 /** The tag @c !!float for float values. */
-#define YAML_FLOAT_TAG      "tag:yaml.org,2002:float"
+#define YAML_FLOAT_TAG      ((const yaml_char_t *) "tag:yaml.org,2002:float")
 
 /** The tag @c !!seq is used to denote sequences. */
-#define YAML_SEQ_TAG        "tag:yaml.org,2002:seq"
+#define YAML_SEQ_TAG        ((const yaml_char_t *) "tag:yaml.org,2002:seq")
 /** The tag @c !!map is used to denote mapping. */
-#define YAML_MAP_TAG        "tag:yaml.org,2002:map"
+#define YAML_MAP_TAG        ((const yaml_char_t *) "tag:yaml.org,2002:map")
 
 /** The default scalar tag is @c !!str. */
 #define YAML_DEFAULT_SCALAR_TAG     YAML_STR_TAG
@@ -1227,7 +1263,8 @@ typedef int yaml_reader_t(void *data, unsigned char *buffer, size_t capacity,
  * it should return @c 0.
  */
 
-typedef int yaml_writer_t(void *data, unsigned char *buffer, size_t length);
+typedef int yaml_writer_t(void *data, const unsigned char *buffer,
+        size_t length);
 
 /**
  * The prototype of a tag resolver.
@@ -1398,7 +1435,7 @@ yaml_parser_set_encoding(yaml_parser_t *parser, yaml_encoding_t encoding);
  */
 
 YAML_DECLARE(int)
-yaml_parser_scan(yaml_parser_t *parser, yaml_token_t *token);
+yaml_parser_parse_token(yaml_parser_t *parser, yaml_token_t *token);
 
 /**
  * Parse the input stream and produce the next parsing event.
@@ -1422,7 +1459,7 @@ yaml_parser_scan(yaml_parser_t *parser, yaml_token_t *token);
  */
 
 YAML_DECLARE(int)
-yaml_parser_parse(yaml_parser_t *parser, yaml_event_t *event);
+yaml_parser_parse_event(yaml_parser_t *parser, yaml_event_t *event);
 
 #if 0
 
@@ -1449,7 +1486,7 @@ yaml_parser_parse(yaml_parser_t *parser, yaml_event_t *event);
  */
 
 YAML_DECLARE(int)
-yaml_parser_load(yaml_parser_t *parser, yaml_document_t *document);
+yaml_parser_parse_document(yaml_parser_t *parser, yaml_document_t *document);
 
 #endif
 
@@ -1647,7 +1684,7 @@ yaml_emitter_set_break(yaml_emitter_t *emitter, yaml_break_t line_break);
  */
 
 YAML_DECLARE(int)
-yaml_emitter_emit(yaml_emitter_t *emitter, yaml_event_t *event);
+yaml_emitter_emit_event(yaml_emitter_t *emitter, yaml_event_t *event);
 
 #if 0
 
@@ -1694,7 +1731,7 @@ yaml_emitter_close(yaml_emitter_t *emitter);
  */
 
 YAML_DECLARE(int)
-yaml_emitter_dump(yaml_emitter_t *emitter, yaml_document_t *document);
+yaml_emitter_emit_document(yaml_emitter_t *emitter, yaml_document_t *document);
 
 #endif
 

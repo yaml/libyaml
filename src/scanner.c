@@ -515,9 +515,9 @@
  * Copy a character to a string buffer and advance pointers.
  */
 
-#define READ(parser,string)                                                     \
-     (STRING_EXTEND(parser,string) ?                                            \
-         (COPY(string,parser->input),                                           \
+#define READ(parser, string)                                                    \
+     (OSTRING_EXTEND(parser, string) ?                                          \
+         (COPY(string, parser->input),                                          \
           parser->mark.index ++,                                                \
           parser->mark.column ++,                                               \
           parser->unread --,                                                    \
@@ -527,39 +527,39 @@
  * Copy a line break character to a string buffer and advance pointers.
  */
 
-#define READ_LINE(parser,string)                                                \
-    (STRING_EXTEND(parser,string) ?                                             \
-    (((CHECK_AT(parser->input,'\r',0)                                           \
-       && CHECK_AT(parser->input,'\n',1)) ?         /* CR LF -> LF */           \
+#define READ_LINE(parser, string)                                               \
+    (OSTRING_EXTEND(parser, string) ?                                           \
+    (((CHECK_AT(parser->input, '\r', 0)                                         \
+       && CHECK_AT(parser->input, '\n', 1)) ?       /* CR LF -> LF */           \
      (JOIN_OCTET(string, (yaml_char_t) '\n'),                                   \
       parser->input.pointer += 2,                                               \
       parser->mark.index += 2,                                                  \
       parser->mark.column = 0,                                                  \
       parser->mark.line ++,                                                     \
       parser->unread -= 2) :                                                    \
-     (CHECK_AT(parser->input,'\r',0)                                            \
-      || CHECK_AT(parser->input,'\n',0)) ?          /* CR|LF -> LF */           \
-     (JOIN_OCTET(string,(yaml_char_t) '\n'),                                    \
+     (CHECK_AT(parser->input, '\r', 0)                                          \
+      || CHECK_AT(parser->input, '\n', 0)) ?        /* CR|LF -> LF */           \
+     (JOIN_OCTET(string, (yaml_char_t) '\n'),                                   \
       parser->input.pointer ++,                                                 \
       parser->mark.index ++,                                                    \
       parser->mark.column = 0,                                                  \
       parser->mark.line ++,                                                     \
       parser->unread --) :                                                      \
-     (CHECK_AT(parser->input,'\xC2',0)                                          \
-      && CHECK_AT(parser->input,'\x85',1)) ?        /* NEL -> LF */             \
-     (JOIN_OCTET(string,(yaml_char_t) '\n'),                                    \
+     (CHECK_AT(parser->input, '\xC2', 0)                                        \
+      && CHECK_AT(parser->input, '\x85', 1)) ?      /* NEL -> LF */             \
+     (JOIN_OCTET(string, (yaml_char_t) '\n'),                                   \
       parser->input.pointer += 2,                                               \
       parser->mark.index ++,                                                    \
       parser->mark.column = 0,                                                  \
       parser->mark.line ++,                                                     \
       parser->unread --) :                                                      \
-     (CHECK_AT(parser->input,'\xE2',0) &&                                       \
-      CHECK_AT(parser->input,'\x80',1) &&                                       \
-      (CHECK_AT(parser->input,'\xA8',2) ||                                      \
-       CHECK_AT(parser->input,'\xA9',2))) ?         /* LS|PS -> LS|PS */        \
-     (COPY_OCTET(string,parser->input),                                         \
-      COPY_OCTET(string,parser->input),                                         \
-      COPY_OCTET(string,parser->input),                                         \
+     (CHECK_AT(parser->input, '\xE2', 0) &&                                     \
+      CHECK_AT(parser->input, '\x80', 1) &&                                     \
+      (CHECK_AT(parser->input, '\xA8', 2) ||                                    \
+       CHECK_AT(parser->input, '\xA9', 2))) ?       /* LS|PS -> LS|PS */        \
+     (COPY_OCTET(string, parser->input),                                        \
+      COPY_OCTET(string, parser->input),                                        \
+      COPY_OCTET(string, parser->input),                                        \
       parser->mark.index ++,                                                    \
       parser->mark.column = 0,                                                  \
       parser->mark.line ++,                                                     \
@@ -571,7 +571,7 @@
  */
 
 YAML_DECLARE(int)
-yaml_parser_scan(yaml_parser_t *parser, yaml_token_t *token);
+yaml_parser_parse_token(yaml_parser_t *parser, yaml_token_t *token);
 
 /*
  * High-level token API.
@@ -708,7 +708,7 @@ yaml_parser_scan_tag_uri(yaml_parser_t *parser, int directive,
 
 static int
 yaml_parser_scan_uri_escapes(yaml_parser_t *parser, int directive,
-        yaml_mark_t start_mark, yaml_string_t *string);
+        yaml_mark_t start_mark, yaml_ostring_t *string);
 
 static int
 yaml_parser_scan_block_scalar(yaml_parser_t *parser, yaml_token_t *token,
@@ -716,7 +716,7 @@ yaml_parser_scan_block_scalar(yaml_parser_t *parser, yaml_token_t *token,
 
 static int
 yaml_parser_scan_block_scalar_breaks(yaml_parser_t *parser,
-        int *indent, yaml_string_t *breaks,
+        int *indent, yaml_ostring_t *breaks,
         yaml_mark_t start_mark, yaml_mark_t *end_mark);
 
 static int
@@ -731,7 +731,7 @@ yaml_parser_scan_plain_scalar(yaml_parser_t *parser, yaml_token_t *token);
  */
 
 YAML_DECLARE(int)
-yaml_parser_scan(yaml_parser_t *parser, yaml_token_t *token)
+yaml_parser_parse_token(yaml_parser_t *parser, yaml_token_t *token)
 {
     assert(parser); /* Non-NULL parser object is expected. */
     assert(token);  /* Non-NULL token object is expected. */
@@ -2092,9 +2092,9 @@ static int
 yaml_parser_scan_directive_name(yaml_parser_t *parser,
         yaml_mark_t start_mark, yaml_char_t **name)
 {
-    yaml_string_t string = NULL_STRING;
+    yaml_ostring_t string = NULL_OSTRING;
 
-    if (!STRING_INIT(parser, string, INITIAL_STRING_CAPACITY))
+    if (!OSTRING_INIT(parser, string, INITIAL_STRING_CAPACITY))
         goto error;
 
     /* Consume the directive name. */
@@ -2130,7 +2130,7 @@ yaml_parser_scan_directive_name(yaml_parser_t *parser,
     return 1;
 
 error:
-    STRING_DEL(parser, string);
+    OSTRING_DEL(parser, string);
     return 0;
 }
 
@@ -2311,9 +2311,9 @@ yaml_parser_scan_anchor(yaml_parser_t *parser, yaml_token_t *token,
 {
     int length = 0;
     yaml_mark_t start_mark, end_mark;
-    yaml_string_t string = NULL_STRING;
+    yaml_ostring_t string = NULL_OSTRING;
 
-    if (!STRING_INIT(parser, string, INITIAL_STRING_CAPACITY))
+    if (!OSTRING_INIT(parser, string, INITIAL_STRING_CAPACITY))
         goto error;
 
     /* Eat the indicator character. */
@@ -2366,7 +2366,7 @@ yaml_parser_scan_anchor(yaml_parser_t *parser, yaml_token_t *token,
     return 1;
 
 error:
-    STRING_DEL(parser, string);
+    OSTRING_DEL(parser, string);
     return 0;
 }
 
@@ -2495,9 +2495,9 @@ static int
 yaml_parser_scan_tag_handle(yaml_parser_t *parser, int directive,
         yaml_mark_t start_mark, yaml_char_t **handle)
 {
-    yaml_string_t string = NULL_STRING;
+    yaml_ostring_t string = NULL_OSTRING;
 
-    if (!STRING_INIT(parser, string, INITIAL_STRING_CAPACITY))
+    if (!OSTRING_INIT(parser, string, INITIAL_STRING_CAPACITY))
         goto error;
 
     /* Check the initial '!' character. */
@@ -2553,7 +2553,7 @@ yaml_parser_scan_tag_handle(yaml_parser_t *parser, int directive,
     return 1;
 
 error:
-    STRING_DEL(parser, string);
+    OSTRING_DEL(parser, string);
     return 0;
 }
 
@@ -2566,15 +2566,15 @@ yaml_parser_scan_tag_uri(yaml_parser_t *parser, int directive,
         yaml_char_t *head, yaml_mark_t start_mark, yaml_char_t **uri)
 {
     size_t length = head ? strlen((char *)head) : 0;
-    yaml_string_t string = NULL_STRING;
+    yaml_ostring_t string = NULL_OSTRING;
 
-    if (!STRING_INIT(parser, string, INITIAL_STRING_CAPACITY))
+    if (!OSTRING_INIT(parser, string, INITIAL_STRING_CAPACITY))
         goto error;
 
     /* Resize the string to include the head. */
 
     while (string.capacity <= length) {
-        if (!yaml_string_extend(&string.buffer, &string.capacity)) {
+        if (!yaml_ostring_extend(&string.buffer, &string.capacity)) {
             MEMORY_ERROR_INIT(parser);
             goto error;
         }
@@ -2632,7 +2632,7 @@ yaml_parser_scan_tag_uri(yaml_parser_t *parser, int directive,
     /* Check if the tag is non-empty. */
 
     if (!length) {
-        if (!STRING_EXTEND(parser, string))
+        if (!OSTRING_EXTEND(parser, string))
             goto error;
 
         SCANNER_ERROR_WITH_CONTEXT_INIT(parser, directive ?
@@ -2646,7 +2646,7 @@ yaml_parser_scan_tag_uri(yaml_parser_t *parser, int directive,
     return 1;
 
 error:
-    STRING_DEL(parser, string);
+    OSTRING_DEL(parser, string);
     return 0;
 }
 
@@ -2656,7 +2656,7 @@ error:
 
 static int
 yaml_parser_scan_uri_escapes(yaml_parser_t *parser, int directive,
-        yaml_mark_t start_mark, yaml_string_t *string)
+        yaml_mark_t start_mark, yaml_ostring_t *string)
 {
     int width = 0;
 
@@ -2730,20 +2730,20 @@ yaml_parser_scan_block_scalar(yaml_parser_t *parser, yaml_token_t *token,
 {
     yaml_mark_t start_mark;
     yaml_mark_t end_mark;
-    yaml_string_t string = NULL_STRING;
-    yaml_string_t leading_break = NULL_STRING;
-    yaml_string_t trailing_breaks = NULL_STRING;
+    yaml_ostring_t string = NULL_OSTRING;
+    yaml_ostring_t leading_break = NULL_OSTRING;
+    yaml_ostring_t trailing_breaks = NULL_OSTRING;
     int chomping = 0;
     int increment = 0;
     int indent = 0;
     int leading_blank = 0;
     int trailing_blank = 0;
 
-    if (!STRING_INIT(parser, string, INITIAL_STRING_CAPACITY))
+    if (!OSTRING_INIT(parser, string, INITIAL_STRING_CAPACITY))
         goto error;
-    if (!STRING_INIT(parser, leading_break, INITIAL_STRING_CAPACITY))
+    if (!OSTRING_INIT(parser, leading_break, INITIAL_STRING_CAPACITY))
         goto error;
-    if (!STRING_INIT(parser, trailing_breaks, INITIAL_STRING_CAPACITY))
+    if (!OSTRING_INIT(parser, trailing_breaks, INITIAL_STRING_CAPACITY))
         goto error;
 
     /* Eat the indicator '|' or '>'. */
@@ -2880,7 +2880,7 @@ yaml_parser_scan_block_scalar(yaml_parser_t *parser, yaml_token_t *token,
             /* Do we need to join the lines by space? */
 
             if (*trailing_breaks.buffer == '\0') {
-                if (!STRING_EXTEND(parser, string)) goto error;
+                if (!OSTRING_EXTEND(parser, string)) goto error;
                 JOIN_OCTET(string, ' ');
             }
 
@@ -2934,15 +2934,15 @@ yaml_parser_scan_block_scalar(yaml_parser_t *parser, yaml_token_t *token,
             literal ? YAML_LITERAL_SCALAR_STYLE : YAML_FOLDED_SCALAR_STYLE,
             start_mark, end_mark);
 
-    STRING_DEL(parser, leading_break);
-    STRING_DEL(parser, trailing_breaks);
+    OSTRING_DEL(parser, leading_break);
+    OSTRING_DEL(parser, trailing_breaks);
 
     return 1;
 
 error:
-    STRING_DEL(parser, string);
-    STRING_DEL(parser, leading_break);
-    STRING_DEL(parser, trailing_breaks);
+    OSTRING_DEL(parser, string);
+    OSTRING_DEL(parser, leading_break);
+    OSTRING_DEL(parser, trailing_breaks);
 
     return 0;
 }
@@ -2954,7 +2954,7 @@ error:
 
 static int
 yaml_parser_scan_block_scalar_breaks(yaml_parser_t *parser,
-        int *indent, yaml_string_t *breaks,
+        int *indent, yaml_ostring_t *breaks,
         yaml_mark_t start_mark, yaml_mark_t *end_mark)
 {
     int max_indent = 0;
@@ -3022,19 +3022,19 @@ yaml_parser_scan_flow_scalar(yaml_parser_t *parser, yaml_token_t *token,
 {
     yaml_mark_t start_mark;
     yaml_mark_t end_mark;
-    yaml_string_t string = NULL_STRING;
-    yaml_string_t leading_break = NULL_STRING;
-    yaml_string_t trailing_breaks = NULL_STRING;
-    yaml_string_t whitespaces = NULL_STRING;
+    yaml_ostring_t string = NULL_OSTRING;
+    yaml_ostring_t leading_break = NULL_OSTRING;
+    yaml_ostring_t trailing_breaks = NULL_OSTRING;
+    yaml_ostring_t whitespaces = NULL_OSTRING;
     int leading_blanks;
 
-    if (!STRING_INIT(parser, string, INITIAL_STRING_CAPACITY))
+    if (!OSTRING_INIT(parser, string, INITIAL_STRING_CAPACITY))
         goto error;
-    if (!STRING_INIT(parser, leading_break, INITIAL_STRING_CAPACITY))
+    if (!OSTRING_INIT(parser, leading_break, INITIAL_STRING_CAPACITY))
         goto error;
-    if (!STRING_INIT(parser, trailing_breaks, INITIAL_STRING_CAPACITY))
+    if (!OSTRING_INIT(parser, trailing_breaks, INITIAL_STRING_CAPACITY))
         goto error;
-    if (!STRING_INIT(parser, whitespaces, INITIAL_STRING_CAPACITY))
+    if (!OSTRING_INIT(parser, whitespaces, INITIAL_STRING_CAPACITY))
         goto error;
 
     /* Eat the left quote. */
@@ -3088,7 +3088,7 @@ yaml_parser_scan_flow_scalar(yaml_parser_t *parser, yaml_token_t *token,
             if (single && CHECK_AT(parser->input, '\'', 0)
                     && CHECK_AT(parser->input, '\'', 1))
             {
-                if (!STRING_EXTEND(parser, string)) goto error;
+                if (!OSTRING_EXTEND(parser, string)) goto error;
                 JOIN_OCTET(string, '\'');
                 SKIP(parser);
                 SKIP(parser);
@@ -3119,7 +3119,7 @@ yaml_parser_scan_flow_scalar(yaml_parser_t *parser, yaml_token_t *token,
             {
                 size_t code_length = 0;
 
-                if (!STRING_EXTEND(parser, string)) goto error;
+                if (!OSTRING_EXTEND(parser, string)) goto error;
 
                 /* Check the escape character. */
 
@@ -3341,7 +3341,7 @@ yaml_parser_scan_flow_scalar(yaml_parser_t *parser, yaml_token_t *token,
 
             if (leading_break.buffer[0] == '\n') {
                 if (trailing_breaks.buffer[0] == '\0') {
-                    if (!STRING_EXTEND(parser, string)) goto error;
+                    if (!OSTRING_EXTEND(parser, string)) goto error;
                     JOIN_OCTET(string, ' ');
                 }
                 else {
@@ -3376,17 +3376,17 @@ yaml_parser_scan_flow_scalar(yaml_parser_t *parser, yaml_token_t *token,
             single ? YAML_SINGLE_QUOTED_SCALAR_STYLE : YAML_DOUBLE_QUOTED_SCALAR_STYLE,
             start_mark, end_mark);
 
-    STRING_DEL(parser, leading_break);
-    STRING_DEL(parser, trailing_breaks);
-    STRING_DEL(parser, whitespaces);
+    OSTRING_DEL(parser, leading_break);
+    OSTRING_DEL(parser, trailing_breaks);
+    OSTRING_DEL(parser, whitespaces);
 
     return 1;
 
 error:
-    STRING_DEL(parser, string);
-    STRING_DEL(parser, leading_break);
-    STRING_DEL(parser, trailing_breaks);
-    STRING_DEL(parser, whitespaces);
+    OSTRING_DEL(parser, string);
+    OSTRING_DEL(parser, leading_break);
+    OSTRING_DEL(parser, trailing_breaks);
+    OSTRING_DEL(parser, whitespaces);
 
     return 0;
 }
@@ -3400,20 +3400,20 @@ yaml_parser_scan_plain_scalar(yaml_parser_t *parser, yaml_token_t *token)
 {
     yaml_mark_t start_mark;
     yaml_mark_t end_mark;
-    yaml_string_t string = NULL_STRING;
-    yaml_string_t leading_break = NULL_STRING;
-    yaml_string_t trailing_breaks = NULL_STRING;
-    yaml_string_t whitespaces = NULL_STRING;
+    yaml_ostring_t string = NULL_OSTRING;
+    yaml_ostring_t leading_break = NULL_OSTRING;
+    yaml_ostring_t trailing_breaks = NULL_OSTRING;
+    yaml_ostring_t whitespaces = NULL_OSTRING;
     int leading_blanks = 0;
     int indent = parser->indent+1;
 
-    if (!STRING_INIT(parser, string, INITIAL_STRING_CAPACITY))
+    if (!OSTRING_INIT(parser, string, INITIAL_STRING_CAPACITY))
         goto error;
-    if (!STRING_INIT(parser, leading_break, INITIAL_STRING_CAPACITY))
+    if (!OSTRING_INIT(parser, leading_break, INITIAL_STRING_CAPACITY))
         goto error;
-    if (!STRING_INIT(parser, trailing_breaks, INITIAL_STRING_CAPACITY))
+    if (!OSTRING_INIT(parser, trailing_breaks, INITIAL_STRING_CAPACITY))
         goto error;
-    if (!STRING_INIT(parser, whitespaces, INITIAL_STRING_CAPACITY))
+    if (!OSTRING_INIT(parser, whitespaces, INITIAL_STRING_CAPACITY))
         goto error;
 
     start_mark = end_mark = parser->mark;
@@ -3475,7 +3475,7 @@ yaml_parser_scan_plain_scalar(yaml_parser_t *parser, yaml_token_t *token)
 
                     if (leading_break.buffer[0] == '\n') {
                         if (trailing_breaks.buffer[0] == '\0') {
-                            if (!STRING_EXTEND(parser, string)) goto error;
+                            if (!OSTRING_EXTEND(parser, string)) goto error;
                             JOIN_OCTET(string, ' ');
                         }
                         else {
@@ -3579,17 +3579,17 @@ yaml_parser_scan_plain_scalar(yaml_parser_t *parser, yaml_token_t *token)
         parser->is_simple_key_allowed = 1;
     }
 
-    STRING_DEL(parser, leading_break);
-    STRING_DEL(parser, trailing_breaks);
-    STRING_DEL(parser, whitespaces);
+    OSTRING_DEL(parser, leading_break);
+    OSTRING_DEL(parser, trailing_breaks);
+    OSTRING_DEL(parser, whitespaces);
 
     return 1;
 
 error:
-    STRING_DEL(parser, string);
-    STRING_DEL(parser, leading_break);
-    STRING_DEL(parser, trailing_breaks);
-    STRING_DEL(parser, whitespaces);
+    OSTRING_DEL(parser, string);
+    OSTRING_DEL(parser, leading_break);
+    OSTRING_DEL(parser, trailing_breaks);
+    OSTRING_DEL(parser, whitespaces);
 
     return 0;
 }

@@ -2,8 +2,8 @@
 
 # Define the package version numbers and the bug reporting link.
 m4_define([YAML_MAJOR], 0)
-m4_define([YAML_MINOR], 0)
-m4_define([YAML_PATCH], 1)
+m4_define([YAML_MINOR], 2)
+m4_define([YAML_PATCH], 0)
 m4_define([YAML_BUGS], [http://pyyaml.org/newticket?component=libyaml])
 
 # Define the libtool version numbers; check the Autobook, Section 11.4.
@@ -18,7 +18,7 @@ m4_define([YAML_BUGS], [http://pyyaml.org/newticket?component=libyaml])
 #       else:
 #           YAML_AGE = 0
 m4_define([YAML_RELEASE], 0)
-m4_define([YAML_CURRENT], 1)
+m4_define([YAML_CURRENT], 2)
 m4_define([YAML_REVISION], 0)
 m4_define([YAML_AGE], 0)
 
@@ -28,12 +28,6 @@ AC_INIT([yaml], [YAML_MAJOR.YAML_MINOR.YAML_PATCH], [YAML_BUGS])
 AC_CONFIG_AUX_DIR([config])
 AC_CONFIG_HEADERS([config.h])
 AM_INIT_AUTOMAKE([1.9 foreign])
-
-# Define macro variables for the package version numbers.
-AC_DEFINE(YAML_VERSION_MAJOR, YAML_MAJOR, [Define the major version number.])
-AC_DEFINE(YAML_VERSION_MINOR, YAML_MINOR, [Define the minor version number.])
-AC_DEFINE(YAML_VERSION_PATCH, YAML_PATCH, [Define the patch version number.])
-AC_DEFINE(YAML_VERSION_STRING, "YAML_MAJOR.YAML_MINOR.YAML_PATCH", [Define the version string.])
 
 # Define substitutions for the libtool version numbers.
 YAML_LT_RELEASE=YAML_RELEASE

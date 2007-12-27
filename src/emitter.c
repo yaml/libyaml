@@ -13,9 +13,9 @@
  * Put a character to the output buffer.
  */
 
-#define PUT(emitter,value)                                                      \
+#define PUT(emitter, value)                                                     \
     (FLUSH(emitter)                                                             \
-     && (JOIN_OCTET(emitter->output,(yaml_char_t)(value)),                      \
+     && (JOIN_OCTET(emitter->output, (yaml_char_t)(value)),                     \
          emitter->column ++,                                                    \
          1))
 
@@ -40,9 +40,9 @@
  * Copy a character from a string into buffer.
  */
 
-#define WRITE(emitter,string)                                                   \
+#define WRITE(emitter, string)                                                  \
     (FLUSH(emitter)                                                             \
-     && (COPY(emitter->output,string),                                          \
+     && (COPY(emitter->output, string),                                         \
          emitter->column ++,                                                    \
          1))
 
@@ -50,13 +50,13 @@
  * Copy a line break character from a string into buffer.
  */
 
-#define WRITE_BREAK(emitter,string)                                             \
+#define WRITE_BREAK(emitter, string)                                            \
     (FLUSH(emitter)                                                             \
-     && (CHECK(string,'\n') ?                                                   \
+     && (CHECK(string, '\n') ?                                                  \
          (PUT_BREAK(emitter),                                                   \
           string.pointer ++,                                                    \
           1) :                                                                  \
-         (COPY(emitter->output,string),                                         \
+         (COPY(emitter->output, string),                                        \
           emitter->column = 0,                                                  \
           emitter->line ++,                                                     \
           1)))
@@ -66,7 +66,7 @@
  */
 
 YAML_DECLARE(int)
-yaml_emitter_emit(yaml_emitter_t *emitter, yaml_event_t *event);
+yaml_emitter_emit_event(yaml_emitter_t *emitter, yaml_event_t *event);
 
 /*
  * Utility functions.
@@ -218,51 +218,51 @@ yaml_emitter_write_indent(yaml_emitter_t *emitter);
 
 static int
 yaml_emitter_write_indicator(yaml_emitter_t *emitter,
-        char *indicator, int need_whitespace,
+        const char *indicator, int need_whitespace,
         int is_whitespace, int is_indention);
 
 static int
 yaml_emitter_write_anchor(yaml_emitter_t *emitter,
-        yaml_char_t *value, size_t length);
+        const yaml_char_t *value, size_t length);
 
 static int
 yaml_emitter_write_tag_handle(yaml_emitter_t *emitter,
-        yaml_char_t *value, size_t length);
+        const yaml_char_t *value, size_t length);
 
 static int
 yaml_emitter_write_tag_content(yaml_emitter_t *emitter,
-        yaml_char_t *value, size_t length, int need_whitespace);
+        const yaml_char_t *value, size_t length, int need_whitespace);
 
 static int
 yaml_emitter_write_plain_scalar(yaml_emitter_t *emitter,
-        yaml_char_t *value, size_t length, int allow_breaks);
+        const yaml_char_t *value, size_t length, int allow_breaks);
 
 static int
 yaml_emitter_write_single_quoted_scalar(yaml_emitter_t *emitter,
-        yaml_char_t *value, size_t length, int allow_breaks);
+        const yaml_char_t *value, size_t length, int allow_breaks);
 
 static int
 yaml_emitter_write_double_quoted_scalar(yaml_emitter_t *emitter,
-        yaml_char_t *value, size_t length, int allow_breaks);
+        const yaml_char_t *value, size_t length, int allow_breaks);
 
 static int
 yaml_emitter_determine_chomping(yaml_emitter_t *emitter,
-        yaml_string_t string);
+        yaml_istring_t string);
 
 static int
 yaml_emitter_write_literal_scalar(yaml_emitter_t *emitter,
-        yaml_char_t *value, size_t length);
+        const yaml_char_t *value, size_t length);
 
 static int
 yaml_emitter_write_folded_scalar(yaml_emitter_t *emitter,
-        yaml_char_t *value, size_t length);
+        const yaml_char_t *value, size_t length);
 
 /*
  * Emit an event.
  */
 
 YAML_DECLARE(int)
-yaml_emitter_emit(yaml_emitter_t *emitter, yaml_event_t *event)
+yaml_emitter_emit_event(yaml_emitter_t *emitter, yaml_event_t *event)
 {
     if (!ENQUEUE(emitter, emitter->events, *event)) {
         yaml_event_delete(event);
@@ -467,7 +467,7 @@ yaml_emitter_state_machine(yaml_emitter_t *emitter, yaml_event_t *event)
                     "expected nothing after STREAM-END");
 
         default:
-            assert(1);      /* Invalid state. */
+            assert(0);      /* Invalid state. */
     }
 
     return 0;
@@ -1286,7 +1286,7 @@ yaml_emitter_process_scalar(yaml_emitter_t *emitter)
                     emitter->scalar_data.value, emitter->scalar_data.length);
 
         default:
-            assert(1);      /* Impossible. */
+            assert(0);      /* Impossible. */
     }
 
     return 0;
@@ -1315,12 +1315,12 @@ static int
 yaml_emitter_analyze_tag_directive(yaml_emitter_t *emitter,
         yaml_tag_directive_t tag_directive)
 {
-    yaml_string_t handle = STRING(tag_directive.handle,
+    yaml_istring_t handle = ISTRING(tag_directive.handle,
             strlen((char *)tag_directive.handle));
-    yaml_string_t prefix = STRING(tag_directive.prefix,
+    yaml_istring_t prefix = ISTRING(tag_directive.prefix,
             strlen((char *)tag_directive.prefix));
 
-    if (!handle.capacity) {
+    if (!handle.length) {
         return EMITTER_ERROR_INIT(emitter, "tag handle must not be empty");
     }
 
@@ -1328,13 +1328,13 @@ yaml_emitter_analyze_tag_directive(yaml_emitter_t *emitter,
         return EMITTER_ERROR_INIT(emitter, "tag handle must start with '!'");
     }
 
-    if (handle.buffer[handle.capacity-1] != '!') {
+    if (handle.buffer[handle.length-1] != '!') {
         return EMITTER_ERROR_INIT(emitter, "tag handle must end with '!'");
     }
 
     handle.pointer ++;
 
-    while (handle.pointer < handle.capacity-1) {
+    while (handle.pointer < handle.length-1) {
         if (!IS_ALPHA(handle)) {
             return EMITTER_ERROR_INIT(emitter,
                     "tag handle must contain alphanumerical characters only");
@@ -1342,7 +1342,7 @@ yaml_emitter_analyze_tag_directive(yaml_emitter_t *emitter,
         MOVE(handle);
     }
 
-    if (!prefix.capacity) {
+    if (!prefix.length) {
         return EMITTER_ERROR_INIT(emitter, "tag prefix must not be empty");
     }
 
@@ -1357,15 +1357,15 @@ static int
 yaml_emitter_analyze_anchor(yaml_emitter_t *emitter,
         yaml_char_t *anchor, int is_alias)
 {
-    yaml_string_t string = STRING(anchor, strlen((char *)anchor));
+    yaml_istring_t string = ISTRING(anchor, strlen((char *)anchor));
 
-    if (!string.capacity) {
+    if (!string.length) {
         return EMITTER_ERROR_INIT(emitter, is_alias ?
                 "alias value must not be empty" :
                 "anchor value must not be empty");
     }
 
-    while (string.pointer < string.capacity) {
+    while (string.pointer < string.length) {
         if (!IS_ALPHA(string)) {
             return EMITTER_ERROR_INIT(emitter, is_alias ?
                     "alias value must contain alphanumerical characters only" :
@@ -1375,7 +1375,7 @@ yaml_emitter_analyze_anchor(yaml_emitter_t *emitter,
     }
 
     emitter->anchor_data.anchor = string.buffer;
-    emitter->anchor_data.anchor_length = string.capacity;
+    emitter->anchor_data.anchor_length = string.length;
     emitter->anchor_data.is_alias = is_alias;
 
     return 1;
@@ -1389,17 +1389,18 @@ static int
 yaml_emitter_analyze_tag(yaml_emitter_t *emitter,
         yaml_char_t *tag)
 {
-    yaml_string_t string = STRING(tag, strlen((char *)tag));
+    yaml_istring_t string = ISTRING(tag, strlen((char *)tag));
     size_t idx;
 
-    if (!string.capacity) {
+    if (!string.length) {
         return EMITTER_ERROR_INIT(emitter, "tag value must not be empty");
     }
 
     for (idx = 0; idx < emitter->tag_directives.length; idx ++) {
-        yaml_tag_directive_t *tag_directive = emitter->tag_directives.list+idx;
+        yaml_tag_directive_t *tag_directive =
+            STACK_ITER(emitter, emitter->tag_directives, idx);
         size_t prefix_length = strlen((char *)tag_directive->prefix);
-        if (prefix_length < string.capacity
+        if (prefix_length < string.length
                 && strncmp((char *)tag_directive->prefix, (char *)string.buffer,
                     prefix_length) == 0)
         {
@@ -1407,13 +1408,13 @@ yaml_emitter_analyze_tag(yaml_emitter_t *emitter,
             emitter->tag_data.handle_length =
                 strlen((char *)tag_directive->handle);
             emitter->tag_data.suffix = string.buffer + prefix_length;
-            emitter->tag_data.suffix_length = string.capacity - prefix_length;
+            emitter->tag_data.suffix_length = string.length - prefix_length;
             return 1;
         }
     }
 
     emitter->tag_data.suffix = string.buffer;
-    emitter->tag_data.suffix_length = string.capacity;
+    emitter->tag_data.suffix_length = string.length;
 
     return 1;
 }
@@ -1426,7 +1427,7 @@ static int
 yaml_emitter_analyze_scalar(yaml_emitter_t *emitter,
         yaml_char_t *value, size_t length)
 {
-    yaml_string_t string = STRING(value, length);
+    yaml_istring_t string = ISTRING(value, length);
 
     int block_indicators = 0;
     int flow_indicators = 0;
@@ -1452,7 +1453,7 @@ yaml_emitter_analyze_scalar(yaml_emitter_t *emitter,
     emitter->scalar_data.value = value;
     emitter->scalar_data.length = length;
 
-    if (!string.capacity)
+    if (!string.length)
     {
         emitter->scalar_data.is_multiline = 0;
         emitter->scalar_data.is_flow_plain_allowed = 0;
@@ -1476,7 +1477,7 @@ yaml_emitter_analyze_scalar(yaml_emitter_t *emitter,
     preceeded_by_space = 1;
     followed_by_space = IS_BLANKZ_AT(string, WIDTH(string));
 
-    while (string.pointer < string.capacity)
+    while (string.pointer < string.length)
     {
         if (!string.pointer)
         {
@@ -1583,7 +1584,7 @@ yaml_emitter_analyze_scalar(yaml_emitter_t *emitter,
             spaces = breaks = mixed = leading = 0;
         }
 
-        if ((spaces || breaks) && string.pointer == string.capacity-1)
+        if ((spaces || breaks) && string.pointer == string.length-1)
         {
             if (spaces && breaks) {
                 mixed_breaks_spaces = 1;
@@ -1604,7 +1605,7 @@ yaml_emitter_analyze_scalar(yaml_emitter_t *emitter,
 
         preceeded_by_space = IS_BLANKZ(string);
         MOVE(string);
-        if (string.pointer < string.capacity) {
+        if (string.pointer < string.length) {
             followed_by_space = IS_BLANKZ_AT(string, WIDTH(string));
         }
     }
@@ -1769,16 +1770,16 @@ yaml_emitter_write_indent(yaml_emitter_t *emitter)
 
 static int
 yaml_emitter_write_indicator(yaml_emitter_t *emitter,
-        char *indicator, int need_whitespace,
+        const char *indicator, int need_whitespace,
         int is_whitespace, int is_indention)
 {
-    yaml_string_t string = STRING((yaml_char_t *)indicator, strlen(indicator));
+    yaml_istring_t string = ISTRING((yaml_char_t *)indicator, strlen(indicator));
 
     if (need_whitespace && !emitter->is_whitespace) {
         if (!PUT(emitter, ' ')) return 0;
     }
 
-    while (string.pointer < string.capacity) {
+    while (string.pointer < string.length) {
         if (!WRITE(emitter, string)) return 0;
     }
 
@@ -1790,11 +1791,11 @@ yaml_emitter_write_indicator(yaml_emitter_t *emitter,
 
 static int
 yaml_emitter_write_anchor(yaml_emitter_t *emitter,
-        yaml_char_t *value, size_t length)
+        const yaml_char_t *value, size_t length)
 {
-    yaml_string_t string = STRING(value, length);
+    yaml_istring_t string = ISTRING(value, length);
 
-    while (string.pointer < string.capacity) {
+    while (string.pointer < string.length) {
         if (!WRITE(emitter, string)) return 0;
     }
 
@@ -1806,15 +1807,15 @@ yaml_emitter_write_anchor(yaml_emitter_t *emitter,
 
 static int
 yaml_emitter_write_tag_handle(yaml_emitter_t *emitter,
-        yaml_char_t *value, size_t length)
+        const yaml_char_t *value, size_t length)
 {
-    yaml_string_t string = STRING(value, length);
+    yaml_istring_t string = ISTRING(value, length);
 
     if (!emitter->is_whitespace) {
         if (!PUT(emitter, ' ')) return 0;
     }
 
-    while (string.pointer < string.capacity) {
+    while (string.pointer < string.length) {
         if (!WRITE(emitter, string)) return 0;
     }
 
@@ -1826,16 +1827,16 @@ yaml_emitter_write_tag_handle(yaml_emitter_t *emitter,
 
 static int
 yaml_emitter_write_tag_content(yaml_emitter_t *emitter,
-        yaml_char_t *value, size_t length,
+        const yaml_char_t *value, size_t length,
         int need_whitespace)
 {
-    yaml_string_t string = STRING(value, length);
+    yaml_istring_t string = ISTRING(value, length);
 
     if (need_whitespace && !emitter->is_whitespace) {
         if (!PUT(emitter, ' ')) return 0;
     }
 
-    while (string.pointer < string.capacity) {
+    while (string.pointer < string.length) {
         if (IS_ALPHA(string)
                 || CHECK(string, ';') || CHECK(string, '/')
                 || CHECK(string, '?') || CHECK(string, ':')
@@ -1874,9 +1875,9 @@ yaml_emitter_write_tag_content(yaml_emitter_t *emitter,
 
 static int
 yaml_emitter_write_plain_scalar(yaml_emitter_t *emitter,
-        yaml_char_t *value, size_t length, int allow_breaks)
+        const yaml_char_t *value, size_t length, int allow_breaks)
 {
-    yaml_string_t string = STRING(value, length);
+    yaml_istring_t string = ISTRING(value, length);
     int spaces = 0;
     int breaks = 0;
 
@@ -1884,7 +1885,7 @@ yaml_emitter_write_plain_scalar(yaml_emitter_t *emitter,
         if (!PUT(emitter, ' ')) return 0;
     }
 
-    while (string.pointer < string.capacity)
+    while (string.pointer < string.length)
     {
         if (IS_SPACE(string))
         {
@@ -1928,23 +1929,22 @@ yaml_emitter_write_plain_scalar(yaml_emitter_t *emitter,
 
 static int
 yaml_emitter_write_single_quoted_scalar(yaml_emitter_t *emitter,
-        yaml_char_t *value, size_t length, int allow_breaks)
+        const yaml_char_t *value, size_t length, int allow_breaks)
 {
-    yaml_string_t string = STRING(value, length);
+    yaml_istring_t string = ISTRING(value, length);
     int spaces = 0;
     int breaks = 0;
 
     if (!yaml_emitter_write_indicator(emitter, "'", 1, 0, 0))
         return 0;
 
-    while (string.pointer < string.capacity)
+    while (string.pointer < string.length)
     {
         if (IS_SPACE(string))
         {
             if (allow_breaks && !spaces
                     && emitter->column > emitter->best_width
-                    && string.pointer != 0
-                    && string.pointer != string.capacity - 1
+                    && string.pointer > 0 && string.pointer < string.length
                     && !IS_SPACE_AT(string, 1)) {
                 if (!yaml_emitter_write_indent(emitter)) return 0;
                 MOVE(string);
@@ -1989,15 +1989,15 @@ yaml_emitter_write_single_quoted_scalar(yaml_emitter_t *emitter,
 
 static int
 yaml_emitter_write_double_quoted_scalar(yaml_emitter_t *emitter,
-        yaml_char_t *value, size_t length, int allow_breaks)
+        const yaml_char_t *value, size_t length, int allow_breaks)
 {
-    yaml_string_t string = STRING(value, length);
+    yaml_istring_t string = ISTRING(value, length);
     int spaces = 0;
 
     if (!yaml_emitter_write_indicator(emitter, "\"", 1, 0, 0))
         return 0;
 
-    while (string.pointer < string.capacity)
+    while (string.pointer < string.length)
     {
         if (!IS_PRINTABLE(string) || (!emitter->is_unicode && !IS_ASCII(string))
                 || IS_BOM(string) || IS_BREAK(string)
@@ -2112,8 +2112,8 @@ yaml_emitter_write_double_quoted_scalar(yaml_emitter_t *emitter,
         {
             if (allow_breaks && !spaces
                     && emitter->column > emitter->best_width
-                    && string.pointer != 0
-                    && string.pointer != string.capacity - 1) {
+                    && string.pointer > 0
+                    && string.pointer < string.length) {
                 if (!yaml_emitter_write_indent(emitter)) return 0;
                 if (IS_SPACE_AT(string, 1)) {
                     if (!PUT(emitter, '\\')) return 0;
@@ -2143,9 +2143,9 @@ yaml_emitter_write_double_quoted_scalar(yaml_emitter_t *emitter,
 
 static int
 yaml_emitter_determine_chomping(yaml_emitter_t *emitter,
-        yaml_string_t string)
+        yaml_istring_t string)
 {
-    string.pointer = string.capacity;
+    string.pointer = string.length;
     if (!string.pointer)
         return -1;
     do {
@@ -2166,9 +2166,9 @@ yaml_emitter_determine_chomping(yaml_emitter_t *emitter,
 
 static int
 yaml_emitter_write_literal_scalar(yaml_emitter_t *emitter,
-        yaml_char_t *value, size_t length)
+        const yaml_char_t *value, size_t length)
 {
-    yaml_string_t string = STRING(value, length);
+    yaml_istring_t string = ISTRING(value, length);
     int chomp = yaml_emitter_determine_chomping(emitter, string);
     int breaks = 0;
 
@@ -2178,7 +2178,7 @@ yaml_emitter_write_literal_scalar(yaml_emitter_t *emitter,
     if (!yaml_emitter_write_indent(emitter))
         return 0;
 
-    while (string.pointer < string.capacity)
+    while (string.pointer < string.length)
     {
         if (IS_BREAK(string))
         {
@@ -2202,9 +2202,9 @@ yaml_emitter_write_literal_scalar(yaml_emitter_t *emitter,
 
 static int
 yaml_emitter_write_folded_scalar(yaml_emitter_t *emitter,
-        yaml_char_t *value, size_t length)
+        const yaml_char_t *value, size_t length)
 {
-    yaml_string_t string = STRING(value, length);
+    yaml_istring_t string = ISTRING(value, length);
     int chomp = yaml_emitter_determine_chomping(emitter, string);
     int breaks = 1;
     int leading_spaces = 0;
@@ -2215,7 +2215,7 @@ yaml_emitter_write_folded_scalar(yaml_emitter_t *emitter,
     if (!yaml_emitter_write_indent(emitter))
         return 0;
 
-    while (string.pointer < string.capacity)
+    while (string.pointer < string.length)
     {
         if (IS_BREAK(string))
         {

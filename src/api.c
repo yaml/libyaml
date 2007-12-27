@@ -67,11 +67,116 @@ yaml_strdup(const yaml_char_t *str)
 }
 
 /*
+ * Format an error message.
+ */
+
+YAML_DECLARE(int)
+yaml_error_message(yaml_error_t *error, char *buffer, size_t capacity)
+{
+    char *prefixes[] = {
+        "No error",
+        "Memory error",
+        "Reader error",
+        "Decoder error",
+        "Scanner error",
+        "Parser error",
+        "Composer error",
+        "Writer error",
+        "Emitter error",
+        "Serializer error",
+        "Resolver error",
+    };
+    int length;
+
+    assert(error);  /* Non-NULL error is expected. */
+    assert(buffer); /* Non-NULL buffer is expected. */
+
+    switch (error->type)
+    {
+        case YAML_NO_ERROR:
+        case YAML_MEMORY_ERROR:
+            length = snprintf(buffer, capacity, "%s",
+                    prefixes[error->type]);
+            break;
+
+        case YAML_READER_ERROR:
+        case YAML_DECODER_ERROR:
+            if (error->data.reading.value == -1) {
+                length = snprintf(buffer, capacity,
+                        "%s: %s at position %d",
+                        prefixes[error->type],
+                        error->data.reading.problem,
+                        error->data.reading.offset);
+            }
+            else {
+                length = snprintf(buffer, capacity,
+                        "%s: %s (#%X) at position %d",
+                        prefixes[error->type],
+                        error->data.reading.problem,
+                        error->data.reading.value,
+                        error->data.reading.offset);
+            }
+            break;
+
+        case YAML_SCANNER_ERROR:
+        case YAML_PARSER_ERROR:
+        case YAML_COMPOSER_ERROR:
+            if (!error->data.loading.context) {
+                length = snprintf(buffer, capacity,
+                        "%s: %s at line %d, column %d",
+                        prefixes[error->type],
+                        error->data.loading.problem,
+                        error->data.loading.problem_mark.line+1,
+                        error->data.loading.problem_mark.column+1);
+            }
+            else {
+                length = snprintf(buffer, capacity,
+                        "%s: %s at line %d, column %d, %s at line %d, column %d",
+                        prefixes[error->type],
+                        error->data.loading.context,
+                        error->data.loading.context_mark.line+1,
+                        error->data.loading.context_mark.column+1,
+                        error->data.loading.problem,
+                        error->data.loading.problem_mark.line+1,
+                        error->data.loading.problem_mark.column+1);
+            }
+            break;
+
+        case YAML_WRITER_ERROR:
+            length = snprintf(buffer, capacity,
+                    "%s: %s at position %d",
+                    prefixes[error->type],
+                    error->data.writing.problem,
+                    error->data.writing.offset);
+            break;
+
+        case YAML_EMITTER_ERROR:
+        case YAML_SERIALIZER_ERROR:
+            length = snprintf(buffer, capacity, "%s: %s",
+                    prefixes[error->type],
+                    error->data.dumping.problem);
+            break;
+
+        case YAML_RESOLVER_ERROR:
+            length = snprintf(buffer, capacity, "%s: %s",
+                    prefixes[error->type],
+                    error->data.resolving.problem);
+            break;
+
+        default:
+            assert(0);  /* Should never happen. */
+    }
+
+    return (length >= 0 && length < capacity);
+}
+
+
+/*
  * Extend a string.
  */
 
 YAML_DECLARE(int)
-yaml_string_extend(yaml_char_t **buffer, size_t *capacity)
+yaml_ostring_extend(yaml_char_t **buffer, size_t *capacity)
 {
     yaml_char_t *new_buffer = yaml_realloc(*buffer, (*capacity)*2);
 
@@ -90,15 +195,15 @@ yaml_string_extend(yaml_char_t **buffer, size_t *capacity)
  */
 
 YAML_DECLARE(int)
-yaml_string_join(
+yaml_ostring_join(
         yaml_char_t **base_buffer, size_t *base_pointer, size_t *base_capacity,
-        yaml_char_t *adj_buffer, size_t adj_pointer, size_t adj_capacity)
+        yaml_char_t *adj_buffer, size_t adj_pointer)
 {
     if (!adj_pointer)
         return 1;
 
     while (*base_capacity - *base_pointer <= adj_pointer) {
-        if (!yaml_string_extend(base_buffer, base_capacity))
+        if (!yaml_ostring_extend(base_buffer, base_capacity))
             return 0;
     }
 
@@ -172,9 +277,9 @@ yaml_parser_new(void)
         return NULL;
 
     memset(parser, 0, sizeof(yaml_parser_t));
-    if (!STRING_INIT(parser, parser->raw_input, RAW_INPUT_BUFFER_CAPACITY))
+    if (!IOSTRING_INIT(parser, parser->raw_input, RAW_INPUT_BUFFER_CAPACITY))
         goto error;
-    if (!STRING_INIT(parser, parser->input, INPUT_BUFFER_CAPACITY))
+    if (!IOSTRING_INIT(parser, parser->input, INPUT_BUFFER_CAPACITY))
         goto error;
     if (!QUEUE_INIT(parser, parser->tokens, INITIAL_QUEUE_CAPACITY))
         goto error;
@@ -206,8 +311,8 @@ yaml_parser_delete(yaml_parser_t *parser)
 {
     assert(parser); /* Non-NULL parser object expected. */
 
-    STRING_DEL(parser, parser->raw_input);
-    STRING_DEL(parser, parser->input);
+    IOSTRING_DEL(parser, parser->raw_input);
+    IOSTRING_DEL(parser, parser->input);
     while (!QUEUE_EMPTY(parser, parser->tokens)) {
         yaml_token_destroy(&DEQUEUE(parser, parser->tokens));
     }
@@ -249,13 +354,13 @@ yaml_string_reader(void *untyped_data, unsigned char *buffer, size_t capacity,
 {
     yaml_standard_reader_data_t *data = untyped_data;
 
-    if (data->string.pointer == data->string.capacity) {
+    if (data->string.pointer == data->string.length) {
         *length = 0;
         return 1;
     }
 
-    if (capacity > (size_t)(data->string.capacity - data->string.pointer)) {
-        capacity = data->string.capacity - data->string.pointer;
+    if (capacity > (size_t)(data->string.length - data->string.pointer)) {
+        capacity = data->string.length - data->string.pointer;
     }
 
     memcpy(buffer, data->string.buffer + data->string.pointer, capacity);
@@ -293,9 +398,9 @@ yaml_parser_set_string_reader(yaml_parser_t *parser,
     parser->reader = yaml_string_reader;
     parser->reader_data = &(parser->standard_reader_data);
 
-    parser->standard_reader_data.string.buffer = (unsigned char *)buffer;
+    parser->standard_reader_data.string.buffer = buffer;
     parser->standard_reader_data.string.pointer = 0;
-    parser->standard_reader_data.string.capacity = length;
+    parser->standard_reader_data.string.length = length;
 }
 
 /*
@@ -357,9 +462,9 @@ yaml_emitter_new(void)
         return NULL;
 
     memset(emitter, 0, sizeof(yaml_emitter_t));
-    if (!STRING_INIT(emitter, emitter->output, OUTPUT_BUFFER_CAPACITY))
+    if (!IOSTRING_INIT(emitter, emitter->output, OUTPUT_BUFFER_CAPACITY))
         goto error;
-    if (!STRING_INIT(emitter, emitter->raw_output, RAW_OUTPUT_BUFFER_CAPACITY))
+    if (!IOSTRING_INIT(emitter, emitter->raw_output, RAW_OUTPUT_BUFFER_CAPACITY))
         goto error;
     if (!STACK_INIT(emitter, emitter->states, INITIAL_STACK_CAPACITY))
         goto error;
@@ -387,8 +492,8 @@ yaml_emitter_delete(yaml_emitter_t *emitter)
 {
     assert(emitter);    /* Non-NULL emitter object expected. */
 
-    STRING_DEL(emitter, emitter->output);
-    STRING_DEL(emitter, emitter->raw_output);
+    IOSTRING_DEL(emitter, emitter->output);
+    IOSTRING_DEL(emitter, emitter->raw_output);
     STACK_DEL(emitter, emitter->states);
     while (!QUEUE_EMPTY(emitter, emitter->events)) {
         yaml_event_delete(&DEQUEUE(emitter, emitter->events));
@@ -424,7 +529,7 @@ yaml_emitter_get_error(yaml_emitter_t *emitter, yaml_error_t *error)
  */
 
 static int
-yaml_string_writer(void *untyped_data, unsigned char *buffer, size_t length)
+yaml_string_writer(void *untyped_data, const unsigned char *buffer, size_t length)
 {
     yaml_standard_writer_data_t *data = untyped_data;
     int result = 1;
@@ -446,7 +551,7 @@ yaml_string_writer(void *untyped_data, unsigned char *buffer, size_t length)
  */
 
 static int
-yaml_file_writer(void *untyped_data, unsigned char *buffer, size_t length)
+yaml_file_writer(void *untyped_data, const unsigned char *buffer, size_t length)
 {
     yaml_standard_writer_data_t *data = untyped_data;
 
@@ -616,7 +721,7 @@ yaml_token_delete(yaml_token_t *token)
  */
 
 YAML_DECLARE(int)
-yaml_token_duplicate(yaml_token_t *token, yaml_token_t *model)
+yaml_token_duplicate(yaml_token_t *token, const yaml_token_t *model)
 {
     assert(token);  /* Non-NULL token object is expected. */
     assert(model);  /* Non-NULL model token object is expected. */
@@ -809,7 +914,7 @@ yaml_event_delete(yaml_event_t *event)
  */
 
 YAML_DECLARE(int)
-yaml_event_duplicate(yaml_event_t *event, yaml_event_t *model)
+yaml_event_duplicate(yaml_event_t *event, const yaml_event_t *model)
 {
     struct {
         yaml_error_t error;

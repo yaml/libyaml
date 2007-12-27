@@ -23,9 +23,11 @@ main(int argc, char *argv[])
         FILE *file;
         yaml_parser_t *parser;
         yaml_token_t token;
+        yaml_error_t error;
+        char error_buffer[256];
         int done = 0;
         int count = 0;
-        int error = 0;
+        int failed = 0;
 
         printf("[%d] Scanning '%s': ", number, argv[number]);
         fflush(stdout);
@@ -39,8 +41,8 @@ main(int argc, char *argv[])
 
         while (!done)
         {
-            if (!yaml_parser_scan(parser, &token)) {
-                error = 1;
+            if (!yaml_parser_parse_token(parser, &token)) {
+                failed = 1;
                 break;
             }
 
@@ -51,11 +53,17 @@ main(int argc, char *argv[])
             count ++;
         }
 
+        yaml_parser_get_error(parser, &error);
+
         yaml_parser_delete(parser);
 
         assert(!fclose(file));
 
-        printf("%s (%d tokens)\n", (error ? "FAILURE" : "SUCCESS"), count);
+        yaml_error_message(&error, error_buffer, 256);
+
+        printf("%s (%d tokens) -> %s\n",
+                (failed ? "FAILURE" : "SUCCESS"),
+                count, error_buffer);
     }
 
     return 0;
