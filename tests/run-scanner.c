@@ -21,7 +21,7 @@ main(int argc, char *argv[])
     for (number = 1; number < argc; number ++)
     {
         FILE *file;
-        yaml_parser_t parser;
+        yaml_parser_t *parser;
         yaml_token_t token;
         int done = 0;
         int count = 0;
@@ -33,25 +33,25 @@ main(int argc, char *argv[])
         file = fopen(argv[number], "rb");
         assert(file);
 
-        assert(yaml_parser_initialize(&parser));
+        assert((parser = yaml_parser_new()));
 
-        yaml_parser_set_input_file(&parser, file);
+        yaml_parser_set_file_reader(parser, file);
 
         while (!done)
         {
-            if (!yaml_parser_scan(&parser, &token)) {
+            if (!yaml_parser_scan(parser, &token)) {
                 error = 1;
                 break;
             }
 
             done = (token.type == YAML_STREAM_END_TOKEN);
 
-            yaml_token_delete(&token);
+            yaml_token_destroy(&token);
 
             count ++;
         }
 
-        yaml_parser_delete(&parser);
+        yaml_parser_delete(parser);
 
         assert(!fclose(file));
 

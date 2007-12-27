@@ -1,6 +1,8 @@
 
 #include "yaml_private.h"
 
+#if 0
+
 /*
  * API functions.
  */
@@ -427,4 +429,6 @@ error:
     yaml_free(first_event->data.mapping_start.anchor);
     return 0;
 }
+
+#endif
 

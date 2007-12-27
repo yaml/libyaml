@@ -172,9 +172,9 @@ yaml_parser_new(void)
         return NULL;
 
     memset(parser, 0, sizeof(yaml_parser_t));
-    if (!BUFFER_INIT(parser, parser->raw_input, RAW_INPUT_BUFFER_CAPACITY))
+    if (!STRING_INIT(parser, parser->raw_input, RAW_INPUT_BUFFER_CAPACITY))
         goto error;
-    if (!BUFFER_INIT(parser, parser->input, INPUT_BUFFER_CAPACITY))
+    if (!STRING_INIT(parser, parser->input, INPUT_BUFFER_CAPACITY))
         goto error;
     if (!QUEUE_INIT(parser, parser->tokens, INITIAL_QUEUE_CAPACITY))
         goto error;
@@ -206,8 +206,8 @@ yaml_parser_delete(yaml_parser_t *parser)
 {
     assert(parser); /* Non-NULL parser object expected. */
 
-    BUFFER_DEL(parser, parser->raw_input);
-    BUFFER_DEL(parser, parser->input);
+    STRING_DEL(parser, parser->raw_input);
+    STRING_DEL(parser, parser->input);
     while (!QUEUE_EMPTY(parser, parser->tokens)) {
         yaml_token_destroy(&DEQUEUE(parser, parser->tokens));
     }
@@ -357,9 +357,9 @@ yaml_emitter_new(void)
         return NULL;
 
     memset(emitter, 0, sizeof(yaml_emitter_t));
-    if (!BUFFER_INIT(emitter, emitter->output, OUTPUT_BUFFER_CAPACITY))
+    if (!STRING_INIT(emitter, emitter->output, OUTPUT_BUFFER_CAPACITY))
         goto error;
-    if (!BUFFER_INIT(emitter, emitter->raw_output, RAW_OUTPUT_BUFFER_CAPACITY))
+    if (!STRING_INIT(emitter, emitter->raw_output, RAW_OUTPUT_BUFFER_CAPACITY))
         goto error;
     if (!STACK_INIT(emitter, emitter->states, INITIAL_STACK_CAPACITY))
         goto error;
@@ -387,8 +387,8 @@ yaml_emitter_delete(yaml_emitter_t *emitter)
 {
     assert(emitter);    /* Non-NULL emitter object expected. */
 
-    BUFFER_DEL(emitter, emitter->output);
-    BUFFER_DEL(emitter, emitter->raw_output);
+    STRING_DEL(emitter, emitter->output);
+    STRING_DEL(emitter, emitter->raw_output);
     STACK_DEL(emitter, emitter->states);
     while (!QUEUE_EMPTY(emitter, emitter->events)) {
         yaml_event_delete(&DEQUEUE(emitter, emitter->events));

@@ -1,6 +1,8 @@
 
 #include "yaml_private.h"
 
+#if 0
+
 /*
  * API functions.
  */
@@ -391,4 +393,6 @@ yaml_emitter_dump_mapping(yaml_emitter_t *emitter, yaml_node_t *node,
 
     return 1;
 }
+
+#endif
 

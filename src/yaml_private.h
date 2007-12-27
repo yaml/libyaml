@@ -71,7 +71,7 @@ yaml_strdup(const yaml_char_t *);
 #define DUMPING_ERROR_INIT(error,error_type,error_problem)                      \
     (memset(&(error), 0, sizeof(error)),                                        \
      (error).type = (error_type),                                               \
-     (error).type.dumping.problem = (error_problem),                            \
+     (error).data.dumping.problem = (error_problem),                            \
      0)
 
 #define MEMORY_ERROR_INIT(self)                                                 \
@@ -104,7 +104,7 @@ yaml_strdup(const yaml_char_t *);
 #define WRITER_ERROR_INIT(self,problem,offset)                                  \
     WRITING_ERROR_INIT((self)->error,YAML_WRITER_ERROR,problem,offset)
 
-#define EMITTER_ERROR_INIT(self,context,problem)                                \
+#define EMITTER_ERROR_INIT(self,problem)                                        \
     DUMPING_ERROR_INIT((self)->error,YAML_EMITTER_ERROR,problem)
 
 #define SERIALIZER_ERROR_INIT(self,context)                                     \
@@ -149,22 +149,6 @@ yaml_strdup(const yaml_char_t *);
 #define INITIAL_STRING_CAPACITY 16
 
 /*
- * Input/output buffer management.
- */
-
-#define STORAGE_INIT(self,storage,storage_capacity)                             \
-    (((storage).buffer = yaml_malloc(storage_capacity)) ?                       \
-        ((storage).pointer = (storage).length = 0,                              \
-         (buffer).capacity = (storage_capacity)                                 \
-         1) :                                                                   \
-        ((self)->error.type = YAML_MEMORY_ERROR,                                \
-         0))
-
-#define STORAGE_DEL(self,storage)                                               \
-    (yaml_free((storage).buffer),                                               \
-     (storage).pointer = (storage).length = (storage).capacity = 0)
-
-/*
  * String management.
  */
 
@@ -182,7 +166,7 @@ yaml_string_join(
         yaml_char_t **base_buffer, size_t *base_pointer, size_t *base_capacity,
         yaml_char_t *adj_buffer, size_t adj_pointer, size_t adj_capacity);
 
-#define NULL_STRING { NULL, NULL, NULL }
+#define NULL_STRING { NULL, 0, 0 }
 
 #define STRING(string,capacity)   { (string), 0, (capacity) }
 
@@ -459,6 +443,13 @@ yaml_string_join(
  */
 
 #define MOVE(string)    ((string).pointer += WIDTH((string)))
+
+/*
+ * Write a single octet and bump the pointer.
+ */
+
+#define JOIN_OCTET(string,octet)                                                \
+    ((string).buffer[(string).pointer++] = (octet))
 
 /*
  * Copy a single octet and bump the pointers.
@@ -863,7 +854,6 @@ struct yaml_parser_s {
     struct {
         yaml_char_t *buffer;
         size_t pointer;
-        size_t length;
         size_t capacity;
     } input;
 
@@ -874,7 +864,6 @@ struct yaml_parser_s {
     struct {
         unsigned char *buffer;
         size_t pointer;
-        size_t length;
         size_t capacity;
     } raw_input;
 
@@ -1068,7 +1057,6 @@ struct yaml_emitter_s {
     struct {
         yaml_char_t *buffer;
         size_t pointer;
-        size_t length;
         size_t capacity;
     } output;
 
@@ -1076,9 +1064,11 @@ struct yaml_emitter_s {
     struct {
         yaml_char_t *buffer;
         size_t pointer;
-        size_t length;
         size_t capacity;
     } raw_output;
+
+    /* The offset of the current position (in bytes). */
+    size_t offset;
 
     /* The stream encoding. */
     yaml_encoding_t encoding;
@@ -1150,9 +1140,9 @@ struct yaml_emitter_s {
     /* The current column. */
     int column;
     /* If the last character was a whitespace? */
-    int whitespace;
+    int is_whitespace;
     /* If the last character was an indentation character (' ', '-', '?', ':')? */
-    int indention;
+    int is_indention;
 
     /* Anchor analysis. */
     struct {
