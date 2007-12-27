@@ -892,7 +892,7 @@ typedef struct yaml_alias_data_s {
  * The structure that holds data used by the file and string readers.
  */
 
-typedef union yaml_standard_reader_data_u {
+typedef struct yaml_standard_reader_data_t {
     /* String input data. */
     yaml_istring_t string;
     /* File input data. */
@@ -1089,7 +1089,7 @@ typedef enum yaml_emitter_state_e {
  * The structure that holds data used by the file and string readers.
  */
 
-typedef union yaml_standard_writer_data_u {
+typedef struct yaml_standard_writer_data_t {
     /* String output data. */
     yaml_ostring_t string;
     size_t *length;

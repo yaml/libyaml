@@ -11,6 +11,7 @@
 int
 main(int argc, char *argv[])
 {
+#if 0
     int number;
 
     if (argc < 2) {
@@ -58,6 +59,7 @@ main(int argc, char *argv[])
         printf("%s (%d documents)\n", (error ? "FAILURE" : "SUCCESS"), count);
     }
 
+#endif
     return 0;
 }
 

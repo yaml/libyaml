@@ -103,14 +103,14 @@ yaml_error_message(yaml_error_t *error, char *buffer, size_t capacity)
         case YAML_DECODER_ERROR:
             if (error->data.reading.value == -1) {
                 length = snprintf(buffer, capacity,
-                        "%s: %s at position %d",
+                        "%s: %s at byte %d",
                         prefixes[error->type],
                         error->data.reading.problem,
                         error->data.reading.offset);
             }
             else {
                 length = snprintf(buffer, capacity,
-                        "%s: %s (#%X) at position %d",
+                        "%s: %s (#%X) at byte %d",
                         prefixes[error->type],
                         error->data.reading.problem,
                         error->data.reading.value,
@@ -144,7 +144,7 @@ yaml_error_message(yaml_error_t *error, char *buffer, size_t capacity)
 
         case YAML_WRITER_ERROR:
             length = snprintf(buffer, capacity,
-                    "%s: %s at position %d",
+                    "%s: %s at byte %d",
                     prefixes[error->type],
                     error->data.writing.problem,
                     error->data.writing.offset);
@@ -496,7 +496,7 @@ yaml_emitter_delete(yaml_emitter_t *emitter)
     IOSTRING_DEL(emitter, emitter->raw_output);
     STACK_DEL(emitter, emitter->states);
     while (!QUEUE_EMPTY(emitter, emitter->events)) {
-        yaml_event_delete(&DEQUEUE(emitter, emitter->events));
+        yaml_event_destroy(&DEQUEUE(emitter, emitter->events));
     }
     QUEUE_DEL(emitter, emitter->events);
     STACK_DEL(emitter, emitter->indents);
@@ -563,7 +563,7 @@ yaml_file_writer(void *untyped_data, const unsigned char *buffer, size_t length)
 
 YAML_DECLARE(void)
 yaml_emitter_set_string_writer(yaml_emitter_t *emitter,
-        unsigned char *buffer, size_t *length, size_t capacity)
+        unsigned char *buffer, size_t capacity, size_t *length)
 {
     assert(emitter);    /* Non-NULL emitter object expected. */
     assert(!emitter->writer);   /* You can set the output only once. */
@@ -729,8 +729,6 @@ yaml_token_duplicate(yaml_token_t *token, const yaml_token_t *model)
     memset(token, 0, sizeof(yaml_token_t));
 
     token->type = model->type;
-    token->start_mark = model->start_mark;
-    token->end_mark = model->end_mark;
 
     switch (token->type)
     {
@@ -781,6 +779,7 @@ yaml_token_duplicate(yaml_token_t *token, const yaml_token_t *model)
             memcpy(token->data.scalar.value, model->data.scalar.value,
                     model->data.scalar.length+1);
             token->data.scalar.length = model->data.scalar.length;
+            token->data.scalar.style = model->data.scalar.style;
             break;
 
         default:
@@ -926,8 +925,6 @@ yaml_event_duplicate(yaml_event_t *event, const yaml_event_t *model)
     memset(event, 0, sizeof(yaml_event_t));
 
     event->type = model->type;
-    event->start_mark = model->start_mark;
-    event->end_mark = model->end_mark;
 
     switch (event->type)
     {
@@ -968,6 +965,7 @@ yaml_event_duplicate(yaml_event_t *event, const yaml_event_t *model)
         case YAML_DOCUMENT_END_EVENT:
             event->data.document_end.is_implicit =
                 model->data.document_end.is_implicit;
+            break;
 
         case YAML_ALIAS_EVENT:
             if (!(event->data.alias.anchor =
@@ -980,7 +978,7 @@ yaml_event_duplicate(yaml_event_t *event, const yaml_event_t *model)
                     !(event->data.scalar.anchor =
                         yaml_strdup(model->data.scalar.anchor)))
                 goto error;
-            if (event->data.scalar.tag &&
+            if (model->data.scalar.tag &&
                     !(event->data.scalar.tag =
                         yaml_strdup(model->data.scalar.tag)))
                 goto error;
@@ -1002,7 +1000,7 @@ yaml_event_duplicate(yaml_event_t *event, const yaml_event_t *model)
                     !(event->data.sequence_start.anchor =
                         yaml_strdup(model->data.sequence_start.anchor)))
                 goto error;
-            if (event->data.sequence_start.tag &&
+            if (model->data.sequence_start.tag &&
                     !(event->data.sequence_start.tag =
                         yaml_strdup(model->data.sequence_start.tag)))
                 goto error;
@@ -1017,7 +1015,7 @@ yaml_event_duplicate(yaml_event_t *event, const yaml_event_t *model)
                     !(event->data.mapping_start.anchor =
                         yaml_strdup(model->data.mapping_start.anchor)))
                 goto error;
-            if (event->data.mapping_start.tag &&
+            if (model->data.mapping_start.tag &&
                     !(event->data.mapping_start.tag =
                         yaml_strdup(model->data.mapping_start.tag)))
                 goto error;

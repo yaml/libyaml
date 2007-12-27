@@ -1364,7 +1364,7 @@ yaml_parser_fetch_directive(yaml_parser_t *parser)
     /* Append the token to the queue. */
 
     if (!ENQUEUE(parser, parser->tokens, token)) {
-        yaml_token_delete(&token);
+        yaml_token_destroy(&token);
         return 0;
     }
 
@@ -1760,7 +1760,7 @@ yaml_parser_fetch_anchor(yaml_parser_t *parser, yaml_token_type_t type)
         return 0;
 
     if (!ENQUEUE(parser, parser->tokens, token)) {
-        yaml_token_delete(&token);
+        yaml_token_destroy(&token);
         return 0;
     }
     return 1;
@@ -1790,7 +1790,7 @@ yaml_parser_fetch_tag(yaml_parser_t *parser)
         return 0;
 
     if (!ENQUEUE(parser, parser->tokens, token)) {
-        yaml_token_delete(&token);
+        yaml_token_destroy(&token);
         return 0;
     }
 
@@ -1821,7 +1821,7 @@ yaml_parser_fetch_block_scalar(yaml_parser_t *parser, int literal)
         return 0;
 
     if (!ENQUEUE(parser, parser->tokens, token)) {
-        yaml_token_delete(&token);
+        yaml_token_destroy(&token);
         return 0;
     }
 
@@ -1852,7 +1852,7 @@ yaml_parser_fetch_flow_scalar(yaml_parser_t *parser, int single)
         return 0;
 
     if (!ENQUEUE(parser, parser->tokens, token)) {
-        yaml_token_delete(&token);
+        yaml_token_destroy(&token);
         return 0;
     }
 
@@ -1883,7 +1883,7 @@ yaml_parser_fetch_plain_scalar(yaml_parser_t *parser)
         return 0;
 
     if (!ENQUEUE(parser, parser->tokens, token)) {
-        yaml_token_delete(&token);
+        yaml_token_destroy(&token);
         return 0;
     }
 

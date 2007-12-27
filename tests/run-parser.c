@@ -11,51 +11,61 @@
 int
 main(int argc, char *argv[])
 {
-    int number;
+    int idx;
 
     if (argc < 2) {
         printf("Usage: %s file1.yaml ...\n", argv[0]);
         return 0;
     }
 
-    for (number = 1; number < argc; number ++)
+    for (idx = 1; idx < argc; idx ++)
     {
         FILE *file;
-        yaml_parser_t parser;
+        yaml_parser_t *parser;
         yaml_event_t event;
-        int done = 0;
+        int failed = 0;
         int count = 0;
-        int error = 0;
 
-        printf("[%d] Parsing '%s': ", number, argv[number]);
+        printf("[%d] Parsing '%s': ", idx, argv[idx]);
         fflush(stdout);
 
-        file = fopen(argv[number], "rb");
+        file = fopen(argv[idx], "rb");
         assert(file);
 
-        assert(yaml_parser_initialize(&parser));
+        parser = yaml_parser_new();
+        assert(parser);
 
-        yaml_parser_set_input_file(&parser, file);
+        yaml_parser_set_file_reader(parser, file);
 
-        while (!done)
+        while (1)
         {
-            if (!yaml_parser_parse(&parser, &event)) {
-                error = 1;
+            if (!yaml_parser_parse_event(parser, &event)) {
+                failed = 1;
                 break;
             }
 
-            done = (event.type == YAML_STREAM_END_EVENT);
+            if (event.type == YAML_NO_EVENT)
+                break;
 
-            yaml_event_delete(&event);
+            yaml_event_destroy(&event);
 
             count ++;
         }
 
-        yaml_parser_delete(&parser);
+        if (!failed) {
+            printf("SUCCESS (%d tokens)\n", count);
+        }
+        else {
+            yaml_error_t error;
+            char message[256];
+            yaml_parser_get_error(parser, &error);
+            yaml_error_message(&error, message, 256);
+            printf("FAILURE (%d events)\n -> %s\n", count, message);
+        }
 
-        assert(!fclose(file));
+        yaml_parser_delete(parser);
 
-        printf("%s (%d events)\n", (error ? "FAILURE" : "SUCCESS"), count);
+        fclose(file);
     }
 
     return 0;

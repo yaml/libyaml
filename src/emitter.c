@@ -265,7 +265,7 @@ YAML_DECLARE(int)
 yaml_emitter_emit_event(yaml_emitter_t *emitter, yaml_event_t *event)
 {
     if (!ENQUEUE(emitter, emitter->events, *event)) {
-        yaml_event_delete(event);
+        yaml_event_destroy(event);
         return 0;
     }
 
@@ -276,7 +276,7 @@ yaml_emitter_emit_event(yaml_emitter_t *emitter, yaml_event_t *event)
         if (!yaml_emitter_state_machine(emitter,
                     emitter->events.list + emitter->events.head))
             return 0;
-        yaml_event_delete(&DEQUEUE(emitter, emitter->events));
+        yaml_event_destroy(&DEQUEUE(emitter, emitter->events));
     }
 
     return 1;

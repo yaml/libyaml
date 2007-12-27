@@ -12,6 +12,8 @@
 #define BUFFER_SIZE 65536
 #define MAX_DOCUMENTS  16
 
+#if 0
+
 int copy_document(yaml_document_t *document_to, yaml_document_t *document_from)
 {
     yaml_node_t *node;
@@ -184,9 +186,12 @@ int print_output(char *name, unsigned char *buffer, size_t size, int count)
     return 0;
 }
 
+#endif
+
 int
 main(int argc, char *argv[])
 {
+#if 0
     int number;
     int canonical = 0;
     int unicode = 0;
@@ -307,5 +312,6 @@ main(int argc, char *argv[])
         print_output(argv[number], buffer, written, -1);
     }
 
+#endif
     return 0;
 }

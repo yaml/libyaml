@@ -11,59 +11,62 @@
 int
 main(int argc, char *argv[])
 {
-    int number;
+    int idx;
 
     if (argc < 2) {
         printf("Usage: %s file1.yaml ...\n", argv[0]);
         return 0;
     }
 
-    for (number = 1; number < argc; number ++)
+    for (idx = 1; idx < argc; idx ++)
     {
         FILE *file;
         yaml_parser_t *parser;
         yaml_token_t token;
-        yaml_error_t error;
-        char error_buffer[256];
-        int done = 0;
-        int count = 0;
         int failed = 0;
+        int count = 0;
 
-        printf("[%d] Scanning '%s': ", number, argv[number]);
+        printf("[%d] Scanning '%s': ", idx, argv[idx]);
         fflush(stdout);
 
-        file = fopen(argv[number], "rb");
+        file = fopen(argv[idx], "rb");
         assert(file);
 
-        assert((parser = yaml_parser_new()));
+        parser = yaml_parser_new();
+        assert(parser);
 
         yaml_parser_set_file_reader(parser, file);
 
-        while (!done)
+        while (1)
         {
             if (!yaml_parser_parse_token(parser, &token)) {
                 failed = 1;
                 break;
             }
 
-            done = (token.type == YAML_STREAM_END_TOKEN);
+            if (token.type == YAML_NO_TOKEN)
+                break;
 
             yaml_token_destroy(&token);
 
             count ++;
         }
 
-        yaml_parser_get_error(parser, &error);
+        if (!failed) {
+            printf("SUCCESS (%d tokens)\n", count);
+        }
+        else {
+            yaml_error_t error;
+            char message[256];
+            yaml_parser_get_error(parser, &error);
+            yaml_error_message(&error, message, 256);
+            printf("FAILURE (%d tokens)\n -> %s\n", count, message);
+        }
 
         yaml_parser_delete(parser);
 
-        assert(!fclose(file));
+        fclose(file);
 
-        yaml_error_message(&error, error_buffer, 256);
-
-        printf("%s (%d tokens) -> %s\n",
-                (failed ? "FAILURE" : "SUCCESS"),
-                count, error_buffer);
     }
 
     return 0;

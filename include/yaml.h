@@ -1541,14 +1541,14 @@ yaml_emitter_get_error(yaml_emitter_t *emitter, yaml_error_t *error);
  *
  * @param[in,out]   emitter         An emitter object.
  * @param[in]       buffer          An output buffer.
+ * @param[in]       capacity        The buffer size.
  * @param[in]       length          The pointer to save the number of written
  *                                  bytes.
- * @param[in]       capacity        The buffer size.
  */
 
 YAML_DECLARE(void)
 yaml_emitter_set_string_writer(yaml_emitter_t *emitter,
-        unsigned char *buffer, size_t *length, size_t capacity);
+        unsigned char *buffer, size_t capacity, size_t *length);
 
 /**
  * Set a file output.
