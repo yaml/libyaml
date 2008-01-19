@@ -183,6 +183,9 @@ yaml_emitter_process_scalar(yaml_emitter_t *emitter);
  */
 
 static int
+yaml_emitter_valid_utf8(yaml_emitter_t *emitter, yaml_istring_t string);
+
+static int
 yaml_emitter_analyze_version_directive(yaml_emitter_t *emitter,
         yaml_version_directive_t version_directive);
 
@@ -1148,10 +1151,10 @@ yaml_emitter_select_scalar_style(yaml_emitter_t *emitter, yaml_event_t *event)
     yaml_scalar_style_t style = event->data.scalar.style;
     int no_tag = (!emitter->tag_data.handle && !emitter->tag_data.suffix);
 
-    if (no_tag && !event->data.scalar.is_plain_implicit
-            && !event->data.scalar.is_quoted_implicit) {
+    if (no_tag && !event->data.scalar.is_plain_nonspecific
+            && !event->data.scalar.is_quoted_nonspecific) {
         return EMITTER_ERROR_INIT(emitter,
-                "neither tag nor implicit flags are specified");
+                "neither tag nor nonspecific flags are specified");
     }
 
     if (style == YAML_ANY_SCALAR_STYLE)
@@ -1171,7 +1174,7 @@ yaml_emitter_select_scalar_style(yaml_emitter_t *emitter, yaml_event_t *event)
         if (!emitter->scalar_data.length
                 && (emitter->flow_level || emitter->is_simple_key_context))
             style = YAML_SINGLE_QUOTED_SCALAR_STYLE;
-        if (no_tag && !event->data.scalar.is_plain_implicit)
+        if (no_tag && !event->data.scalar.is_plain_nonspecific)
             style = YAML_SINGLE_QUOTED_SCALAR_STYLE;
     }
 
@@ -1188,7 +1191,7 @@ yaml_emitter_select_scalar_style(yaml_emitter_t *emitter, yaml_event_t *event)
             style = YAML_DOUBLE_QUOTED_SCALAR_STYLE;
     }
 
-    if (no_tag && !event->data.scalar.is_quoted_implicit
+    if (no_tag && !event->data.scalar.is_quoted_nonspecific
             && style != YAML_PLAIN_SCALAR_STYLE)
     {
         emitter->tag_data.handle = (yaml_char_t *)"!";
@@ -1308,6 +1311,50 @@ yaml_emitter_analyze_version_directive(yaml_emitter_t *emitter,
 }
 
 /*
+ * Verify that a string is a valid UTF-8 sequence.
+ *
+ * Check 'reader.c' for more details on UTF-8 encoding.
+ */
+
+static int
+yaml_emitter_valid_utf8(yaml_emitter_t *emitter, yaml_istring_t string)
+{
+    while (string.pointer < string.length)
+    {
+        unsigned char octet;
+        unsigned int width;
+        unsigned int value;
+        size_t idx;
+
+        octet = OCTET(string);
+        width = (octet & 0x80) == 0x00 ? 1 :
+                (octet & 0xE0) == 0xC0 ? 2 :
+                (octet & 0xF0) == 0xE0 ? 3 :
+                (octet & 0xF8) == 0xF0 ? 4 : 0;
+        value = (octet & 0x80) == 0x00 ? octet & 0x7F :
+                (octet & 0xE0) == 0xC0 ? octet & 0x1F :
+                (octet & 0xF0) == 0xE0 ? octet & 0x0F :
+                (octet & 0xF8) == 0xF0 ? octet & 0x07 : 0;
+        if (!width) return 0;
+        if (string.pointer+width > string.length) return 0;
+        for (idx = 1; idx < width; idx ++) {
+            octet = OCTET_AT(string, idx);
+            if ((octet & 0xC0) != 0x80) return 0;
+            value = (value << 6) + (octet & 0x3F);
+        }
+        if (!((width == 1) ||
+            (width == 2 && value >= 0x80) ||
+            (width == 3 && value >= 0x800) ||
+            (width == 4 && value >= 0x10000))) return 0;
+
+        string.pointer += width;
+    }
+
+    return 1;
+}
+
+
+/*
  * Check if a %TAG directive is valid.
  */
 
@@ -1319,6 +1366,16 @@ yaml_emitter_analyze_tag_directive(yaml_emitter_t *emitter,
             strlen((char *)tag_directive.handle));
     yaml_istring_t prefix = ISTRING(tag_directive.prefix,
             strlen((char *)tag_directive.prefix));
+
+    if (!yaml_emitter_valid_utf8(emitter, handle)) {
+        return EMITTER_ERROR_INIT(emitter,
+                "tag handle is not a valid UTF-8 string");
+    }
+
+    if (!yaml_emitter_valid_utf8(emitter, prefix)) {
+        return EMITTER_ERROR_INIT(emitter,
+                "tag prefix is not a valid UTF-8 string");
+    }
 
     if (!handle.length) {
         return EMITTER_ERROR_INIT(emitter, "tag handle must not be empty");
@@ -1359,6 +1416,12 @@ yaml_emitter_analyze_anchor(yaml_emitter_t *emitter,
 {
     yaml_istring_t string = ISTRING(anchor, strlen((char *)anchor));
 
+    if (!yaml_emitter_valid_utf8(emitter, string)) {
+        return EMITTER_ERROR_INIT(emitter, is_alias ?
+                "alias value is not a valid UTF-8 string" :
+                "anchor value is not a valid UTF-8 string");
+    }
+
     if (!string.length) {
         return EMITTER_ERROR_INIT(emitter, is_alias ?
                 "alias value must not be empty" :
@@ -1391,6 +1454,11 @@ yaml_emitter_analyze_tag(yaml_emitter_t *emitter,
 {
     yaml_istring_t string = ISTRING(tag, strlen((char *)tag));
     size_t idx;
+
+    if (!yaml_emitter_valid_utf8(emitter, string)) {
+        return EMITTER_ERROR_INIT(emitter,
+                "tag value is not a valid UTF-8 string");
+    }
 
     if (!string.length) {
         return EMITTER_ERROR_INIT(emitter, "tag value must not be empty");
@@ -1449,6 +1517,11 @@ yaml_emitter_analyze_scalar(yaml_emitter_t *emitter,
     int breaks = 0;
     int mixed = 0;
     int leading = 0;
+
+    if (!yaml_emitter_valid_utf8(emitter, string)) {
+        return EMITTER_ERROR_INIT(emitter,
+                "scalar value is not a valid UTF-8 string");
+    }
 
     emitter->scalar_data.value = value;
     emitter->scalar_data.length = length;
@@ -1689,8 +1762,8 @@ yaml_emitter_analyze_event(yaml_emitter_t *emitter,
                     return 0;
             }
             if (event->data.scalar.tag && (emitter->is_canonical ||
-                        (!event->data.scalar.is_plain_implicit
-                         && !event->data.scalar.is_quoted_implicit))) {
+                        (!event->data.scalar.is_plain_nonspecific
+                         && !event->data.scalar.is_quoted_nonspecific))) {
                 if (!yaml_emitter_analyze_tag(emitter, event->data.scalar.tag))
                     return 0;
             }
@@ -1706,7 +1779,7 @@ yaml_emitter_analyze_event(yaml_emitter_t *emitter,
                     return 0;
             }
             if (event->data.sequence_start.tag && (emitter->is_canonical ||
-                        !event->data.sequence_start.is_implicit)) {
+                        !event->data.sequence_start.is_nonspecific)) {
                 if (!yaml_emitter_analyze_tag(emitter,
                             event->data.sequence_start.tag))
                     return 0;
@@ -1720,7 +1793,7 @@ yaml_emitter_analyze_event(yaml_emitter_t *emitter,
                     return 0;
             }
             if (event->data.mapping_start.tag && (emitter->is_canonical ||
-                        !event->data.mapping_start.is_implicit)) {
+                        !event->data.mapping_start.is_nonspecific)) {
                 if (!yaml_emitter_analyze_tag(emitter,
                             event->data.mapping_start.tag))
                     return 0;

@@ -1,3 +1,11 @@
+/*****************************************************************************
+ * Private Definitions for LibYAML
+ *
+ * Copyright (c) 2006 Kirill Simonov
+ *
+ * LibYAML is free software; you can use, modify and/or redistribute it under
+ * the terms of the MIT license; see the file LICENCE for more details.
+ *****************************************************************************/
 
 #if HAVE_CONFIG_H
 #include <config.h>
@@ -7,10 +15,13 @@
 
 #include <assert.h>
 #include <limits.h>
+#include <errno.h>
+#include <ctype.h>
+#include <locale.h>
 
-/*
- * Memory management.
- */
+/*****************************************************************************
+ * Memory Management
+ *****************************************************************************/
 
 YAML_DECLARE(void *)
 yaml_malloc(size_t size);
@@ -24,9 +35,9 @@ yaml_free(void *ptr);
 YAML_DECLARE(yaml_char_t *)
 yaml_strdup(const yaml_char_t *);
 
-/*
- * Error management.
- */
+/*****************************************************************************
+ * Error Management
+ *****************************************************************************/
 
 /*
  * Generic error initializers; not to be used directly.
@@ -128,6 +139,10 @@ yaml_strdup(const yaml_char_t *);
 #define RESOLVER_ERROR_INIT(self, _problem)                                     \
     RESOLVER_ERROR_INIT((self)->error, YAML_RESOLVER_ERROR, _problem)
 
+/*****************************************************************************
+ * Buffer Sizes
+ *****************************************************************************/
+
 /*
  * The size of the input raw buffer.
  */
@@ -138,7 +153,10 @@ yaml_strdup(const yaml_char_t *);
  * The size of the input buffer.
  *
  * The input buffer should be large enough to hold the content of the raw
- * buffer after it is decoded.
+ * buffer after it is decoded.  The raw input buffer could be encoded in UTF-8
+ * or UTF-16 while the input buffer is always encoded in UTF-8.  A UTF-16
+ * character may take 2 or 4 bytes, and a UTF-8 character takes up to 4 bytes.
+ * We use the *3 multiplier just to be safe.
  */
 
 #define INPUT_BUFFER_CAPACITY   (RAW_INPUT_BUFFER_CAPACITY*3)
@@ -166,9 +184,9 @@ yaml_strdup(const yaml_char_t *);
 #define INITIAL_QUEUE_CAPACITY  16
 #define INITIAL_STRING_CAPACITY 16
 
-/*
- * String management.
- */
+/*****************************************************************************
+ * String Management
+ *****************************************************************************/
 
 /*
  * An immutable string used as an input buffer.
@@ -202,7 +220,7 @@ typedef struct yaml_iostring_s {
 } yaml_iostring_t;
 
 /*
- * Separate type for non-UTF-8 i/o strings.
+ * A separate type for non-UTF-8 i/o strings.
  */
 
 typedef struct yaml_raw_iostring_s {
@@ -212,13 +230,25 @@ typedef struct yaml_raw_iostring_s {
     size_t capacity;
 } yaml_raw_iostring_t;
 
+/*
+ * Double the string capacity.
+ */
+
 YAML_DECLARE(int)
 yaml_ostring_extend(yaml_char_t **buffer, size_t *capacity);
+
+/*
+ * Append a string to the end of the base string expanding it if needed.
+ */
 
 YAML_DECLARE(int)
 yaml_ostring_join(
         yaml_char_t **base_buffer, size_t *base_pointer, size_t *base_capacity,
         yaml_char_t *adj_buffer, size_t adj_pointer);
+
+/*
+ * Basic string operations.
+ */
 
 #define ISTRING(buffer, length) { (buffer), 0, (length) }
 
@@ -237,6 +267,12 @@ yaml_ostring_join(
     (yaml_free((string).buffer),                                                \
      (string).buffer = NULL,                                                    \
      ((string).pointer = (string).length = (string).capacity = 0))
+
+#define IOSTRING_SET(self, string, _buffer, _capacity)                          \
+    (memset((_buffer), 0, (_capacity)),                                         \
+     (string).buffer = (_buffer),                                               \
+     (string).pointer = (string).length = 0,                                    \
+     (string).capacity = (_capacity))
 
 #define OSTRING_INIT(self, string, _capacity)                                   \
     (((string).buffer = yaml_malloc(_capacity)) ?                               \
@@ -272,9 +308,9 @@ yaml_ostring_join(
         ((self)->error.type = YAML_MEMORY_ERROR,                                \
          0))
 
-/*
- * String check operations.
- */
+/*****************************************************************************
+ * String Tests
+ *****************************************************************************/
 
 /*
  * Get the octet at the specified position.
@@ -547,16 +583,28 @@ yaml_ostring_join(
       COPY_OCTET((target_string), (source_string)),                             \
       COPY_OCTET((target_string), (source_string))) : 0)
 
+/*****************************************************************************
+ * Stack and Queue Management
+ *****************************************************************************/
+
 /*
- * Stack and queue management.
+ * Double the stack capacity.
  */
 
 YAML_DECLARE(int)
 yaml_stack_extend(void **list, size_t size, size_t *length, size_t *capacity);
 
+/*
+ * Double the queue capacity.
+ */
+
 YAML_DECLARE(int)
 yaml_queue_extend(void **list, size_t size,
         size_t *head, size_t *tail, size_t *capacity);
+
+/*
+ * Basic stack operations.
+ */
 
 #define STACK_INIT(self, stack, _capacity)                                      \
     (((stack).list = yaml_malloc((_capacity)*sizeof(*(stack).list))) ?          \
@@ -570,6 +618,11 @@ yaml_queue_extend(void **list, size_t size,
     (yaml_free((stack).list),                                                   \
      (stack).list = NULL,                                                       \
      (stack).length = (stack).capacity = 0)
+
+#define STACK_SET(self, stack, _list, _capacity)                                \
+    ((stack).list = (_list),                                                    \
+     (stack).length = 0,                                                        \
+     (stack).capacity = (_capacity))
 
 #define STACK_EMPTY(self, stack)                                                \
     ((stack).length == 0)
@@ -589,6 +642,10 @@ yaml_queue_extend(void **list, size_t size,
 #define POP(self, stack)                                                        \
     ((stack).list[--(stack).length])
 
+/*
+ * Basic queue operations.
+ */
+
 #define QUEUE_INIT(self, queue, _capacity)                                      \
     (((queue).list = yaml_malloc((_capacity)*sizeof(*(queue).list))) ?          \
         ((queue).head = (queue).tail = 0,                                       \
@@ -601,6 +658,11 @@ yaml_queue_extend(void **list, size_t size,
     (yaml_free((queue).list),                                                   \
      (queue).list = NULL,                                                       \
      (queue).head = (queue).tail = (queue).capacity = 0)
+
+#define QUEUE_SET(self, queue, _list, _capacity)                                \
+    ((queue).list = (_list),                                                    \
+     (queue).head = (queue).tail = 0,                                           \
+     (queue).capacity = (_capacity))
 
 #define QUEUE_EMPTY(self, queue)                                                \
     ((queue).head == (queue).tail)
@@ -633,9 +695,9 @@ yaml_queue_extend(void **list, size_t size,
         ((self)->error.type = YAML_MEMORY_ERROR,                                \
          0))
 
-/*
- * Token initializers.
- */
+/*****************************************************************************
+ * Token Initializers
+ *****************************************************************************/
 
 #define TOKEN_INIT(token, _type, _start_mark, _end_mark)                        \
     (memset(&(token), 0, sizeof(yaml_token_t)),                                 \
@@ -679,9 +741,9 @@ yaml_queue_extend(void **list, size_t size,
      (token).data.tag_directive.handle = (_handle),                             \
      (token).data.tag_directive.prefix = (_prefix))
 
-/*
- * Event initializers.
- */
+/*****************************************************************************
+ * Event Initializers
+ *****************************************************************************/
 
 #define EVENT_INIT(event, _type, _start_mark, _end_mark)                        \
     (memset(&(event), 0, sizeof(yaml_event_t)),                                 \
@@ -715,95 +777,153 @@ yaml_queue_extend(void **list, size_t size,
      (event).data.alias.anchor = (_anchor))
 
 #define SCALAR_EVENT_INIT(event, _anchor, _tag, _value, _length,                \
-        _is_plain_implicit, _is_quoted_implicit, _style, _start_mark, _end_mark)    \
+        _is_plain_nonspecific, _is_quoted_nonspecific, _style, _start_mark, _end_mark)  \
     (EVENT_INIT((event), YAML_SCALAR_EVENT, (_start_mark), (_end_mark)),        \
      (event).data.scalar.anchor = (_anchor),                                    \
      (event).data.scalar.tag = (_tag),                                          \
      (event).data.scalar.value = (_value),                                      \
      (event).data.scalar.length = (_length),                                    \
-     (event).data.scalar.is_plain_implicit = (_is_plain_implicit),              \
-     (event).data.scalar.is_quoted_implicit = (_is_quoted_implicit),            \
+     (event).data.scalar.is_plain_nonspecific = (_is_plain_nonspecific),        \
+     (event).data.scalar.is_quoted_nonspecific = (_is_quoted_nonspecific),      \
      (event).data.scalar.style = (_style))
 
-#define SEQUENCE_START_EVENT_INIT(event, _anchor, _tag, _is_implicit, _style,   \
+#define SEQUENCE_START_EVENT_INIT(event, _anchor, _tag, _is_nonspecific, _style,    \
         _start_mark, _end_mark)                                                 \
     (EVENT_INIT((event), YAML_SEQUENCE_START_EVENT, (_start_mark), (_end_mark)),    \
      (event).data.sequence_start.anchor = (_anchor),                            \
      (event).data.sequence_start.tag = (_tag),                                  \
-     (event).data.sequence_start.is_implicit = (_is_implicit),                  \
+     (event).data.sequence_start.is_nonspecific = (_is_nonspecific),            \
      (event).data.sequence_start.style = (_style))
 
 #define SEQUENCE_END_EVENT_INIT(event, _start_mark, _end_mark)                  \
     (EVENT_INIT((event), YAML_SEQUENCE_END_EVENT, (_start_mark), (_end_mark)))
 
-#define MAPPING_START_EVENT_INIT(event, _anchor, _tag, _is_implicit, _style,    \
+#define MAPPING_START_EVENT_INIT(event, _anchor, _tag, _is_nonspecific, _style, \
         _start_mark, _end_mark)                                                 \
     (EVENT_INIT((event), YAML_MAPPING_START_EVENT, (_start_mark), (_end_mark)), \
      (event).data.mapping_start.anchor = (_anchor),                             \
      (event).data.mapping_start.tag = (_tag),                                   \
-     (event).data.mapping_start.is_implicit = (_is_implicit),                   \
+     (event).data.mapping_start.is_nonspecific = (_is_nonspecific),             \
      (event).data.mapping_start.style = (_style))
 
 #define MAPPING_END_EVENT_INIT(event, _start_mark, _end_mark)                   \
     (EVENT_INIT((event), YAML_MAPPING_END_EVENT, (_start_mark), (_end_mark)))
 
-#if 0
+/*****************************************************************************
+ * Document, Node and Arc Initializers
+ *****************************************************************************/
 
-/*
- * Document initializer.
- */
-
-#define DOCUMENT_INIT(document,document_nodes_start,document_nodes_end,         \
-        document_version_directive,document_tag_directives_start,               \
-        document_tag_directives_end,document_start_implicit,                    \
-        document_end_implicit,document_start_mark,document_end_mark)            \
+#define DOCUMENT_INIT(document, _nodes_list, _nodes_length, _nodes_capacity,    \
+        _version_directive, _tag_directives_list, _tag_directives_length,       \
+        _tag_directives_capacity, _is_start_implicit, _is_end_implicit,         \
+        _start_mark, _end_mark)                                                 \
     (memset(&(document), 0, sizeof(yaml_document_t)),                           \
-     (document).nodes.start = (document_nodes_start),                           \
-     (document).nodes.end = (document_nodes_end),                               \
-     (document).nodes.top = (document_nodes_start),                             \
-     (document).version_directive = (document_version_directive),               \
-     (document).tag_directives.start = (document_tag_directives_start),         \
-     (document).tag_directives.end = (document_tag_directives_end),             \
-     (document).start_implicit = (document_start_implicit),                     \
-     (document).end_implicit = (document_end_implicit),                         \
-     (document).start_mark = (document_start_mark),                             \
-     (document).end_mark = (document_end_mark))
+     (document).type = YAML_DOCUMENT,                                           \
+     (document).nodes.list = (_nodes_list),                                     \
+     (document).nodes.length = (_nodes_length),                                 \
+     (document).nodes.capacity = (_nodes_capacity),                             \
+     (document).version_directive = (_version_directive),                       \
+     (document).tag_directives.list = (_tag_directives_list),                   \
+     (document).tag_directives.length = (_tag_directives_length),               \
+     (document).tag_directives.capacity = (_tag_directives_capacity),           \
+     (document).is_start_implicit = (_is_start_implicit),                       \
+     (document).is_end_implicit = (_is_end_implicit),                           \
+     (document).start_mark = (_start_mark),                                     \
+     (document).end_mark = (_end_mark))
 
-/*
- * Node initializers.
- */
-
-#define NODE_INIT(node,node_type,node_tag,node_start_mark,node_end_mark)        \
+#define NODE_INIT(node, _type, _anchor, _tag, _start_mark, _end_mark)           \
     (memset(&(node), 0, sizeof(yaml_node_t)),                                   \
-     (node).type = (node_type),                                                 \
-     (node).tag = (node_tag),                                                   \
-     (node).start_mark = (node_start_mark),                                     \
-     (node).end_mark = (node_end_mark))
+     (node).type = (_type),                                                     \
+     (node).anchor = (_anchor),                                                 \
+     (node).tag = (_tag),                                                       \
+     (node).start_mark = (_start_mark),                                         \
+     (node).end_mark = (_end_mark))
 
-#define SCALAR_NODE_INIT(node,node_tag,node_value,node_length,                  \
-        node_style,start_mark,end_mark)                                         \
-    (NODE_INIT((node),YAML_SCALAR_NODE,(node_tag),(start_mark),(end_mark)),     \
-     (node).data.scalar.value = (node_value),                                   \
-     (node).data.scalar.length = (node_length),                                 \
-     (node).data.scalar.style = (node_style))
+#define SCALAR_NODE_INIT(node, _anchor, _tag, _value, _length, _style,          \
+        _start_mark, _end_mark)                                                 \
+    (NODE_INIT((node), YAML_SCALAR_NODE, (_anchor), (_tag),                     \
+               (_start_mark), (_end_mark)),                                     \
+     (node).data.scalar.value = (_value),                                       \
+     (node).data.scalar.length = (_length),                                     \
+     (node).data.scalar.style = (_style))
 
-#define SEQUENCE_NODE_INIT(node,node_tag,node_items_start,node_items_end,       \
-        node_style,start_mark,end_mark)                                         \
-    (NODE_INIT((node),YAML_SEQUENCE_NODE,(node_tag),(start_mark),(end_mark)),   \
-     (node).data.sequence.items.start = (node_items_start),                     \
-     (node).data.sequence.items.end = (node_items_end),                         \
-     (node).data.sequence.items.top = (node_items_start),                       \
-     (node).data.sequence.style = (node_style))
+#define SEQUENCE_NODE_INIT(node, _anchor, _tag, _items_list, _items_length,     \
+        _items_capacity, _style, _start_mark, _end_mark)                        \
+    (NODE_INIT((node), YAML_SEQUENCE_NODE, (_anchor), (_tag),                   \
+               (_start_mark), (_end_mark)),                                     \
+     (node).data.sequence.items.list = (_items_list),                           \
+     (node).data.sequence.items.length = (_items_length),                       \
+     (node).data.sequence.items.capacity = (_items_capacity),                   \
+     (node).data.sequence.style = (_style))
 
-#define MAPPING_NODE_INIT(node,node_tag,node_pairs_start,node_pairs_end,        \
-        node_style,start_mark,end_mark)                                         \
-    (NODE_INIT((node),YAML_MAPPING_NODE,(node_tag),(start_mark),(end_mark)),    \
-     (node).data.mapping.pairs.start = (node_pairs_start),                      \
-     (node).data.mapping.pairs.end = (node_pairs_end),                          \
-     (node).data.mapping.pairs.top = (node_pairs_start),                        \
-     (node).data.mapping.style = (node_style))
+#define MAPPING_NODE_INIT(node, _anchor, _tag, _pairs_list, _pairs_length,      \
+        _pairs_capacity, _style, _start_mark, _end_mark)                        \
+    (NODE_INIT((node), YAML_MAPPING_NODE, (_anchor), (_tag),                    \
+               (_start_mark), (_end_mark)),                                     \
+     (node).data.mapping.pairs.list = (_pairs_list),                            \
+     (node).data.mapping.pairs.length = (_pairs_length),                        \
+     (node).data.mapping.pairs.capacity = (_pairs_capacity),                    \
+     (node).data.mapping.style = (_style))
 
-#endif
+#define ARC_INIT(arc, _type, _tag)                                              \
+    (memset(&(arc), 0, sizeof(yaml_arc_t)),                                     \
+     (arc).type = (_type),                                                      \
+     (arc).tag = (_tag))
+
+#define SEQUENCE_ITEM_ARC_INIT(arc, _tag, _index)                               \
+    (ARC_INIT((arc), YAML_SEQUENCE_ITEM_ARC, (_tag)),                           \
+     (arc).data.item.index = (_index))
+
+#define MAPPING_KEY_ARC_INIT(arc, _tag)                                         \
+    ARC_INIT((arc), YAML_MAPPING_KEY_ARC, (_tag))
+
+#define MAPPING_VALUE_ARC_INIT(arc, _tag, _key_type, _key_tag)                  \
+    (ARC_INIT((arc), YAML_MAPPING_VALUE_ARC, (_tag)),                           \
+     (arc).data.value.key.type = (_key_type),                                   \
+     (arc).data.value.key.tag = (_key_tag))
+
+#define MAPPING_VALUE_FOR_SCALAR_KEY_ARC_INIT(arc, _tag, _key_tag,              \
+        _key_value, _key_length)                                                \
+    (MAPPING_VALUE_ARC_INIT((arc), (_tag), YAML_SCALAR_NODE, (_key_tag)),       \
+     (arc).data.value.key.data.scalar.value = (_key_value),                     \
+     (arc).data.value.key.data.scalar.length = (_key_length))
+
+#define MAPPING_VALUE_FOR_SEQUENCE_KEY_ARC_INIT(arc, _tag, _key_tag)            \
+    MAPPING_VALUE_ARC_INIT((arc), (_tag), YAML_SEQUENCE_NODE, (_key_tag))
+
+#define MAPPING_VALUE_FOR_MAPPING_KEY_INIT(arc, _tag, _key_tag)                 \
+    MAPPING_VALUE_ARC_INIT((arc), (_tag), YAML_MAPPING_NODE, (_key_tag))
+
+#define INCOMPLETE_NODE_INIT(node, _type, _path_list, _path_length,             \
+        _path_capacity, _mark)                                                  \
+    (memset(&(node), 0, sizeof(yaml_incomplete_node_t)),                        \
+     (node).type = (_type),                                                     \
+     (node).path.list = (_path_list),                                           \
+     (node).path.length = (_path_length),                                       \
+     (node).path.capacity = (_path_capacity),                                   \
+     (node).mark = (_mark))
+
+#define INCOMPLETE_SCALAR_NODE_INIT(node, _path_list, _path_length,             \
+        _path_capacity, _value, _length, _is_plain, _mark)                      \
+    (INCOMPLETE_NODE_INIT((node), YAML_SCALAR_NODE, (_path_list),               \
+                          (_path_length), (_path_capacity), (_mark)).           \
+     (node).data.scalar.value = (_value),                                       \
+     (node).data.scalar.length = (_length),                                     \
+     (node).data.scalar.is_plain = (_is_plain))
+
+#define INCOMPLETE_SEQUENCE_NODE_INIT(node, _path_list, _path_length,           \
+        _path_capacity, _mark)                                                  \
+    INCOMPLETE_NODE_INIT((node), YAML_SEQUENCE_NODE, (_path_list),              \
+            (_path_length), (_path_capacity), (_mark))
+
+#define INCOMPLETE_MAPPING_NODE_INIT(node, _path_list, _path_length,            \
+        _path_capacity, _mark)                                                  \
+    INCOMPLETE_NODE_INIT((node), YAML_MAPPING_NODE, (_path_list),               \
+            (_path_length), (_path_capacity), (_mark))
+
+/*****************************************************************************
+ * Parser Structures
+ *****************************************************************************/
 
 /*
  * This structure holds information about a potential simple key.
@@ -1037,51 +1157,73 @@ struct yaml_parser_s {
         size_t capacity;
     } aliases;
 
-    /* The currently parsed document. */
+    /* The document being parsed. */
     yaml_document_t *document;
 
 };
+
+/*****************************************************************************
+ * Internal Parser API
+ *****************************************************************************/
+
+/*
+ * Reader: Ensure that the buffer contains at least `length` characters.
+ */
+
+YAML_DECLARE(int)
+yaml_parser_update_buffer(yaml_parser_t *parser, size_t length);
+
+/*
+ * Scanner: Ensure that the token stack contains at least one token ready.
+ */
+
+YAML_DECLARE(int)
+yaml_parser_fetch_more_tokens(yaml_parser_t *parser);
+
+/*****************************************************************************
+ * Emitter Structures
+ *****************************************************************************/
 
 /*
  * The emitter states.
  */
 
 typedef enum yaml_emitter_state_e {
-    /** Expect STREAM-START. */
+    /* Expect STREAM-START. */
     YAML_EMIT_STREAM_START_STATE,
-    /** Expect the first DOCUMENT-START or STREAM-END. */
+    /* Expect the first DOCUMENT-START or STREAM-END. */
     YAML_EMIT_FIRST_DOCUMENT_START_STATE,
-    /** Expect DOCUMENT-START or STREAM-END. */
+    /* Expect DOCUMENT-START or STREAM-END. */
     YAML_EMIT_DOCUMENT_START_STATE,
-    /** Expect the content of a document. */
+    /* Expect the content of a document. */
     YAML_EMIT_DOCUMENT_CONTENT_STATE,
-    /** Expect DOCUMENT-END. */
+    /* Expect DOCUMENT-END. */
     YAML_EMIT_DOCUMENT_END_STATE,
-    /** Expect the first item of a flow sequence. */
+    /* Expect the first item of a flow sequence. */
     YAML_EMIT_FLOW_SEQUENCE_FIRST_ITEM_STATE,
-    /** Expect an item of a flow sequence. */
+    /* Expect an item of a flow sequence. */
     YAML_EMIT_FLOW_SEQUENCE_ITEM_STATE,
-    /** Expect the first key of a flow mapping. */
+    /* Expect the first key of a flow mapping. */
     YAML_EMIT_FLOW_MAPPING_FIRST_KEY_STATE,
-    /** Expect a key of a flow mapping. */
+    /* Expect a key of a flow mapping. */
     YAML_EMIT_FLOW_MAPPING_KEY_STATE,
-    /** Expect a value for a simple key of a flow mapping. */
+    /* Expect a value for a simple key of a flow mapping. */
     YAML_EMIT_FLOW_MAPPING_SIMPLE_VALUE_STATE,
-    /** Expect a value of a flow mapping. */
+    /* Expect a value of a flow mapping. */
     YAML_EMIT_FLOW_MAPPING_VALUE_STATE,
-    /** Expect the first item of a block sequence. */
+    /* Expect the first item of a block sequence. */
     YAML_EMIT_BLOCK_SEQUENCE_FIRST_ITEM_STATE,
-    /** Expect an item of a block sequence. */
+    /* Expect an item of a block sequence. */
     YAML_EMIT_BLOCK_SEQUENCE_ITEM_STATE,
-    /** Expect the first key of a block mapping. */
+    /* Expect the first key of a block mapping. */
     YAML_EMIT_BLOCK_MAPPING_FIRST_KEY_STATE,
-    /** Expect the key of a block mapping. */
+    /* Expect the key of a block mapping. */
     YAML_EMIT_BLOCK_MAPPING_KEY_STATE,
-    /** Expect a value for a simple key of a block mapping. */
+    /* Expect a value for a simple key of a block mapping. */
     YAML_EMIT_BLOCK_MAPPING_SIMPLE_VALUE_STATE,
-    /** Expect a value of a block mapping. */
+    /* Expect a value of a block mapping. */
     YAML_EMIT_BLOCK_MAPPING_VALUE_STATE,
-    /** Expect nothing. */
+    /* Expect nothing. */
     YAML_EMIT_END_STATE
 } yaml_emitter_state_t;
 
@@ -1251,6 +1393,12 @@ struct yaml_emitter_s {
      * Dumper stuff.
      */
 
+    /* The resolve handler. */
+    yaml_resolver_t *resolver;
+
+    /* The application data to be passed to the resolver. */
+    void *resolver_data;
+
     /* If the stream was already opened? */
     int is_opened;
     /* If the stream was already closed? */
@@ -1269,22 +1417,8 @@ struct yaml_emitter_s {
     /* The last assigned anchor id. */
     int last_anchor_id;
 
-    /* The currently emitted document. */
+    /* The document being emitted. */
     yaml_document_t *document;
 
 };
-
-/*
- * Reader: Ensure that the buffer contains at least `length` characters.
- */
-
-YAML_DECLARE(int)
-yaml_parser_update_buffer(yaml_parser_t *parser, size_t length);
-
-/*
- * Scanner: Ensure that the token stack contains at least one token ready.
- */
-
-YAML_DECLARE(int)
-yaml_parser_fetch_more_tokens(yaml_parser_t *parser);
 

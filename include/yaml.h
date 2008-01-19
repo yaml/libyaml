@@ -7,17 +7,43 @@
  * the terms of the MIT license; see the file LICENCE for more details.
  *****************************************************************************/
 
-/*
+/*****************************************************************************
  * General guidelines.
+ *****************************************************************************/
+
+/*
+ * Basic conventions.
  *
- * Naming conventions: all functions exported by LibYAML starts with the `yaml_` prefix;
- * types starts with `yaml_` and ends with `_t`; macros and enumerations starts
- * with `YAML_`.
+ * All functions exported by exported by LibYAML starts with the the prefix
+ * `yaml_`; types starts with `yaml_` and ends with `_t`; macros and
+ * enumeration values start with `YAML_`.
+ *
+ * A function may serve as method for an object or a particular type; such
+ * functions start with `yaml_<type>`.  A type constructor is named
+ * `yaml_<type>_new()`, a type destructor is named `yaml_<type>_delete()`.
+ *
+ * A function signifies whether it succeeded or failed with its return value;
+ * typically it is `1` for success, `0` for failure.  Functions that return a
+ * pointer may indicate an error condition by returning `NULL`.  Functions that
+ * never fail commonly do not return any value.  For most of the functions, an
+ * error value means that the function is unable to allocate some memory
+ * buffer.  For parsing and emitting functions, detailed information on the
+ * nature of the error could be obtained.
+ *
+ * LibYAML provides two active objects: parsers and emitters and three passive
+ * objects: tokens, events and documents.
+ *
+ * 
+ *
  *
  * FIXME: Calling conventions.
  * FIXME: Memory allocation.
  * FIXME: Errors and exceptions.
  * FIXME: And so on, and so forth.
+ *
+ *
+ *
+ *
  */
 
 
@@ -269,9 +295,9 @@ typedef struct yaml_error_s {
 YAML_DECLARE(int)
 yaml_error_message(yaml_error_t *error, char *buffer, size_t capacity);
 
-/******************************************************************************
+/*****************************************************************************
  * Basic Types
- ******************************************************************************/
+ *****************************************************************************/
 
 /*
  * The character type (UTF-8 octet).
@@ -347,9 +373,9 @@ typedef enum yaml_break_e {
     YAML_CRLN_BREAK
 } yaml_break_t;
 
-/******************************************************************************
+/*****************************************************************************
  * Node Styles
- ******************************************************************************/
+ *****************************************************************************/
 
 /*
  * Scalar styles.
@@ -402,9 +428,9 @@ typedef enum yaml_sequence_style_e {
     YAML_ANY_SEQUENCE_STYLE,
 
     /* The flow sequence style. */
-    YAML_FLOW_SEQUENCE_STYLE
+    YAML_FLOW_SEQUENCE_STYLE,
     /* The block sequence style. */
-    YAML_BLOCK_SEQUENCE_STYLE,
+    YAML_BLOCK_SEQUENCE_STYLE
 } yaml_sequence_style_t;
 
 /*
@@ -430,9 +456,9 @@ typedef enum yaml_mapping_style_e {
     YAML_FLOW_MAPPING_STYLE
 } yaml_mapping_style_t;
 
-/******************************************************************************
+/*****************************************************************************
  * Tokens
- ******************************************************************************/
+ *****************************************************************************/
 
 /*
  * Token types.
@@ -680,9 +706,9 @@ yaml_token_duplicate(yaml_token_t *token, const yaml_token_t *model);
 YAML_DECLARE(void)
 yaml_token_clear(yaml_token_t *token);
 
-/******************************************************************************
+/*****************************************************************************
  * Events
- ******************************************************************************/
+ *****************************************************************************/
 
 /*
  * Event types.
@@ -1220,9 +1246,9 @@ yaml_event_create_mapping_start(yaml_event_t *event,
 YAML_DECLARE(int)
 yaml_event_create_mapping_end(yaml_event_t *event);
 
-/******************************************************************************
+/*****************************************************************************
  * Documents and Nodes
- ******************************************************************************/
+ *****************************************************************************/
 
 /*
  * Well-known scalar tags.
@@ -1260,7 +1286,7 @@ yaml_event_create_mapping_end(yaml_event_t *event);
 
 typedef enum yaml_document_type_e {
     /* An empty uninitialized document. */
-    YAML_NO_DOCUMENT.
+    YAML_NO_DOCUMENT,
 
     /* A YAML document. */
     YAML_DOCUMENT
@@ -1382,7 +1408,7 @@ typedef struct yaml_arc_s {
  * node object is destroyed when the document containing it is destroyed.
  */
 
-struct yaml_node_s {
+typedef struct yaml_node_s {
 
     /* The node type. */
     yaml_node_type_t type;
@@ -1442,7 +1468,7 @@ struct yaml_node_s {
     /* The end of the node. */
     yaml_mark_t end_mark;
 
-};
+} yaml_node_t;
 
 /*
  * The incomplete node object.
@@ -1818,6 +1844,62 @@ yaml_document_add_mapping(yaml_document_t *document, int *node_id,
         yaml_mapping_style_t style);
 
 /*
+ * Add an item to a SEQUENCE node.
+ *
+ * The order in which items are added to a sequence coincides with the order
+ * they are emitted into the output stream.
+ *
+ * Arguments:
+ *
+ * - `document`: a document object.
+ *
+ * - `sequence_id`: the id of a sequence node; could be negative.  It is a
+ *   fatal error if `sequence_id` does not refer to an existing sequence node.
+ *
+ * - `item_id`: the id of an item node; could be negative.  It is a fatal error
+ *   if `item_id` does not refer to an existing node.  Note that it is possible
+ *   for `item_id` to coincide with `sequence_id`, which means that the
+ *   sequence recursively contains itself.
+ *
+ * Returns: `1` on success, `0` on error.  The function may fail if it cannot
+ * allocate memory for internal buffers.
+ */
+
+YAML_DECLARE(int)
+yaml_document_append_sequence_item(yaml_document_t *document,
+        int sequence_id, int item_id);
+
+/*
+ * Add a pair of a key and a value to a MAPPING node.
+ *
+ * The order in which (key, value) pairs are added to a mapping coincides with
+ * the order in which they are presented in the output stream.  Note that the
+ * mapping key order is a presentation detail and should not used to convey any
+ * information.  An ordered mapping could be represented as a sequence of
+ * single-paired mappings.
+ *
+ * Arguments:
+ *
+ * - `document`: a document object.
+ *
+ * - `mapping_id`: the id of a mapping node; could be negative.  It is a
+ *   fatal error if `mapping_id` does not refer to an existing mapping node.
+ *
+ * - `key_id`: the id of a key node; could be negative.  It is a fatal error
+ *   if `key_id` does not refer to an existing node.
+ *
+ * - `value_id`: the id of a value node; could be negative.  It is a fatal
+ *   error if `value_id` does not refer to an existing node.
+ *
+ * Returns: `1` on success, `0` on error.  The function may fail if it cannot
+ * allocate memory for internal buffers.
+ */
+
+YAML_DECLARE(int)
+yaml_document_append_mapping_pair(yaml_document_t *document,
+        int mapping_id, int key_id, int value_id);
+
+/*
  * Get the value of a `!!null` SCALAR node.
  *
  * Use this function to ensure that the given node is a scalar, the node tag is
@@ -1893,7 +1975,7 @@ yaml_document_get_str_node(yaml_document_t *document, int node_id,
  * `tag:yaml.org,2002:int` and the node value is a valid integer.  In this
  * case, the function parses the node value and returns an integer number.  The
  * function recognizes decimal, hexdecimal and octal numbers including negative
- * numbers.
+ * numbers.  The function uses `strtol()` for string-to-integer conversion.
  *
  * Arguments:
  *
@@ -1910,7 +1992,7 @@ yaml_document_get_str_node(yaml_document_t *document, int node_id,
 
 YAML_DECLARE(int)
 yaml_document_get_int_node(yaml_document_t *document, int node_id,
-        int *value);
+        long *value);
 
 /*
  * Get the value of a `!!float` SCALAR node.
@@ -1919,7 +2001,9 @@ yaml_document_get_int_node(yaml_document_t *document, int node_id,
  * `tag:yaml.org,2002:float` and the node value is a valid float value.  In
  * this case, the function parses the node value and returns a float number.
  * The function recognizes float values in exponential and fixed notation as
- * well as special values `.nan`, `.inf` and `-.inf`.
+ * well as special values `.nan`, `.inf` and `-.inf`.  The function uses
+ * `strtod()` for string-to-float conversion.  The `.nan`, `.inf` and `-.inf`
+ * values are generated as `0.0/0.0`, `1.0/0.0` and `-1.0/0.0` respectively.
  *
  * Arguments:
  *
@@ -2094,7 +2178,7 @@ yaml_document_add_str_node(yaml_document_t *document, int *node_id,
 
 YAML_DECLARE(int)
 yaml_document_add_int_node(yaml_document_t *document, int *node_id,
-        int value);
+        long value);
 
 /*
  * Add a `!!float` SCALAR node to the document.
@@ -2166,65 +2250,9 @@ yaml_document_add_seq_node(yaml_document_t *document, int *node_id);
 YAML_DECLARE(int)
 yaml_document_add_map_node(yaml_document_t *document, int *node_id);
 
-/*
- * Add an item to a SEQUENCE node.
- *
- * The order in which items are added to a sequence coincides with the order
- * they are emitted into the output stream.
- *
- * Arguments:
- *
- * - `document`: a document object.
- *
- * - `sequence_id`: the id of a sequence node; could be negative.  It is a
- *   fatal error if `sequence_id` does not refer to an existing sequence node.
- *
- * - `item_id`: the id of an item node; could be negative.  It is a fatal error
- *   if `item_id` does not refer to an existing node.  Note that it is possible
- *   for `item_id` to coincide with `sequence_id`, which means that the
- *   sequence recursively contains itself.
- *
- * Returns: `1` on success, `0` on error.  The function may fail if it cannot
- * allocate memory for internal buffers.
- */
-
-YAML_DECLARE(int)
-yaml_document_append_sequence_item(yaml_document_t *document,
-        int sequence_id, int item_id);
-
-/*
- * Add a pair of a key and a value to a MAPPING node.
- *
- * The order in which (key, value) pairs are added to a mapping coincides with
- * the order in which they are presented in the output stream.  Note that the
- * mapping key order is a presentation detail and should not used to convey any
- * information.  An ordered mapping could be represented as a sequence of
- * single-paired mappings.
- *
- * Arguments:
- *
- * - `document`: a document object.
- *
- * - `mapping_id`: the id of a mapping node; could be negative.  It is a
- *   fatal error if `mapping_id` does not refer to an existing mapping node.
- *
- * - `key_id`: the id of a key node; could be negative.  It is a fatal error
- *   if `key_id` does not refer to an existing node.
- *
- * - `value_id`: the id of a value node; could be negative.  It is a fatal
- *   error if `value_id` does not refer to an existing node.
- *
- * Returns: `1` on success, `0` on error.  The function may fail if it cannot
- * allocate memory for internal buffers.
- */
-
-YAML_DECLARE(int)
-yaml_document_append_mapping_pair(yaml_document_t *document,
-        int mapping_id, int key_id, int value_id);
-
-/******************************************************************************
+/*****************************************************************************
  * Callback Definitions
- ******************************************************************************/
+ *****************************************************************************/
 
 /*
  * The prototype of a read handler.
@@ -2305,11 +2333,11 @@ typedef int yaml_writer_t(void *data, const unsigned char *buffer,
  */
 
 typedef int yaml_resolver_t(void *data, yaml_incomplete_node_t *node,
-        yaml_char_t **tag);
+        const yaml_char_t **tag);
 
-/******************************************************************************
+/*****************************************************************************
  * Parser Definitions
- ******************************************************************************/
+ *****************************************************************************/
 
 /*
  * An opaque definition of the parser object.
@@ -2359,7 +2387,7 @@ yaml_parser_delete(yaml_parser_t *parser);
  */
 
 YAML_DECLARE(void)
-yaml_parser_clear(yaml_parser_t *parser);
+yaml_parser_reset(yaml_parser_t *parser);
 
 /*
  * Get the parser error.
@@ -2617,9 +2645,9 @@ YAML_DECLARE(int)
 yaml_parser_parse_single_document(yaml_parser_t *parser,
         yaml_document_t *document);
 
-/******************************************************************************
+/*****************************************************************************
  * Emitter Definitions
- ******************************************************************************/
+ *****************************************************************************/
 
 /*
  * An opaque definition of the emitter object.
@@ -2669,7 +2697,7 @@ yaml_emitter_delete(yaml_emitter_t *emitter);
  */
 
 YAML_DECLARE(void)
-yaml_emitter_clear(yaml_emitter_t *emitter);
+yaml_emitter_reset(yaml_emitter_t *emitter);
 
 /*
  * Get the emitter error.
