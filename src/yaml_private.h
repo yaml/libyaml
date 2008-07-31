@@ -1228,6 +1228,17 @@ typedef enum yaml_emitter_state_e {
 } yaml_emitter_state_t;
 
 /*
+ * The information of a node being emitted.
+ */
+
+struct typedef yaml_node_data_s {
+    /* The node id. */
+    int id;
+    /* The collection iterator. */
+    int index;
+} yaml_node_data_t;
+
+/*
  * The structure that holds data used by the file and string readers.
  */
 
@@ -1240,7 +1251,7 @@ typedef struct yaml_standard_writer_data_t {
 } yaml_standard_writer_data_t;
 
 /*
- * The internals emitter structure.
+ * The internal emitter structure.
  */
 
 struct yaml_emitter_s {

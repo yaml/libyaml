@@ -1,8 +1,6 @@
 
 #include "yaml_private.h"
 
-#if 0
-
 /*
  * API functions.
  */
@@ -66,8 +64,8 @@ yaml_emitter_open(yaml_emitter_t *emitter)
     yaml_event_t event;
     yaml_mark_t mark = { 0, 0, 0 };
 
-    assert(emitter);            /* Non-NULL emitter object is required. */
-    assert(!emitter->opened);   /* Emitter should not be opened yet. */
+    assert(emitter);                /* Non-NULL emitter object is required. */
+    assert(!emitter->is_opened);    /* Emitter should not be opened yet. */
 
     STREAM_START_EVENT_INIT(event, YAML_ANY_ENCODING, mark, mark);
 
@@ -75,7 +73,7 @@ yaml_emitter_open(yaml_emitter_t *emitter)
         return 0;
     }
 
-    emitter->opened = 1;
+    emitter->is_opened = 1;
 
     return 1;
 }
@@ -91,9 +89,9 @@ yaml_emitter_close(yaml_emitter_t *emitter)
     yaml_mark_t mark = { 0, 0, 0 };
 
     assert(emitter);            /* Non-NULL emitter object is required. */
-    assert(emitter->opened);    /* Emitter should be opened. */
+    assert(emitter->is_opened); /* Emitter should be opened. */
 
-    if (emitter->closed) return 1;
+    if (emitter->is_closed) return 1;
 
     STREAM_END_EVENT_INIT(event, mark, mark);
 
@@ -101,7 +99,7 @@ yaml_emitter_close(yaml_emitter_t *emitter)
         return 0;
     }
 
-    emitter->closed = 1;
+    emitter->is_closed = 1;
 
     return 1;
 }
@@ -121,34 +119,41 @@ yaml_emitter_dump(yaml_emitter_t *emitter, yaml_document_t *document)
 
     emitter->document = document;
 
-    if (!emitter->opened) {
+    if (!emitter->is_opened) {
         if (!yaml_emitter_open(emitter)) goto error;
     }
 
-    if (STACK_EMPTY(emitter, document->nodes)) {
-        if (!yaml_emitter_close(emitter)) goto error;
-        yaml_emitter_delete_document_and_anchors(emitter);
-        return 1;
+    if (document->type == YAML_DOCUMENT)
+    {
+        assert(emitter->is_opened); /* Emitter should be opened. */
+
+        if (STACK_EMPTY(emitter, emitter->nodes)) {
+            SERIALIZER_ERROR_INIT(emitter, "root node is not specified");
+            goto error;
+        }
+
+        emitter->anchors = yaml_malloc(sizeof(*(emitter->anchors))
+                * (document->nodes.length));
+        if (!emitter->anchors) goto error;
+        memset(emitter->anchors, 0, sizeof(*(emitter->anchors))
+                * (document->nodes.length));
+
+        DOCUMENT_START_EVENT_INIT(event, document->version_directive,
+                document->tag_directives.list, document->tag_directives.length,
+                document->tag_directives.capacity,
+                document->start_implicit, mark, mark);
+        if (!yaml_emitter_emit(emitter, &event)) goto error;
+
+        yaml_emitter_anchor_node(emitter, 0);
+        if (!yaml_emitter_dump_node(emitter, 0)) goto error;
+
+        DOCUMENT_END_EVENT_INIT(event, document->end_implicit, mark, mark);
+        if (!yaml_emitter_emit(emitter, &event)) goto error;
     }
 
-    assert(emitter->opened);    /* Emitter should be opened. */
-
-    emitter->anchors = yaml_malloc(sizeof(*(emitter->anchors))
-            * (document->nodes.top - document->nodes.start));
-    if (!emitter->anchors) goto error;
-    memset(emitter->anchors, 0, sizeof(*(emitter->anchors))
-            * (document->nodes.top - document->nodes.start));
-
-    DOCUMENT_START_EVENT_INIT(event, document->version_directive,
-            document->tag_directives.start, document->tag_directives.end,
-            document->start_implicit, mark, mark);
-    if (!yaml_emitter_emit(emitter, &event)) goto error;
-
-    yaml_emitter_anchor_node(emitter, 1);
-    if (!yaml_emitter_dump_node(emitter, 1)) goto error;
-
-    DOCUMENT_END_EVENT_INIT(event, document->end_implicit, mark, mark);
-    if (!yaml_emitter_emit(emitter, &event)) goto error;
+    if (!document->type) {
+        if (!yaml_emitter_close(emitter)) goto error;
+    }
 
     yaml_emitter_delete_document_and_anchors(emitter);
 
@@ -243,7 +248,7 @@ yaml_emitter_anchor_node(yaml_emitter_t *emitter, int index)
  * Generate a textual representation for an anchor.
  */
 
-#define ANCHOR_TEMPLATE         "id%03d"
+#define ANCHOR_TEMPLATE         "_%03d"
 #define ANCHOR_TEMPLATE_LENGTH  16
 
 static yaml_char_t *
@@ -393,6 +398,4 @@ yaml_emitter_dump_mapping(yaml_emitter_t *emitter, yaml_node_t *node,
 
     return 1;
 }
-
-#endif
 
