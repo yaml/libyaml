@@ -2,7 +2,7 @@
 
 # Define the package version numbers and the bug reporting link.
 m4_define([YAML_MAJOR], 0)
-m4_define([YAML_MINOR], 0)
+m4_define([YAML_MINOR], 1)
 m4_define([YAML_PATCH], 1)
 m4_define([YAML_BUGS], [http://pyyaml.org/newticket?component=libyaml])
 
