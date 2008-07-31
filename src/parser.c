@@ -319,7 +319,7 @@ yaml_parser_parse_stream_start(yaml_parser_t *parser, yaml_event_t *event)
 
     if (token->type != YAML_STREAM_START_TOKEN) {
         return yaml_parser_set_parser_error(parser,
-                "did not found expected <stream-start>", token->start_mark);
+                "did not find expected <stream-start>", token->start_mark);
     }
 
     parser->state = YAML_PARSE_IMPLICIT_DOCUMENT_START_STATE;
@@ -393,7 +393,7 @@ yaml_parser_parse_document_start(yaml_parser_t *parser, yaml_event_t *event,
         if (!token) goto error;
         if (token->type != YAML_DOCUMENT_START_TOKEN) {
             yaml_parser_set_parser_error(parser,
-                    "did not found expected <document start>", token->start_mark);
+                    "did not find expected <document start>", token->start_mark);
             goto error;
         }
         if (!PUSH(parser, parser->states, YAML_PARSE_DOCUMENT_END_STATE))
@@ -701,7 +701,7 @@ yaml_parser_parse_node(yaml_parser_t *parser, yaml_event_t *event,
                 yaml_parser_set_parser_error_context(parser,
                         (block ? "while parsing a block node"
                          : "while parsing a flow node"), start_mark,
-                        "did not found expected node content", token->start_mark);
+                        "did not find expected node content", token->start_mark);
                 goto error;
             }
         }
@@ -771,7 +771,7 @@ yaml_parser_parse_block_sequence_entry(yaml_parser_t *parser,
     {
         return yaml_parser_set_parser_error_context(parser,
                 "while parsing a block collection", POP(parser, parser->marks),
-                "did not found expected '-' indicator", token->start_mark);
+                "did not find expected '-' indicator", token->start_mark);
     }
 }
 
@@ -881,7 +881,7 @@ yaml_parser_parse_block_mapping_key(yaml_parser_t *parser,
     {
         return yaml_parser_set_parser_error_context(parser,
                 "while parsing a block mapping", POP(parser, parser->marks),
-                "did not found expected key", token->start_mark);
+                "did not find expected key", token->start_mark);
     }
 }
 
@@ -975,7 +975,7 @@ yaml_parser_parse_flow_sequence_entry(yaml_parser_t *parser,
             else {
                 return yaml_parser_set_parser_error_context(parser,
                         "while parsing a flow sequence", POP(parser, parser->marks),
-                        "did not found expected ',' or ']'", token->start_mark);
+                        "did not find expected ',' or ']'", token->start_mark);
             }
         }
 
@@ -1127,7 +1127,7 @@ yaml_parser_parse_flow_mapping_key(yaml_parser_t *parser,
             else {
                 return yaml_parser_set_parser_error_context(parser,
                         "while parsing a flow mapping", POP(parser, parser->marks),
-                        "did not found expected ',' or '}'", token->start_mark);
+                        "did not find expected ',' or '}'", token->start_mark);
             }
         }
 
