@@ -1056,7 +1056,7 @@ yaml_parser_stale_simple_keys(yaml_parser_t *parser)
             if (simple_key->is_required) {
                 return SCANNER_ERROR_WITH_CONTEXT_INIT(parser,
                         "while scanning a simple key", simple_key->mark,
-                        "could not found expected ':'", parser->mark);
+                        "could not find expected ':'", parser->mark);
             }
 
             simple_key->is_possible = 0;
@@ -1126,7 +1126,7 @@ yaml_parser_remove_simple_key(yaml_parser_t *parser)
         if (simple_key->is_required) {
             return SCANNER_ERROR_WITH_CONTEXT_INIT(parser,
                     "while scanning a simple key", simple_key->mark,
-                    "could not found expected ':'", parser->mark);
+                    "could not find expected ':'", parser->mark);
         }
     }
 
@@ -2056,7 +2056,7 @@ yaml_parser_scan_directive(yaml_parser_t *parser, yaml_token_t *token)
     if (!IS_BREAKZ(parser->input)) {
         SCANNER_ERROR_WITH_CONTEXT_INIT(parser,
                 "while scanning a directive", start_mark,
-                "did not found expected comment or line break", parser->mark);
+                "did not find expected comment or line break", parser->mark);
         goto error;
     }
 
@@ -2112,7 +2112,7 @@ yaml_parser_scan_directive_name(yaml_parser_t *parser,
     if (!string.pointer) {
         SCANNER_ERROR_WITH_CONTEXT_INIT(parser,
                 "while scanning a directive", start_mark,
-                "cannot found expected directive name", parser->mark);
+                "could not find expected directive name", parser->mark);
         goto error;
     }
 
@@ -2469,7 +2469,7 @@ yaml_parser_scan_tag(yaml_parser_t *parser, yaml_token_t *token)
     if (!IS_BLANKZ(parser->input)) {
         SCANNER_ERROR_WITH_CONTEXT_INIT(parser,
                 "while scanning a tag", start_mark,
-                "did not found expected whitespace or line break", parser->mark);
+                "did not find expected whitespace or line break", parser->mark);
         goto error;
     }
 
@@ -2834,7 +2834,7 @@ yaml_parser_scan_block_scalar(yaml_parser_t *parser, yaml_token_t *token,
     if (!IS_BREAKZ(parser->input)) {
         SCANNER_ERROR_WITH_CONTEXT_INIT(parser,
                 "while scanning a block scalar", start_mark,
-                "did not found expected comment or line break", parser->mark);
+                "did not find expected comment or line break", parser->mark);
         goto error;
     }
 
