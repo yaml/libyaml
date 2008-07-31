@@ -1078,7 +1078,7 @@ yaml_parser_stale_simple_keys(yaml_parser_t *parser)
             if (simple_key->required) {
                 return yaml_parser_set_scanner_error(parser,
                         "while scanning a simple key", simple_key->mark,
-                        "could not found expected ':'");
+                        "could not find expected ':'");
             }
 
             simple_key->possible = 0;
@@ -1147,7 +1147,7 @@ yaml_parser_remove_simple_key(yaml_parser_t *parser)
         if (simple_key->required) {
             return yaml_parser_set_scanner_error(parser,
                     "while scanning a simple key", simple_key->mark,
-                    "could not found expected ':'");
+                    "could not find expected ':'");
         }
     }
 
@@ -2072,7 +2072,7 @@ yaml_parser_scan_directive(yaml_parser_t *parser, yaml_token_t *token)
 
     if (!IS_BREAKZ(parser->buffer)) {
         yaml_parser_set_scanner_error(parser, "while scanning a directive",
-                start_mark, "did not found expected comment or line break");
+                start_mark, "did not find expected comment or line break");
         goto error;
     }
 
@@ -2126,7 +2126,7 @@ yaml_parser_scan_directive_name(yaml_parser_t *parser,
 
     if (string.start == string.pointer) {
         yaml_parser_set_scanner_error(parser, "while scanning a directive",
-                start_mark, "cannot found expected directive name");
+                start_mark, "could not find expected directive name");
         goto error;
     }
 
@@ -2472,7 +2472,7 @@ yaml_parser_scan_tag(yaml_parser_t *parser, yaml_token_t *token)
 
     if (!IS_BLANKZ(parser->buffer)) {
         yaml_parser_set_scanner_error(parser, "while scanning a tag",
-                start_mark, "did not found expected whitespace or line break");
+                start_mark, "did not find expected whitespace or line break");
         goto error;
     }
 
@@ -2826,7 +2826,7 @@ yaml_parser_scan_block_scalar(yaml_parser_t *parser, yaml_token_t *token,
 
     if (!IS_BREAKZ(parser->buffer)) {
         yaml_parser_set_scanner_error(parser, "while scanning a block scalar",
-                start_mark, "did not found expected comment or line break");
+                start_mark, "did not find expected comment or line break");
         goto error;
     }
 
