@@ -587,6 +587,17 @@ yaml_emitter_emit_document_start(yaml_emitter_t *emitter,
             implicit = 0;
         }
 
+        if ((event->data.document_start.version_directive ||
+                    (event->data.document_start.tag_directives.start
+                     != event->data.document_start.tag_directives.end)) &&
+                emitter->open_ended)
+        {
+            if (!yaml_emitter_write_indicator(emitter, "...", 1, 0, 0))
+                return 0;
+            if (!yaml_emitter_write_indent(emitter))
+                return 0;
+        }
+
         if (event->data.document_start.version_directive) {
             implicit = 0;
             if (!yaml_emitter_write_indicator(emitter, "%YAML", 1, 0, 0))
@@ -638,6 +649,14 @@ yaml_emitter_emit_document_start(yaml_emitter_t *emitter,
 
     else if (event->type == YAML_STREAM_END_EVENT)
     {
+        if (emitter->open_ended)
+        {
+            if (!yaml_emitter_write_indicator(emitter, "...", 1, 0, 0))
+                return 0;
+            if (!yaml_emitter_write_indent(emitter))
+                return 0;
+        }
+
         if (!yaml_emitter_flush(emitter))
             return 0;
 
@@ -1765,6 +1784,7 @@ yaml_emitter_write_indicator(yaml_emitter_t *emitter,
 
     emitter->whitespace = is_whitespace;
     emitter->indention = (emitter->indention && is_indention);
+    emitter->open_ended = 0;
 
     return 1;
 }
@@ -1902,6 +1922,10 @@ yaml_emitter_write_plain_scalar(yaml_emitter_t *emitter,
 
     emitter->whitespace = 0;
     emitter->indention = 0;
+    if (emitter->root_context)
+    {
+        emitter->open_ended = 1;
+    }
 
     return 1;
 }
@@ -2136,6 +2160,8 @@ yaml_emitter_write_block_scalar_hints(yaml_emitter_t *emitter,
             return 0;
     }
 
+    emitter->open_ended = 0;
+
     string.pointer = string.end;
     if (string.start == string.pointer)
     {
@@ -2153,6 +2179,7 @@ yaml_emitter_write_block_scalar_hints(yaml_emitter_t *emitter,
         else if (string.start == string.pointer)
         {
             chomp_hint = "+";
+            emitter->open_ended = 1;
         }
         else
         {
@@ -2162,6 +2189,7 @@ yaml_emitter_write_block_scalar_hints(yaml_emitter_t *emitter,
             if (IS_BREAK(string))
             {
                 chomp_hint = "+";
+                emitter->open_ended = 1;
             }
         }
     }
@@ -2237,7 +2265,7 @@ yaml_emitter_write_folded_scalar(yaml_emitter_t *emitter,
                 while (IS_BREAK_AT(string, k)) {
                     k += WIDTH_AT(string, k);
                 }
-                if (!IS_BLANK_AT(string, k)) {
+                if (!IS_BLANKZ_AT(string, k)) {
                     if (!PUT_BREAK(emitter)) return 0;
                 }
             }
