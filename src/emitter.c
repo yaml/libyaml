@@ -249,7 +249,7 @@ yaml_emitter_write_double_quoted_scalar(yaml_emitter_t *emitter,
         yaml_char_t *value, size_t length, int allow_breaks);
 
 static int
-yaml_emitter_determine_chomping(yaml_emitter_t *emitter,
+yaml_emitter_write_block_scalar_hints(yaml_emitter_t *emitter,
         yaml_string_t string);
 
 static int
@@ -1454,21 +1454,17 @@ yaml_emitter_analyze_scalar(yaml_emitter_t *emitter,
     int line_breaks = 0;
     int special_characters = 0;
 
-    int inline_spaces = 0;
-    int inline_breaks = 0;
-    int leading_spaces = 0;
-    int leading_breaks = 0;
-    int trailing_spaces = 0;
-    int trailing_breaks = 0;
-    int inline_breaks_spaces = 0;
-    int mixed_breaks_spaces = 0;
+    int leading_space = 0;
+    int leading_break = 0;
+    int trailing_space = 0;
+    int trailing_break = 0;
+    int break_space = 0;
+    int space_break = 0;
 
-    int preceeded_by_space = 0;
-    int followed_by_space = 0;
-    int spaces = 0;
-    int breaks = 0;
-    int mixed = 0;
-    int leading = 0;
+    int preceeded_by_whitespace = 0;
+    int followed_by_whitespace = 0;
+    int previous_space = 0;
+    int previous_break = 0;
 
     emitter->scalar_data.value = value;
     emitter->scalar_data.length = length;
@@ -1494,8 +1490,8 @@ yaml_emitter_analyze_scalar(yaml_emitter_t *emitter,
         flow_indicators = 1;
     }
 
-    preceeded_by_space = 1;
-    followed_by_space = IS_BLANKZ_AT(string, WIDTH(string));
+    preceeded_by_whitespace = 1;
+    followed_by_whitespace = IS_BLANKZ_AT(string, WIDTH(string));
 
     while (string.pointer != string.end)
     {
@@ -1515,12 +1511,12 @@ yaml_emitter_analyze_scalar(yaml_emitter_t *emitter,
 
             if (CHECK(string, '?') || CHECK(string, ':')) {
                 flow_indicators = 1;
-                if (followed_by_space) {
+                if (followed_by_whitespace) {
                     block_indicators = 1;
                 }
             }
 
-            if (CHECK(string, '-') && followed_by_space) {
+            if (CHECK(string, '-') && followed_by_whitespace) {
                 flow_indicators = 1;
                 block_indicators = 1;
             }
@@ -1535,12 +1531,12 @@ yaml_emitter_analyze_scalar(yaml_emitter_t *emitter,
 
             if (CHECK(string, ':')) {
                 flow_indicators = 1;
-                if (followed_by_space) {
+                if (followed_by_whitespace) {
                     block_indicators = 1;
                 }
             }
 
-            if (CHECK(string, '#') && preceeded_by_space) {
+            if (CHECK(string, '#') && preceeded_by_whitespace) {
                 flow_indicators = 1;
                 block_indicators = 1;
             }
@@ -1557,76 +1553,42 @@ yaml_emitter_analyze_scalar(yaml_emitter_t *emitter,
 
         if (IS_SPACE(string))
         {
-            spaces = 1;
             if (string.start == string.pointer) {
-                leading = 1;
+                leading_space = 1;
             }
+            if (string.pointer+WIDTH(string) == string.end) {
+                trailing_space = 1;
+            }
+            if (previous_break) {
+                break_space = 1;
+            }
+            previous_space = 1;
+            previous_break = 0;
         }
-
         else if (IS_BREAK(string))
         {
-            if (spaces) {
-                mixed = 1;
-            }
-            breaks = 1;
             if (string.start == string.pointer) {
-                leading = 1;
+                leading_break = 1;
             }
+            if (string.pointer+WIDTH(string) == string.end) {
+                trailing_break = 1;
+            }
+            if (previous_space) {
+                space_break = 1;
+            }
+            previous_space = 0;
+            previous_break = 1;
         }
-
-        else if (spaces || breaks)
+        else
         {
-            if (leading) {
-                if (spaces && breaks) {
-                    mixed_breaks_spaces = 1;
-                }
-                else if (spaces) {
-                    leading_spaces = 1;
-                }
-                else if (breaks) {
-                    leading_breaks = 1;
-                }
-            }
-            else {
-                if (mixed) {
-                    mixed_breaks_spaces = 1;
-                }
-                else if (spaces && breaks) {
-                    inline_breaks_spaces = 1;
-                }
-                else if (spaces) {
-                    inline_spaces = 1;
-                }
-                else if (breaks) {
-                    inline_breaks = 1;
-                }
-            }
-            spaces = breaks = mixed = leading = 0;
+            previous_space = 0;
+            previous_break = 0;
         }
 
-        if ((spaces || breaks) && string.pointer == string.end-1)
-        {
-            if (spaces && breaks) {
-                mixed_breaks_spaces = 1;
-            }
-            else if (spaces) {
-                if (leading) {
-                    leading_spaces = 1;
-                }
-                trailing_spaces = 1;
-            }
-            else if (breaks) {
-                if (leading) {
-                    leading_breaks = 1;
-                }
-                trailing_breaks = 1;
-            }
-        }
-
-        preceeded_by_space = IS_BLANKZ(string);
+        preceeded_by_whitespace = IS_BLANKZ(string);
         MOVE(string);
         if (string.pointer != string.end) {
-            followed_by_space = IS_BLANKZ_AT(string, WIDTH(string));
+            followed_by_whitespace = IS_BLANKZ_AT(string, WIDTH(string));
         }
     }
 
@@ -1637,24 +1599,22 @@ yaml_emitter_analyze_scalar(yaml_emitter_t *emitter,
     emitter->scalar_data.single_quoted_allowed = 1;
     emitter->scalar_data.block_allowed = 1;
 
-    if (leading_spaces || leading_breaks || trailing_spaces) {
+    if (leading_space || leading_break || trailing_space || trailing_break) {
         emitter->scalar_data.flow_plain_allowed = 0;
         emitter->scalar_data.block_plain_allowed = 0;
+    }
+
+    if (trailing_space) {
         emitter->scalar_data.block_allowed = 0;
     }
 
-    if (trailing_breaks) {
-        emitter->scalar_data.flow_plain_allowed = 0;
-        emitter->scalar_data.block_plain_allowed = 0;
-    }
-
-    if (inline_breaks_spaces) {
+    if (break_space) {
         emitter->scalar_data.flow_plain_allowed = 0;
         emitter->scalar_data.block_plain_allowed = 0;
         emitter->scalar_data.single_quoted_allowed = 0;
     }
 
-    if (mixed_breaks_spaces || special_characters) {
+    if (space_break || special_characters) {
         emitter->scalar_data.flow_plain_allowed = 0;
         emitter->scalar_data.block_plain_allowed = 0;
         emitter->scalar_data.single_quoted_allowed = 0;
@@ -2162,26 +2122,57 @@ yaml_emitter_write_double_quoted_scalar(yaml_emitter_t *emitter,
 }
 
 static int
-yaml_emitter_determine_chomping(yaml_emitter_t *emitter,
+yaml_emitter_write_block_scalar_hints(yaml_emitter_t *emitter,
         yaml_string_t string)
 {
+    char indent_hint[2];
+    char *chomp_hint = NULL;
+
+    if (IS_SPACE(string) || IS_BREAK(string))
+    {
+        indent_hint[0] = '0' + (char)emitter->best_indent;
+        indent_hint[1] = '\0';
+        if (!yaml_emitter_write_indicator(emitter, indent_hint, 0, 0, 0))
+            return 0;
+    }
+
     string.pointer = string.end;
     if (string.start == string.pointer)
-        return -1;
-    do {
-        string.pointer --;
-    } while ((*string.pointer & 0xC0) == 0x80);
-    if (!IS_BREAK(string))
-        return -1;
-    if (string.start == string.pointer)
-        return 0;
-    do {
-        string.pointer --;
-    } while ((*string.pointer & 0xC0) == 0x80);
-    if (!IS_BREAK(string))
-        return 0;
-    return +1;
-    
+    {
+        chomp_hint = "-";
+    }
+    else
+    {
+        do {
+            string.pointer --;
+        } while ((*string.pointer & 0xC0) == 0x80);
+        if (!IS_BREAK(string))
+        {
+            chomp_hint = "-";
+        }
+        else if (string.start == string.pointer)
+        {
+            chomp_hint = "+";
+        }
+        else
+        {
+            do {
+                string.pointer --;
+            } while ((*string.pointer & 0xC0) == 0x80);
+            if (IS_BREAK(string))
+            {
+                chomp_hint = "+";
+            }
+        }
+    }
+
+    if (chomp_hint)
+    {
+        if (!yaml_emitter_write_indicator(emitter, chomp_hint, 0, 0, 0))
+            return 0;
+    }
+
+    return 1;
 }
 
 static int
@@ -2189,14 +2180,15 @@ yaml_emitter_write_literal_scalar(yaml_emitter_t *emitter,
         yaml_char_t *value, size_t length)
 {
     yaml_string_t string = STRING(value, length);
-    int chomp = yaml_emitter_determine_chomping(emitter, string);
-    int breaks = 0;
+    int breaks = 1;
 
-    if (!yaml_emitter_write_indicator(emitter,
-                chomp == -1 ? "|-" : chomp == +1 ? "|+" : "|", 1, 0, 0))
+    if (!yaml_emitter_write_indicator(emitter, "|", 1, 0, 0))
         return 0;
-    if (!yaml_emitter_write_indent(emitter))
+    if (!yaml_emitter_write_block_scalar_hints(emitter, string))
         return 0;
+    if (!PUT_BREAK(emitter)) return 0;
+    emitter->indention = 1;
+    emitter->whitespace = 1;
 
     while (string.pointer != string.end)
     {
@@ -2225,15 +2217,16 @@ yaml_emitter_write_folded_scalar(yaml_emitter_t *emitter,
         yaml_char_t *value, size_t length)
 {
     yaml_string_t string = STRING(value, length);
-    int chomp = yaml_emitter_determine_chomping(emitter, string);
     int breaks = 1;
-    int leading_spaces = 0;
+    int leading_spaces = 1;
 
-    if (!yaml_emitter_write_indicator(emitter,
-                chomp == -1 ? ">-" : chomp == +1 ? ">+" : ">", 1, 0, 0))
+    if (!yaml_emitter_write_indicator(emitter, ">", 1, 0, 0))
         return 0;
-    if (!yaml_emitter_write_indent(emitter))
+    if (!yaml_emitter_write_block_scalar_hints(emitter, string))
         return 0;
+    if (!PUT_BREAK(emitter)) return 0;
+    emitter->indention = 1;
+    emitter->whitespace = 1;
 
     while (string.pointer != string.end)
     {
