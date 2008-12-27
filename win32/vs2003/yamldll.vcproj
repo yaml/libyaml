@@ -32,12 +32,12 @@
 				Name="VCCustomBuildTool"/>
 			<Tool
 				Name="VCLinkerTool"
-				OutputFile="$(OutDir)/yamldll.dll"
+				OutputFile="$(OutDir)/yaml.dll"
 				LinkIncremental="2"
 				GenerateDebugInformation="TRUE"
-				ProgramDatabaseFile="$(OutDir)/yamldll.pdb"
+				ProgramDatabaseFile="$(OutDir)/yaml.pdb"
 				SubSystem="2"
-				ImportLibrary="$(OutDir)/yamldll.lib"
+				ImportLibrary="$(OutDir)/yaml.lib"
 				TargetMachine="1"/>
 			<Tool
 				Name="VCMIDLTool"/>
@@ -79,13 +79,13 @@
 				Name="VCCustomBuildTool"/>
 			<Tool
 				Name="VCLinkerTool"
-				OutputFile="$(OutDir)/yamldll.dll"
+				OutputFile="$(OutDir)/yaml.dll"
 				LinkIncremental="1"
 				GenerateDebugInformation="TRUE"
 				SubSystem="2"
 				OptimizeReferences="2"
 				EnableCOMDATFolding="2"
-				ImportLibrary="$(OutDir)/yamldll.lib"
+				ImportLibrary="$(OutDir)/yaml.lib"
 				TargetMachine="1"/>
 			<Tool
 				Name="VCMIDLTool"/>
