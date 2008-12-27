@@ -1,7 +1,7 @@
 ## Run `./bootstrap` to generate the "Makefile.in" files in this directory and
-## the "$SUBDIR" subdirectories.
+## the "$SUBDIRS" subdirectories.
 
-SUBDIRS = include src . tests
+SUBDIRS = include src . tests win32
 
 EXTRA_DIST = README LICENSE doc/doxygen.cfg
 

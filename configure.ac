@@ -67,7 +67,7 @@ AC_C_CONST
 AC_TYPE_SIZE_T
 
 # Define Makefiles.
-AC_CONFIG_FILES([include/Makefile src/Makefile Makefile tests/Makefile])
+AC_CONFIG_FILES([include/Makefile src/Makefile Makefile tests/Makefile win32/Makefile])
 
 # Generate the "configure" script.
 AC_OUTPUT
