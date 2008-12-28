@@ -58,7 +58,7 @@ yaml_emitter_flush(yaml_emitter_t *emitter)
             return 1;
         }
         else {
-            return yaml_emitter_set_writer_error(emitter, "Write error");
+            return yaml_emitter_set_writer_error(emitter, "write error");
         }
     }
 
@@ -135,7 +135,7 @@ yaml_emitter_flush(yaml_emitter_t *emitter)
         return 1;
     }
     else {
-        return yaml_emitter_set_writer_error(emitter, "Write error");
+        return yaml_emitter_set_writer_error(emitter, "write error");
     }
 }
 
