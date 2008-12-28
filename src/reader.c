@@ -120,7 +120,7 @@ yaml_parser_update_raw_buffer(yaml_parser_t *parser)
 
     if (!parser->read_handler(parser->read_handler_data, parser->raw_buffer.last,
                 parser->raw_buffer.end - parser->raw_buffer.last, &size_read)) {
-        return yaml_parser_set_reader_error(parser, "Input error",
+        return yaml_parser_set_reader_error(parser, "input error",
                 parser->offset, -1);
     }
     parser->raw_buffer.last += size_read;
@@ -232,7 +232,7 @@ yaml_parser_update_buffer(yaml_parser_t *parser, size_t length)
 
                     if (!width)
                         return yaml_parser_set_reader_error(parser,
-                                "Invalid leading UTF-8 octet",
+                                "invalid leading UTF-8 octet",
                                 parser->offset, octet);
 
                     /* Check if the raw buffer contains an incomplete character. */
@@ -240,7 +240,7 @@ yaml_parser_update_buffer(yaml_parser_t *parser, size_t length)
                     if (width > raw_unread) {
                         if (parser->eof) {
                             return yaml_parser_set_reader_error(parser,
-                                    "Incomplete UTF-8 octet sequence",
+                                    "incomplete UTF-8 octet sequence",
                                     parser->offset, -1);
                         }
                         incomplete = 1;
@@ -264,7 +264,7 @@ yaml_parser_update_buffer(yaml_parser_t *parser, size_t length)
 
                         if ((octet & 0xC0) != 0x80)
                             return yaml_parser_set_reader_error(parser,
-                                    "Invalid trailing UTF-8 octet",
+                                    "invalid trailing UTF-8 octet",
                                     parser->offset+k, octet);
 
                         /* Decode the octet. */
@@ -279,14 +279,14 @@ yaml_parser_update_buffer(yaml_parser_t *parser, size_t length)
                             (width == 3 && value >= 0x800) ||
                             (width == 4 && value >= 0x10000)))
                         return yaml_parser_set_reader_error(parser,
-                                "Invalid length of a UTF-8 sequence",
+                                "invalid length of a UTF-8 sequence",
                                 parser->offset, -1);
 
                     /* Check the range of the value. */
 
                     if ((value >= 0xD800 && value <= 0xDFFF) || value > 0x10FFFF)
                         return yaml_parser_set_reader_error(parser,
-                                "Invalid Unicode character",
+                                "invalid Unicode character",
                                 parser->offset, value);
 
                     break;
@@ -328,7 +328,7 @@ yaml_parser_update_buffer(yaml_parser_t *parser, size_t length)
                     if (raw_unread < 2) {
                         if (parser->eof) {
                             return yaml_parser_set_reader_error(parser,
-                                    "Incomplete UTF-16 character",
+                                    "incomplete UTF-16 character",
                                     parser->offset, -1);
                         }
                         incomplete = 1;
@@ -344,7 +344,7 @@ yaml_parser_update_buffer(yaml_parser_t *parser, size_t length)
 
                     if ((value & 0xFC00) == 0xDC00)
                         return yaml_parser_set_reader_error(parser,
-                                "Unexpected low surrogate area",
+                                "unexpected low surrogate area",
                                 parser->offset, value);
 
                     /* Check for a high surrogate area. */
@@ -358,7 +358,7 @@ yaml_parser_update_buffer(yaml_parser_t *parser, size_t length)
                         if (raw_unread < 4) {
                             if (parser->eof) {
                                 return yaml_parser_set_reader_error(parser,
-                                        "Incomplete UTF-16 surrogate pair",
+                                        "incomplete UTF-16 surrogate pair",
                                         parser->offset, -1);
                             }
                             incomplete = 1;
@@ -374,7 +374,7 @@ yaml_parser_update_buffer(yaml_parser_t *parser, size_t length)
 
                         if ((value2 & 0xFC00) != 0xDC00)
                             return yaml_parser_set_reader_error(parser,
-                                    "Expected low surrogate area",
+                                    "expected low surrogate area",
                                     parser->offset+2, value2);
 
                         /* Generate the value of the surrogate pair. */
@@ -409,7 +409,7 @@ yaml_parser_update_buffer(yaml_parser_t *parser, size_t length)
                         || (value >= 0xE000 && value <= 0xFFFD)
                         || (value >= 0x10000 && value <= 0x10FFFF)))
                 return yaml_parser_set_reader_error(parser,
-                        "Control characters are not allowed",
+                        "control characters are not allowed",
                         parser->offset, value);
 
             /* Move the raw pointers. */
