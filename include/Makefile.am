@@ -10,7 +10,7 @@ html: $(INCLUDES) $(DOXYGEN_CFG)
 
 endif
 
-distclean-local:
+maintainer-clean-local:
 	-rm -rf $(top_builddir)/doc/html
 
 dist-hook: html
