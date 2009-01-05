@@ -20,7 +20,7 @@ m4_define([YAML_BUGS], [http://pyyaml.org/newticket?component=libyaml])
 m4_define([YAML_RELEASE], 0)
 m4_define([YAML_CURRENT], 2)
 m4_define([YAML_REVISION], 0)
-m4_define([YAML_AGE], 1)
+m4_define([YAML_AGE], 0)
 
 # Initialize autoconf & automake.
 AC_PREREQ(2.59)
