@@ -1365,7 +1365,8 @@ yaml_document_append_mapping_pair(yaml_document_t *document,
     struct {
         yaml_error_type_t error;
     } context;
-    yaml_node_pair_t pair = { key, value };
+
+    yaml_node_pair_t pair;
 
     assert(document);       /* Non-NULL document is required. */
     assert(mapping > 0
@@ -1377,6 +1378,9 @@ yaml_document_append_mapping_pair(yaml_document_t *document,
                             /* Valid key id is required. */
     assert(value > 0 && document->nodes.start + value <= document->nodes.top);
                             /* Valid value id is required. */
+
+    pair.key = key;
+    pair.value = value;
 
     if (!PUSH(&context,
                 document->nodes.start[mapping-1].data.mapping.pairs, pair))

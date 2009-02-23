@@ -1280,10 +1280,10 @@ yaml_parser_process_directives(yaml_parser_t *parser,
         }
 
         else if (token->type == YAML_TAG_DIRECTIVE_TOKEN) {
-            yaml_tag_directive_t value = {
-                token->data.tag_directive.handle,
-                token->data.tag_directive.prefix
-            };
+            yaml_tag_directive_t value;
+            value.handle = token->data.tag_directive.handle;
+            value.prefix = token->data.tag_directive.prefix;
+
             if (!yaml_parser_append_tag_directive(parser, value, 0,
                         token->start_mark))
                 goto error;

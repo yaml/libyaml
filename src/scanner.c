@@ -1118,9 +1118,11 @@ yaml_parser_save_simple_key(yaml_parser_t *parser)
 
     if (parser->simple_key_allowed)
     {
-        yaml_simple_key_t simple_key = { 1, required,
-            parser->tokens_parsed + parser->tokens.tail - parser->tokens.head,
-            { 0, 0, 0 } };
+        yaml_simple_key_t simple_key;
+        simple_key.possible = 1;
+        simple_key.required = required;
+        simple_key.token_number = 
+            parser->tokens_parsed + parser->tokens.tail - parser->tokens.head;
         simple_key.mark = parser->mark;
 
         if (!yaml_parser_remove_simple_key(parser)) return 0;

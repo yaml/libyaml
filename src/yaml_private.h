@@ -113,6 +113,11 @@ yaml_string_join(
 
 #define STRING(string,length)   { (string), (string)+(length), (string) }
 
+#define STRING_ASSIGN(value,string,length)                                      \
+    ((value).start = (string),                                                  \
+     (value).end = (string)+(length),                                           \
+     (value).pointer = (string))
+
 #define STRING_INIT(context,string,size)                                        \
     (((string).start = yaml_malloc(size)) ?                                     \
         ((string).pointer = (string).start,                                     \
