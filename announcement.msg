@@ -1,12 +1,12 @@
 From: Kirill Simonov <xi@gamma.dn.ua>
 To: yaml-core@lists.sourceforge.net
-Subject: LibYAML-0.1.2: A minor bugfix release
+Subject: LibYAML-0.1.3: A minor bugfix release
 
 This is a minor bugfix release of LibYAML, a YAML parser and emitter
 written in C.
 
 LibYAML homepage:   http://pyyaml.org/wiki/LibYAML
-TAR.GZ package:     http://pyyaml.org/download/libyaml/yaml-0.1.2.tar.gz
+TAR.GZ package:     http://pyyaml.org/download/libyaml/yaml-0.1.3.tar.gz
 SVN repository:     http://svn.pyyaml.org/libyaml/branches/stable
 Bug tracker:        http://pyyaml.org/newticket?component=libyaml
 
