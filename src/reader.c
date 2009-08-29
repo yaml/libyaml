@@ -141,6 +141,8 @@ yaml_parser_update_raw_buffer(yaml_parser_t *parser)
 YAML_DECLARE(int)
 yaml_parser_update_buffer(yaml_parser_t *parser, size_t length)
 {
+    int first = 1;
+
     assert(parser->read_handler);   /* Read handler must be set. */
 
     /* If the EOF flag is set and the raw buffer is empty, do nothing. */
@@ -178,9 +180,12 @@ yaml_parser_update_buffer(yaml_parser_t *parser, size_t length)
 
     while (parser->unread < length)
     {
-        /* Fill the raw buffer. */
+        /* Fill the raw buffer if necessary. */
 
-        if (!yaml_parser_update_raw_buffer(parser)) return 0;
+        if (!first || parser->raw_buffer.pointer == parser->raw_buffer.last) {
+            if (!yaml_parser_update_raw_buffer(parser)) return 0;
+        }
+        first = 0;
 
         /* Decode the raw buffer. */
 
