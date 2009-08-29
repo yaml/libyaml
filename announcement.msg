@@ -5,6 +5,9 @@ Subject: LibYAML-0.1.3: A minor bugfix release
 This is a minor bugfix release of LibYAML, a YAML parser and emitter
 written in C.
 
+This release fixes non-standard structure initialization and
+a streaming-related issue.
+
 LibYAML homepage:   http://pyyaml.org/wiki/LibYAML
 TAR.GZ package:     http://pyyaml.org/download/libyaml/yaml-0.1.3.tar.gz
 SVN repository:     http://svn.pyyaml.org/libyaml/branches/stable
