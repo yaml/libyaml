@@ -12,7 +12,7 @@ granted liberally. Stop by #yaml on irc.freenode.net.
 
     $ git clone https://github.com/yaml/libyaml.git
     $ cd libyaml
-    $ ./developent/test
+    $ ./development/test
 
 == Testing
 
@@ -22,7 +22,7 @@ pyyamlrepository.
 The following script will make sure that everything is set up correctly and run
 the tests for you:
 
-    $ ./developent/test
+    $ ./development/test
 
 == PyYAML
 

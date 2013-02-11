@@ -35,7 +35,7 @@ if [ -e $pyyaml ]; then
     fi
 else
     git clone git://github.com/yaml/pyyaml.git $pyyaml
-    (cd $pyyaml; git branch $pyyaml)
+    (cd $pyyaml; git checkout $test_branch)
 fi
 
 pyyaml_branch=$(cd $pyyaml; git rev-parse --abbrev-ref HEAD)
