@@ -1,0 +1,2 @@
+- When there is a system libyaml available, pyyaml will link to that even
+  though we tell it to use the local version. I don't understand why.

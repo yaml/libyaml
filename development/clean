@@ -1,0 +1,12 @@
+#!/bin/bash
+
+set -ex
+
+git clean -dxf
+(
+    cd ../pyyaml
+    git checkout setup.cfg
+    rm -fr build
+    rm -f ext/_yaml.c
+    rm -f tests/lib/*.pyc
+)

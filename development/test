@@ -1,0 +1,58 @@
+#!/bin/bash
+
+set -ex
+
+test_branch=yaml-1.2
+pyyaml=../pyyaml
+[ -n "$LIBYAML_REPO_NAME" ] || LIBYAML_REPO_NAME=libyaml
+
+if [[ $(basename $PWD) != $LIBYAML_REPO_NAME ]]; then
+    echo "This does not appear to be the libyaml repository"
+    echo "If it is, set LIBYAML_REPO_NAME"
+    exit 1
+fi
+
+if [ ! -d .git ]; then
+    echo "Run this script from the top level directory of the libyaml repo"
+    exit 1
+fi
+
+if [ -z "$(which cython)" ]; then
+    echo "You need to install cython"
+    exit 1
+fi
+
+libyaml_branch=$(git rev-parse --abbrev-ref HEAD)
+if [ $libyaml_branch != $test_branch ]; then
+    echo "git branch must be set to '$test_branch'"
+    exit 1
+fi
+
+if [ -e $pyyaml ]; then
+    if [ ! -d $pyyaml/.git ]; then
+        echo "$pyyaml must be a Git repository"
+        exit 1
+    fi
+else
+    git clone git://github.com/yaml/pyyaml.git $pyyaml
+    (cd $pyyaml; git branch $pyyaml)
+fi
+
+pyyaml_branch=$(cd $pyyaml; git rev-parse --abbrev-ref HEAD)
+if [ $pyyaml_branch != $test_branch ]; then
+    echo "$pyyaml must be on branch '$test_branch'"
+    exit 1
+fi
+
+[ ! -e ./configure ] && ./bootstrap
+[ ! -e ./Makefile ] && ./configure
+
+make
+
+cp development/setup.cfg $pyyaml/
+(
+    cd $pyyaml
+    rm -fr build
+    python setup.py build test
+)
+
