@@ -1,0 +1,7 @@
+language: c
+
+compiler:
+- clang
+- gcc
+
+script: ./boostrap && ./configure && make && make test
