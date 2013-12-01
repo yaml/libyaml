@@ -16,3 +16,5 @@ maintainer-clean-local:
 bootstrap: maintainer-clean
 	./bootstrap
 
+test: all
+	make -C tests check-TESTS
