@@ -4,4 +4,7 @@ compiler:
 - clang
 - gcc
 
-script: ./bootstrap && ./configure && make test
+script:
+- ./bootstrap
+- ./configure
+- make test
