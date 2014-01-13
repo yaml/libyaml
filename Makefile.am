@@ -3,7 +3,7 @@
 
 SUBDIRS = include src . tests win32
 
-EXTRA_DIST = README LICENSE doc/doxygen.cfg
+EXTRA_DIST = README LICENSE CMakeLists.txt doc/doxygen.cfg
 
 pkgconfigdir = $(libdir)/pkgconfig
 pkgconfig_DATA = yaml-0.1.pc
