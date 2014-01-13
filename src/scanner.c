@@ -2574,7 +2574,7 @@ yaml_parser_scan_tag_uri(yaml_parser_t *parser, int directive,
 
     /* Resize the string to include the head. */
 
-    while (string.end - string.start <= (int)length) {
+    while ((size_t)(string.end - string.start) <= length) {
         if (!yaml_string_extend(&string.start, &string.pointer, &string.end)) {
             parser->error = YAML_MEMORY_ERROR;
             goto error;
