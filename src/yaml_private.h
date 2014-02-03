@@ -421,6 +421,12 @@ yaml_queue_extend(void **start, void **head, void **tail, void **end);
 #define STACK_EMPTY(context,stack)                                              \
     ((stack).start == (stack).top)
 
+#define STACK_LIMIT(context,stack,size)                                         \
+    ((stack).top - (stack).start < (size) ?                                     \
+        1 :                                                                     \
+        ((context)->error = YAML_MEMORY_ERROR,                                  \
+         0))
+
 #define PUSH(context,stack,value)                                               \
     (((stack).top != (stack).end                                                \
       || yaml_stack_extend((void **)&(stack).start,                             \
