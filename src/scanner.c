@@ -1176,8 +1176,10 @@ yaml_parser_increase_flow_level(yaml_parser_t *parser)
 
     /* Increase the flow level. */
 
-    if (parser->flow_level == INT_MAX)
+    if (parser->flow_level == INT_MAX) {
+        parser->error = YAML_MEMORY_ERROR;
         return 0;
+    }
 
     parser->flow_level++;
 
@@ -1229,8 +1231,10 @@ yaml_parser_roll_indent(yaml_parser_t *parser, ptrdiff_t column,
         if (!PUSH(parser, parser->indents, parser->indent))
             return 0;
 
-        if (column > INT_MAX)
+        if (column > INT_MAX) {
+            parser->error = YAML_MEMORY_ERROR;
             return 0;
+        }
 
         parser->indent = column;
 
