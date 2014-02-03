@@ -7,6 +7,7 @@
 
 #include <assert.h>
 #include <limits.h>
+#include <stddef.h>
 
 /*
  * Memory management.
