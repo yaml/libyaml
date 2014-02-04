@@ -8,7 +8,16 @@
 #include <assert.h>
 #include <limits.h>
 #include <stddef.h>
+
+#ifndef _MSC_VER
 #include <stdint.h>
+#else
+#ifdef _WIN64
+#define PTRDIFF_MAX _I64_MAX
+#else
+#define PTRDIFF_MAX INT_MAX
+#endif
+#endif
 
 /*
  * Memory management.
