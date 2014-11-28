@@ -1110,7 +1110,9 @@ yaml_parser_save_simple_key(yaml_parser_t *parser)
      * line.  Therefore it is always allowed.  But we add a check anyway.
      */
 
-    assert(parser->simple_key_allowed || !required);    /* Impossible. */
+    /* XXX This caused:
+     * https://bitbucket.org/xi/libyaml/issue/10/wrapped-strings-cause-assert-failure
+    assert(parser->simple_key_allowed || !required); */    /* Impossible. */
 
     /*
      * If the current position may start a simple key, save it.
