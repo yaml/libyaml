@@ -615,14 +615,11 @@ yaml_parser_decrease_flow_level(yaml_parser_t *parser);
  */
 
 static int
-yaml_parser_roll_indent(yaml_parser_t *parser, size_t column,
-        int number, yaml_token_type_t type, yaml_mark_t mark);
+yaml_parser_roll_indent(yaml_parser_t *parser, ptrdiff_t column,
+        ptrdiff_t number, yaml_token_type_t type, yaml_mark_t mark);
 
 static int
-yaml_parser_unroll_indent(yaml_parser_t *parser, size_t column);
-
-static int
-yaml_parser_reset_indent(yaml_parser_t *parser);
+yaml_parser_unroll_indent(yaml_parser_t *parser, ptrdiff_t column);
 
 /*
  * Token fetchers.
@@ -1106,7 +1103,7 @@ yaml_parser_save_simple_key(yaml_parser_t *parser)
      */
 
     int required = (!parser->flow_level
-            && parser->indent == (int)parser->mark.column);
+            && parser->indent == (ptrdiff_t)parser->mark.column);
 
     /*
      * A simple key is required only when it is the first token in the current
@@ -1179,6 +1176,11 @@ yaml_parser_increase_flow_level(yaml_parser_t *parser)
 
     /* Increase the flow level. */
 
+    if (parser->flow_level == INT_MAX) {
+        parser->error = YAML_MEMORY_ERROR;
+        return 0;
+    }
+
     parser->flow_level++;
 
     return 1;
@@ -1209,8 +1211,8 @@ yaml_parser_decrease_flow_level(yaml_parser_t *parser)
  */
 
 static int
-yaml_parser_roll_indent(yaml_parser_t *parser, size_t column,
-        int number, yaml_token_type_t type, yaml_mark_t mark)
+yaml_parser_roll_indent(yaml_parser_t *parser, ptrdiff_t column,
+        ptrdiff_t number, yaml_token_type_t type, yaml_mark_t mark)
 {
     yaml_token_t token;
 
@@ -1219,7 +1221,7 @@ yaml_parser_roll_indent(yaml_parser_t *parser, size_t column,
     if (parser->flow_level)
         return 1;
 
-    if (parser->indent == -1 || parser->indent < column)
+    if (parser->indent < column)
     {
         /*
          * Push the current indentation level to the stack and set the new
@@ -1228,6 +1230,11 @@ yaml_parser_roll_indent(yaml_parser_t *parser, size_t column,
 
         if (!PUSH(parser, parser->indents, parser->indent))
             return 0;
+
+        if (column > INT_MAX) {
+            parser->error = YAML_MEMORY_ERROR;
+            return 0;
+        }
 
         parser->indent = column;
 
@@ -1257,62 +1264,18 @@ yaml_parser_roll_indent(yaml_parser_t *parser, size_t column,
 
 
 static int
-yaml_parser_unroll_indent(yaml_parser_t *parser, size_t column)
+yaml_parser_unroll_indent(yaml_parser_t *parser, ptrdiff_t column)
 {
     yaml_token_t token;
 
     /* In the flow context, do nothing. */
 
     if (parser->flow_level)
-        return 1;
-
-    /*
-     * column is unsigned and parser->indent is signed, so if
-     * parser->indent is less than zero the conditional in the while
-     * loop below is incorrect.  Guard against that.
-     */
-    
-    if (parser->indent < 0)
         return 1;
 
     /* Loop through the intendation levels in the stack. */
 
     while (parser->indent > column)
-    {
-        /* Create a token and append it to the queue. */
-
-        TOKEN_INIT(token, YAML_BLOCK_END_TOKEN, parser->mark, parser->mark);
-
-        if (!ENQUEUE(parser, parser->tokens, token))
-            return 0;
-
-        /* Pop the indentation level. */
-
-        parser->indent = POP(parser, parser->indents);
-    }
-
-    return 1;
-}
-
-/*
- * Pop indentation levels from the indents stack until the current
- * level resets to -1.  For each intendation level, append the
- * BLOCK-END token.
- */
-
-static int
-yaml_parser_reset_indent(yaml_parser_t *parser)
-{
-    yaml_token_t token;
-
-    /* In the flow context, do nothing. */
-
-    if (parser->flow_level)
-        return 1;
-
-    /* Loop through the intendation levels in the stack. */
-
-    while (parser->indent > -1)
     {
         /* Create a token and append it to the queue. */
 
@@ -1385,7 +1348,7 @@ yaml_parser_fetch_stream_end(yaml_parser_t *parser)
 
     /* Reset the indentation level. */
 
-    if (!yaml_parser_reset_indent(parser))
+    if (!yaml_parser_unroll_indent(parser, -1))
         return 0;
 
     /* Reset simple keys. */
@@ -1416,7 +1379,7 @@ yaml_parser_fetch_directive(yaml_parser_t *parser)
 
     /* Reset the indentation level. */
 
-    if (!yaml_parser_reset_indent(parser))
+    if (!yaml_parser_unroll_indent(parser, -1))
         return 0;
 
     /* Reset simple keys. */
@@ -1454,7 +1417,7 @@ yaml_parser_fetch_document_indicator(yaml_parser_t *parser,
 
     /* Reset the indentation level. */
 
-    if (!yaml_parser_reset_indent(parser))
+    if (!yaml_parser_unroll_indent(parser, -1))
         return 0;
 
     /* Reset simple keys. */
@@ -2666,6 +2629,9 @@ yaml_parser_scan_tag_uri(yaml_parser_t *parser, int directive,
         /* Check if it is a URI-escape sequence. */
 
         if (CHECK(parser->buffer, '%')) {
+            if (!STRING_EXTEND(parser, string))
+                goto error;
+
             if (!yaml_parser_scan_uri_escapes(parser,
                         directive, start_mark, &string)) goto error;
         }
