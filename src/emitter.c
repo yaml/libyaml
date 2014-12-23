@@ -1946,13 +1946,15 @@ yaml_emitter_write_plain_scalar(yaml_emitter_t *emitter,
 
     emitter->whitespace = 0;
     emitter->indention = 0;
-// < rz> ingy: i'm not sure why i set open_ended in yaml_emitter_write_plain_scalar
-//
-// Disabling this as it breaks YAML::XS tests with no perceived benefit.
-//     if (emitter->root_context)
-//     {
-//         emitter->open_ended = 1;
-//     }
+/*
+ * < rz> ingy: i'm not sure why i set open_ended in yaml_emitter_write_plain_scalar
+ *
+ * Disabling this as it breaks YAML::XS tests with no perceived benefit.
+ *     if (emitter->root_context)
+ *     {
+ *         emitter->open_ended = 1;
+ *     }
+ */
 
     return 1;
 }
