@@ -266,7 +266,7 @@ main(int argc, char *argv[])
             if (!done) {
                 assert(document_number < MAX_DOCUMENTS);
                 assert(copy_document(&(documents[document_number++]), &document));
-                assert(yaml_emitter_dump(&emitter, &document) || 
+                assert(yaml_emitter_dump(&emitter, &document) ||
                         (yaml_emitter_flush(&emitter) && print_output(argv[number], buffer, written, count)));
                 count ++;
             }

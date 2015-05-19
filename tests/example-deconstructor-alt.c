@@ -168,7 +168,7 @@ main(int argc, char *argv[])
                     if (!yaml_document_append_mapping_pair(&output_document,
                                 properties, key, value)) goto document_error;
                 }
-                    
+
                 break;
 
             case YAML_STREAM_END_EVENT:
@@ -208,7 +208,7 @@ main(int argc, char *argv[])
                     char number[64];
 
                     /* Add 'version': {}. */
-                    
+
                     key = yaml_document_add_scalar(&output_document, NULL,
                         "version", -1, YAML_PLAIN_SCALAR_STYLE);
                     if (!key) goto document_error;
@@ -251,7 +251,7 @@ main(int argc, char *argv[])
                     yaml_tag_directive_t *tag;
 
                     /* Add 'tags': []. */
-                    
+
                     key = yaml_document_add_scalar(&output_document, NULL,
                         "tags", -1, YAML_PLAIN_SCALAR_STYLE);
                     if (!key) goto document_error;

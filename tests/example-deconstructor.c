@@ -244,7 +244,7 @@ main(int argc, char *argv[])
                     char number[64];
 
                     /* Write 'version'. */
-                    
+
                     if (!yaml_scalar_event_initialize(&output_event,
                                 NULL, "tag:yaml.org,2002:str", "version", -1,
                                 1, 1, YAML_PLAIN_SCALAR_STYLE))
@@ -315,7 +315,7 @@ main(int argc, char *argv[])
                     yaml_tag_directive_t *tag;
 
                     /* Write 'tags'. */
-                    
+
                     if (!yaml_scalar_event_initialize(&output_event,
                                 NULL, "tag:yaml.org,2002:str", "tags", -1,
                                 1, 1, YAML_PLAIN_SCALAR_STYLE))
@@ -597,7 +597,7 @@ main(int argc, char *argv[])
                 /* Display if the scalar tag is implicit. */
 
                 /* Write 'implicit'. */
-                
+
                 if (!yaml_scalar_event_initialize(&output_event,
                             NULL, "tag:yaml.org,2002:str", "implicit", -1,
                             1, 1, YAML_PLAIN_SCALAR_STYLE))
