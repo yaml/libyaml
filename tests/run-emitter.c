@@ -289,7 +289,7 @@ main(int argc, char *argv[])
             done = (event.type == YAML_STREAM_END_EVENT);
             assert(event_number < MAX_EVENTS);
             assert(copy_event(&(events[event_number++]), &event));
-            assert(yaml_emitter_emit(&emitter, &event) || 
+            assert(yaml_emitter_emit(&emitter, &event) ||
                     (yaml_emitter_flush(&emitter) && print_output(argv[number], buffer, written, count)));
             count ++;
         }
