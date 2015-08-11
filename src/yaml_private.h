@@ -9,12 +9,17 @@
 #include <stddef.h>
 
 #ifndef _MSC_VER
+#if defined(__sun) || defined(__sun__)
+#include <sys/inttypes.h>
+#define PTRDIFF_MAX INT_MAX
+#else
 #include <stdint.h>
-#ifndef PTRDIFF_MAX /* gcc on HP-UX sucks */
+#ifndef PTRDIFF_MAX /* gcc on HP-UX */
 #ifdef _LP64
 #define PTRDIFF_MAX 0x7FFFFFFFFFFFFFFFLL
 #else
 #define PTRDIFF_MAX 0x7FFFFFFFL
+#endif
 #endif
 #endif
 #else
