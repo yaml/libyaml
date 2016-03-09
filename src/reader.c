@@ -103,7 +103,8 @@ yaml_parser_update_raw_buffer(yaml_parser_t *parser)
 
     /* Return on EOF. */
 
-    if (parser->eof) return 1;
+    if (parser->eof)
+        return 1;
 
     /* Move the remaining bytes in the raw buffer to the beginning. */
 
@@ -183,7 +184,8 @@ yaml_parser_update_buffer(yaml_parser_t *parser, size_t length)
         /* Fill the raw buffer if necessary. */
 
         if (!first || parser->raw_buffer.pointer == parser->raw_buffer.last) {
-            if (!yaml_parser_update_raw_buffer(parser)) return 0;
+            if (!yaml_parser_update_raw_buffer(parser))
+                return 0;
         }
         first = 0;
 
@@ -343,7 +345,7 @@ yaml_parser_update_buffer(yaml_parser_t *parser, size_t length)
                     /* Get the character. */
 
                     value = parser->raw_buffer.pointer[low]
-                        + (parser->raw_buffer.pointer[high] << 8);
+                         + (parser->raw_buffer.pointer[high] << 8);
 
                     /* Check for unexpected low surrogate area. */
 
@@ -409,15 +411,15 @@ yaml_parser_update_buffer(yaml_parser_t *parser, size_t length)
              */
 
             if (! (value == 0x09 || value == 0x0A || value == 0x0D
-                        || (value >= 0x20 && value <= 0x7E)
-                        || (value == 0x85) || (value >= 0xA0 && value <= 0xD7FF)
-                        || (value >= 0xE000 && value <= 0xFFFD)
-                       || (value >= 0x10000 && value <= 0x10FFFF))) {
-                int err = yaml_parser_set_reader_error(parser,
-                              "control characters are not allowed",
-                              parser->offset, value);
+                   || (value >= 0x20 && value <= 0x7E)
+                   || (value == 0x85) || (value >= 0xA0 && value <= 0xD7FF)
+                   || (value >= 0xE000 && value <= 0xFFFD)
+                   || (value >= 0x10000 && value <= 0x10FFFF))) {
+                (void)yaml_parser_set_reader_error(parser,
+                           "control characters are not allowed",
+                           parser->offset, value);
                 if (!parser->problem_nonstrict)
-                    return err;
+                    return 0;
             }
 
             /* Move the raw pointers. */
