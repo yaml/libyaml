@@ -750,9 +750,11 @@ yaml_parser_scan(yaml_parser_t *parser, yaml_token_t *token)
 
     /* No tokens after STREAM-END or error. */
 
-    if (parser->stream_end_produced || parser->error) {
+    if (parser->stream_end_produced
+        || (parser->error
+            /* continue in nonstrict and READER_ERROR */
+            && (!parser->problem_nonstrict || parser->error != YAML_READER_ERROR)))
         return 1;
-    }
 
     /* Ensure that the tokens queue contains enough tokens. */
 
@@ -1195,11 +1197,9 @@ yaml_parser_increase_flow_level(yaml_parser_t *parser)
 static int
 yaml_parser_decrease_flow_level(yaml_parser_t *parser)
 {
-    yaml_simple_key_t dummy_key;    /* Used to eliminate a compiler warning. */
-
     if (parser->flow_level) {
         parser->flow_level --;
-        dummy_key = POP(parser, parser->simple_keys);
+        (void)POP(parser, parser->simple_keys);
     }
 
     return 1;
@@ -2410,7 +2410,7 @@ yaml_parser_scan_tag(yaml_parser_t *parser, yaml_token_t *token)
     {
         /* Set the handle to '' */
 
-        handle = yaml_malloc(1);
+        handle = YAML_MALLOC(1);
         if (!handle) goto error;
         handle[0] = '\0';
 
@@ -2462,7 +2462,7 @@ yaml_parser_scan_tag(yaml_parser_t *parser, yaml_token_t *token)
             /* Set the handle to '!'. */
 
             yaml_free(handle);
-            handle = yaml_malloc(2);
+            handle = YAML_MALLOC(2);
             if (!handle) goto error;
             handle[0] = '!';
             handle[1] = '\0';
@@ -3169,6 +3169,10 @@ yaml_parser_scan_flow_scalar(yaml_parser_t *parser, yaml_token_t *token,
 
                     case '"':
                         *(string.pointer++) = '"';
+                        break;
+
+                    case '/':
+                        *(string.pointer++) = '/';
                         break;
 
                     case '\'':
