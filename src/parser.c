@@ -179,8 +179,10 @@ yaml_parser_parse(yaml_parser_t *parser, yaml_event_t *event)
     /* No events after the end of the stream or error. */
 
     if (parser->stream_end_produced ||
-        parser->error ||
-        parser->state == YAML_PARSE_END_STATE) {
+        (parser->error &&
+           /* continue in nonstrict and READER_ERROR */
+           (!parser->problem_nonstrict || parser->error != YAML_READER_ERROR)) ||
+         parser->state == YAML_PARSE_END_STATE) {
         return 1;
     }
 
