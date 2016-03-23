@@ -3218,9 +3218,15 @@ yaml_parser_scan_flow_scalar(yaml_parser_t *parser, yaml_token_t *token,
                         break;
 
                     default:
-                        yaml_parser_set_scanner_error(parser, "while parsing a quoted scalar",
-                                start_mark, "found unknown escape character");
-                        goto error;
+                      yaml_parser_set_scanner_error(parser, "while parsing a quoted scalar",
+                                                    start_mark, "found unknown escape character");
+                      if (!parser->problem_nonstrict) {
+                          goto error;
+                      } else { /* all other parsers allow any quoted char, like \. in strings */
+                          parser->error = YAML_READER_ERROR; /* fake for the YAML_PARSE_END_STATE check */
+                          *(string.pointer++) = '\\';
+                          *(string.pointer++) = parser->buffer.pointer[1];
+                      }
                 }
 
                 SKIP(parser);
