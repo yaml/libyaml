@@ -11,8 +11,11 @@ set (YAML_VERSION_STRING "${YAML_VERSION_MAJOR}.${YAML_VERSION_MINOR}.${YAML_VER
 file (GLOB SRC src/*.c)
 
 include_directories (include win32)
-add_definitions (-DHAVE_CONFIG_H -DYAML_DECLARE_STATIC)
-add_library (yaml STATIC ${SRC})
+add_library (yaml SHARED ${SRC})
+set_target_properties(yaml PROPERTIES COMPILE_FLAGS "-DYAML_DECLARE_EXPORT -DHAVE_CONFIG_H")
+
+add_library (yaml_static STATIC ${SRC})
+set_target_properties(yaml_static PROPERTIES COMPILE_FLAGS "-DYAML_DECLARE_STATIC -DHAVE_CONFIG_H")
 
 add_executable (test-version tests/test-version.c)
 target_link_libraries(test-version yaml)
