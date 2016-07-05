@@ -290,7 +290,7 @@ main(int argc, char *argv[])
             assert(event_number < MAX_EVENTS);
             assert(copy_event(&(events[event_number++]), &event));
             assert(yaml_emitter_emit(&emitter, &event) || 
-                    (yaml_emitter_flush(&emitter) && print_output(argv[number], buffer, written, count)));
+                    print_output(argv[number], buffer, written, count));
             count ++;
         }
 
