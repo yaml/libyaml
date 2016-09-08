@@ -29,7 +29,16 @@ run-scanner
 
 .git
 .gitignore
-win32/vc6
-win32/vs2008
-win32/vs2003
 TAGS
+
+CMakeCache.txt
+CMakeFiles/
+cmake_install.cmake
+libyaml.a
+tests/test-reader
+tests/test-reader.log
+tests/test-reader.trs
+tests/test-suite.log
+tests/test-version
+tests/test-version.log
+tests/test-version.trs
