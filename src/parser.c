@@ -488,7 +488,7 @@ yaml_parser_parse_document_end(yaml_parser_t *parser, yaml_event_t *event)
         implicit = 0;
     }
 
-    while (!STACK_EMPTY(parser, parser->tag_directives)) {
+    while (!(STACK_EMPTY(parser, parser->tag_directives))) {
         yaml_tag_directive_t tag_directive = POP(parser, parser->tag_directives);
         yaml_free(tag_directive.handle);
         yaml_free(tag_directive.prefix);
@@ -1330,7 +1330,7 @@ yaml_parser_process_directives(yaml_parser_t *parser,
 
 error:
     yaml_free(version_directive);
-    while (!STACK_EMPTY(parser, tag_directives)) {
+    while (!(STACK_EMPTY(parser, tag_directives))) {
         yaml_tag_directive_t tag_directive = POP(parser, tag_directives);
         yaml_free(tag_directive.handle);
         yaml_free(tag_directive.prefix);

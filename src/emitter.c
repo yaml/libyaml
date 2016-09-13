@@ -706,7 +706,7 @@ yaml_emitter_emit_document_end(yaml_emitter_t *emitter,
 
         emitter->state = YAML_EMIT_DOCUMENT_START_STATE;
 
-        while (!STACK_EMPTY(emitter, emitter->tag_directives)) {
+        while (!(STACK_EMPTY(emitter, emitter->tag_directives))) {
             yaml_tag_directive_t tag_directive = POP(emitter,
                     emitter->tag_directives);
             yaml_free(tag_directive.handle);
@@ -1921,9 +1921,11 @@ yaml_emitter_write_plain_scalar(yaml_emitter_t *emitter,
     while (string.pointer != string.end)
     {
         if (IS_SPACE(string)) {
-            if (allow_breaks && !spaces
-                    && emitter->column > emitter->best_width
-                    && !IS_SPACE_AT(string, 1)) {
+            if (allow_breaks
+                && !spaces
+                && emitter->column > emitter->best_width
+                && !(IS_SPACE_AT(string, 1)))
+            {
                 if (!yaml_emitter_write_indent(emitter))
                     return 0;
                 MOVE(string);
@@ -1988,11 +1990,13 @@ yaml_emitter_write_single_quoted_scalar(yaml_emitter_t *emitter,
     while (string.pointer != string.end)
     {
         if (IS_SPACE(string)) {
-            if (allow_breaks && !spaces
-                    && emitter->column > emitter->best_width
-                    && string.pointer != string.start
-                    && string.pointer != string.end - 1
-                    && !IS_SPACE_AT(string, 1)) {
+            if (allow_breaks
+                && !spaces
+                && emitter->column > emitter->best_width
+                && string.pointer != string.start
+                && string.pointer != string.end - 1
+                && !(IS_SPACE_AT(string, 1)))
+            {
                 if (!yaml_emitter_write_indent(emitter))
                     return 0;
                 MOVE(string);
@@ -2355,7 +2359,7 @@ yaml_emitter_write_folded_scalar(yaml_emitter_t *emitter,
                     return 0;
                 leading_spaces = IS_BLANK(string);
             }
-            if (!breaks && IS_SPACE(string) && !IS_SPACE_AT(string, 1)
+            if (!breaks && IS_SPACE(string) && !(IS_SPACE_AT(string, 1))
                     && emitter->column > emitter->best_width) {
                 if (!yaml_emitter_write_indent(emitter))
                     return 0;

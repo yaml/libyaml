@@ -218,7 +218,7 @@ yaml_parser_delete(yaml_parser_t *parser)
 
     BUFFER_DEL(parser, parser->raw_buffer);
     BUFFER_DEL(parser, parser->buffer);
-    while (!QUEUE_EMPTY(parser, parser->tokens)) {
+    while (!(QUEUE_EMPTY(parser, parser->tokens))) {
         yaml_token_delete(&DEQUEUE(parser, parser->tokens));
     }
     QUEUE_DEL(parser, parser->tokens);
@@ -226,7 +226,7 @@ yaml_parser_delete(yaml_parser_t *parser)
     STACK_DEL(parser, parser->simple_keys);
     STACK_DEL(parser, parser->states);
     STACK_DEL(parser, parser->marks);
-    while (!STACK_EMPTY(parser, parser->tag_directives)) {
+    while (!(STACK_EMPTY(parser, parser->tag_directives))) {
         yaml_tag_directive_t tag_directive = POP(parser, parser->tag_directives);
         yaml_free(tag_directive.handle);
         yaml_free(tag_directive.prefix);
@@ -391,12 +391,12 @@ yaml_emitter_delete(yaml_emitter_t *emitter)
     BUFFER_DEL(emitter, emitter->buffer);
     BUFFER_DEL(emitter, emitter->raw_buffer);
     STACK_DEL(emitter, emitter->states);
-    while (!QUEUE_EMPTY(emitter, emitter->events)) {
+    while (!(QUEUE_EMPTY(emitter, emitter->events))) {
         yaml_event_delete(&DEQUEUE(emitter, emitter->events));
     }
     QUEUE_DEL(emitter, emitter->events);
     STACK_DEL(emitter, emitter->indents);
-    while (!STACK_EMPTY(empty, emitter->tag_directives)) {
+    while (!(STACK_EMPTY(empty, emitter->tag_directives))) {
         yaml_tag_directive_t tag_directive = POP(emitter, emitter->tag_directives);
         yaml_free(tag_directive.handle);
         yaml_free(tag_directive.prefix);
@@ -756,7 +756,7 @@ yaml_document_start_event_initialize(yaml_event_t *event,
 
 error:
     yaml_free(version_directive_copy);
-    while (!STACK_EMPTY(context, tag_directives_copy)) {
+    while (!(STACK_EMPTY(context, tag_directives_copy))) {
         yaml_tag_directive_t value = POP(context, tag_directives_copy);
         yaml_free(value.handle);
         yaml_free(value.prefix);
@@ -1098,7 +1098,7 @@ yaml_document_initialize(yaml_document_t *document,
 error:
     STACK_DEL(&context, nodes);
     yaml_free(version_directive_copy);
-    while (!STACK_EMPTY(&context, tag_directives_copy)) {
+    while (!(STACK_EMPTY(&context, tag_directives_copy))) {
         yaml_tag_directive_t value = POP(&context, tag_directives_copy);
         yaml_free(value.handle);
         yaml_free(value.prefix);
@@ -1126,7 +1126,7 @@ yaml_document_delete(yaml_document_t *document)
 
     assert(document);   /* Non-NULL document object is expected. */
 
-    while (!STACK_EMPTY(&context, document->nodes)) {
+    while (!(STACK_EMPTY(&context, document->nodes))) {
         yaml_node_t node = POP(&context, document->nodes);
         yaml_free(node.tag);
         switch (node.type) {

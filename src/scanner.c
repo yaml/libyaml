@@ -2183,7 +2183,7 @@ yaml_parser_scan_version_directive_value(yaml_parser_t *parser,
 
     /* Eat '.'. */
 
-    if (!CHECK(parser->buffer, '.')) {
+    if (!(CHECK(parser->buffer, '.'))) {
         return yaml_parser_set_scanner_error(parser, "while scanning a %YAML directive",
                 start_mark, "did not find expected digit or '.' character");
     }
@@ -2420,7 +2420,7 @@ yaml_parser_scan_tag(yaml_parser_t *parser, yaml_token_t *token)
 
         /* Check for '>' and eat it. */
 
-        if (!CHECK(parser->buffer, '>')) {
+        if (!(CHECK(parser->buffer, '>'))) {
             yaml_parser_set_scanner_error(parser, "while scanning a tag",
                     start_mark, "did not find the expected '>'");
             goto error;
@@ -2514,7 +2514,7 @@ yaml_parser_scan_tag_handle(yaml_parser_t *parser, int directive,
 
     if (!CACHE(parser, 1)) goto error;
 
-    if (!CHECK(parser->buffer, '!')) {
+    if (!(CHECK(parser->buffer, '!'))) {
         yaml_parser_set_scanner_error(parser, directive ?
                 "while scanning a tag directive" : "while scanning a tag",
                 start_mark, "did not find expected '!'");
