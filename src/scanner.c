@@ -2865,7 +2865,7 @@ yaml_parser_scan_block_scalar(yaml_parser_t *parser, yaml_token_t *token,
 
     if (!CACHE(parser, 1)) goto error;
 
-    while ((int)parser->mark.column == indent && !IS_Z(parser->buffer))
+    while ((int)parser->mark.column == indent && !(IS_Z(parser->buffer)))
     {
         /*
          * We are at the beginning of a non-empty line.

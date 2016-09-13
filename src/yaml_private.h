@@ -170,14 +170,14 @@ yaml_string_join(
  * Check the octet at the specified position.
  */
 
-#define CHECK_AT(string,octet,offset)                                           \
-    ((string).pointer[offset] == (yaml_char_t)(octet))
+#define CHECK_AT(string,octet,offset)                   \
+    (string).pointer[offset] == (yaml_char_t)(octet)
 
 /*
  * Check the current octet in the buffer.
  */
 
-#define CHECK(string,octet) CHECK_AT((string),(octet),0)
+#define CHECK(string,octet) (CHECK_AT((string),(octet),0))
 
 /*
  * Check if the character at the specified position is an alphabetical
