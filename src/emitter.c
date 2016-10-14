@@ -36,6 +36,20 @@
          emitter->line ++,                                                      \
          1))
 
+/* returning nothing */
+
+#define PUT_BREAK_void(emitter)                                           \
+    (emitter->line_break == YAML_CR_BREAK ?                               \
+       (*(emitter->buffer.pointer++) = (yaml_char_t) '\r') :              \
+     emitter->line_break == YAML_LN_BREAK ?                               \
+       (*(emitter->buffer.pointer++) = (yaml_char_t) '\n') :              \
+     emitter->line_break == YAML_CRLN_BREAK ?                             \
+       (*(emitter->buffer.pointer++) = (yaml_char_t) '\r',                \
+        *(emitter->buffer.pointer++) = (yaml_char_t) '\n') : 0,           \
+      emitter->column = 0,                                                \
+      emitter->line ++                                                    \
+     )
+
 /*
  * Copy a character from a string into buffer.
  */
@@ -53,7 +67,7 @@
 #define WRITE_BREAK(emitter,string)                                             \
     (FLUSH(emitter)                                                             \
      && (CHECK(string,'\n') ?                                                   \
-         (PUT_BREAK(emitter),                                                   \
+         (PUT_BREAK_void(emitter),                                              \
           string.pointer ++,                                                    \
           1) :                                                                  \
          (COPY(emitter->buffer,string),                                         \
