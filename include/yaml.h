@@ -95,7 +95,7 @@ typedef struct yaml_tag_directive_s {
 
 /** The stream encoding. */
 typedef enum yaml_encoding_e {
-    /** Let the parser choose the encoding. */
+    /** Let the parser choose the encoding. The initial state, invalid at runtime. */
     YAML_ANY_ENCODING,
     /** The default UTF-8 encoding. */
     YAML_UTF8_ENCODING,
