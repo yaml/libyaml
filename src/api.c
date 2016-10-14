@@ -1117,12 +1117,7 @@ error:
 YAML_DECLARE(void)
 yaml_document_delete(yaml_document_t *document)
 {
-    struct {
-        yaml_error_type_t error;
-    } context;
     yaml_tag_directive_t *tag_directive;
-
-    context.error = YAML_NO_ERROR;  /* Eliminate a compliler warning. */
 
     assert(document);   /* Non-NULL document object is expected. */
 
