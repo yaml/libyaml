@@ -221,7 +221,7 @@ yaml_emitter_write_indent(yaml_emitter_t *emitter);
 
 static int
 yaml_emitter_write_indicator(yaml_emitter_t *emitter,
-        char *indicator, int need_whitespace,
+        const char *indicator, int need_whitespace,
         int is_whitespace, int is_indention);
 
 static int
@@ -1777,7 +1777,7 @@ yaml_emitter_write_indent(yaml_emitter_t *emitter)
 
 static int
 yaml_emitter_write_indicator(yaml_emitter_t *emitter,
-        char *indicator, int need_whitespace,
+        const char *indicator, int need_whitespace,
         int is_whitespace, int is_indention)
 {
     size_t indicator_length;
@@ -2174,7 +2174,7 @@ yaml_emitter_write_block_scalar_hints(yaml_emitter_t *emitter,
         yaml_string_t string)
 {
     char indent_hint[2];
-    char *chomp_hint = NULL;
+    const char *chomp_hint = NULL;
 
     if (IS_SPACE(string) || IS_BREAK(string))
     {
