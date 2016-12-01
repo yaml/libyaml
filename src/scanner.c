@@ -621,6 +621,9 @@ yaml_parser_roll_indent(yaml_parser_t *parser, ptrdiff_t column,
 static int
 yaml_parser_unroll_indent(yaml_parser_t *parser, ptrdiff_t column);
 
+static int
+yaml_parser_reset_indent(yaml_parser_t *parser);
+
 /*
  * Token fetchers.
  */
@@ -750,9 +753,11 @@ yaml_parser_scan(yaml_parser_t *parser, yaml_token_t *token)
 
     /* No tokens after STREAM-END or error. */
 
-    if (parser->stream_end_produced || parser->error) {
+    if (parser->stream_end_produced
+        || (parser->error
+            /* continue in nonstrict and READER_ERROR */
+            && (!parser->problem_nonstrict || parser->error != YAML_READER_ERROR)))
         return 1;
-    }
 
     /* Ensure that the tokens queue contains enough tokens. */
 
@@ -1186,11 +1191,9 @@ yaml_parser_increase_flow_level(yaml_parser_t *parser)
 static int
 yaml_parser_decrease_flow_level(yaml_parser_t *parser)
 {
-    yaml_simple_key_t dummy_key;    /* Used to eliminate a compiler warning. */
-
     if (parser->flow_level) {
         parser->flow_level --;
-        dummy_key = POP(parser, parser->simple_keys);
+        (void)POP(parser, parser->simple_keys);
     }
 
     return 1;
@@ -1266,7 +1269,7 @@ yaml_parser_unroll_indent(yaml_parser_t *parser, ptrdiff_t column)
     if (parser->flow_level)
         return 1;
 
-    /* Loop through the indentation levels in the stack. */
+    /* Loop through the intendation levels in the stack. */
 
     while (parser->indent > column)
     {
@@ -2180,7 +2183,7 @@ yaml_parser_scan_version_directive_value(yaml_parser_t *parser,
 
     /* Eat '.'. */
 
-    if (!CHECK(parser->buffer, '.')) {
+    if (!(CHECK(parser->buffer, '.'))) {
         return yaml_parser_set_scanner_error(parser, "while scanning a %YAML directive",
                 start_mark, "did not find expected digit or '.' character");
     }
@@ -2401,7 +2404,7 @@ yaml_parser_scan_tag(yaml_parser_t *parser, yaml_token_t *token)
     {
         /* Set the handle to '' */
 
-        handle = yaml_malloc(1);
+        handle = YAML_MALLOC(1);
         if (!handle) goto error;
         handle[0] = '\0';
 
@@ -2417,7 +2420,7 @@ yaml_parser_scan_tag(yaml_parser_t *parser, yaml_token_t *token)
 
         /* Check for '>' and eat it. */
 
-        if (!CHECK(parser->buffer, '>')) {
+        if (!(CHECK(parser->buffer, '>'))) {
             yaml_parser_set_scanner_error(parser, "while scanning a tag",
                     start_mark, "did not find the expected '>'");
             goto error;
@@ -2453,7 +2456,7 @@ yaml_parser_scan_tag(yaml_parser_t *parser, yaml_token_t *token)
             /* Set the handle to '!'. */
 
             yaml_free(handle);
-            handle = yaml_malloc(2);
+            handle = YAML_MALLOC(2);
             if (!handle) goto error;
             handle[0] = '!';
             handle[1] = '\0';
@@ -2511,7 +2514,7 @@ yaml_parser_scan_tag_handle(yaml_parser_t *parser, int directive,
 
     if (!CACHE(parser, 1)) goto error;
 
-    if (!CHECK(parser->buffer, '!')) {
+    if (!(CHECK(parser->buffer, '!'))) {
         yaml_parser_set_scanner_error(parser, directive ?
                 "while scanning a tag directive" : "while scanning a tag",
                 start_mark, "did not find expected '!'");
@@ -2862,7 +2865,7 @@ yaml_parser_scan_block_scalar(yaml_parser_t *parser, yaml_token_t *token,
 
     if (!CACHE(parser, 1)) goto error;
 
-    while ((int)parser->mark.column == indent && !IS_Z(parser->buffer))
+    while ((int)parser->mark.column == indent && !(IS_Z(parser->buffer)))
     {
         /*
          * We are at the beginning of a non-empty line.
@@ -3209,9 +3212,15 @@ yaml_parser_scan_flow_scalar(yaml_parser_t *parser, yaml_token_t *token,
                         break;
 
                     default:
-                        yaml_parser_set_scanner_error(parser, "while parsing a quoted scalar",
-                                start_mark, "found unknown escape character");
-                        goto error;
+                      yaml_parser_set_scanner_error(parser, "while parsing a quoted scalar",
+                                                    start_mark, "found unknown escape character");
+                      if (!parser->problem_nonstrict) {
+                          goto error;
+                      } else { /* all other parsers allow any quoted char, like \. in strings */
+                          parser->error = YAML_READER_ERROR; /* fake for the YAML_PARSE_END_STATE check */
+                          *(string.pointer++) = '\\';
+                          *(string.pointer++) = parser->buffer.pointer[1];
+                      }
                 }
 
                 SKIP(parser);

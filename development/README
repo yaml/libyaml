@@ -1,0 +1,36 @@
+= libyaml Development
+
+Welcome!
+
+The directory contains extra content for development of libyaml. It should only
+exist on branches and should not be merged to master.
+
+All libyaml development should be done on branches. GitHub commit/push will be
+granted liberally. Stop by #yaml on irc.freenode.net.
+
+== Quick start
+
+    $ git clone https://github.com/yaml/libyaml.git
+    $ cd libyaml
+    $ ./developent/test
+
+== Testing
+
+Testing libyaml requires the pyyaml repository. The tests are all in the
+pyyamlrepository.
+
+The following script will make sure that everything is set up correctly and run
+the tests for you:
+
+    $ ./developent/test
+
+== PyYAML
+
+Note that changes to libyaml should be replicated in ../pyyaml/lib and
+../pyyaml/lib3 for Python and Python3 respectively.
+
+== NOTE
+
+There is an unsolved problem where the build system will pick up a system
+libyaml instead of the development one. For now make sure there is no system
+libyaml. Patches (very much) welcome.

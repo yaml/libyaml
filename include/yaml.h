@@ -95,7 +95,7 @@ typedef struct yaml_tag_directive_s {
 
 /** The stream encoding. */
 typedef enum yaml_encoding_e {
-    /** Let the parser choose the encoding. */
+    /** Let the parser choose the encoding. The initial state, invalid at runtime. */
     YAML_ANY_ENCODING,
     /** The default UTF-8 encoding. */
     YAML_UTF8_ENCODING,
@@ -1296,6 +1296,10 @@ typedef struct yaml_parser_s {
     /** The currently parsed document. */
     yaml_document_t *document;
 
+    /** Optionally forgive some reader errors.
+     * Make them non-fatal. */
+    int problem_nonstrict;
+
     /**
      * @}
      */
@@ -1515,6 +1519,18 @@ typedef enum yaml_emitter_state_e {
     YAML_EMIT_END_STATE
 } yaml_emitter_state_t;
 
+
+/* This is needed for C++ */
+
+typedef struct yaml_anchors_s {
+    /** The number of references. */
+    int references;
+    /** The anchor id. */
+    int anchor;
+    /** If the node has been emitted? */
+    int serialized;
+} yaml_anchors_t;
+
 /**
  * The emitter structure.
  *
@@ -1682,6 +1698,8 @@ typedef struct yaml_emitter_s {
     int indention;
     /** If an explicit document end is required? */
     int open_ended;
+    /** If a map requires a new indent (backcompat, unreadable by YAML.pm) */
+    int indentless_map;
 
     /** Anchor analysis. */
     struct {
@@ -1740,14 +1758,7 @@ typedef struct yaml_emitter_s {
     int closed;
 
     /** The information associated with the document nodes. */
-    struct {
-        /** The number of references. */
-        int references;
-        /** The anchor id. */
-        int anchor;
-        /** If the node has been emitted? */
-        int serialized;
-    } *anchors;
+    yaml_anchors_t *anchors;
 
     /** The last assigned anchor id. */
     int last_anchor_id;

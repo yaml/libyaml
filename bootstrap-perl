@@ -1,0 +1,5 @@
+#!/bin/sh
+
+exec autoreconf -fvi
+# perl adds a lot of warnings
+export CFLAGS='-Wall -Wunused-parameter -Wc++-compat'
