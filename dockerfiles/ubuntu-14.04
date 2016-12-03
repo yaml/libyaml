@@ -1,0 +1,21 @@
+# vim: ft=dockerfile
+FROM ubuntu:14.04
+
+RUN apt-get update && \
+    apt-get install -y \
+        autoconf \
+        build-essential \
+        git \
+        libtool \
+        vim && \
+    rm -rf /var/lib/apt/lists/*
+
+RUN mkdir /libyaml
+COPY . /libyaml/
+WORKDIR /libyaml
+
+RUN ./bootstrap
+RUN ./configure
+RUN make
+RUN make install
+CMD ["bash"]
