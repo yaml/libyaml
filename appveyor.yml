@@ -1,0 +1,12 @@
+version: 0.1.7.{build}
+
+image:
+- Visual Studio 2015
+- Visual Studio 2013
+
+
+build_script:
+- cmake --build . --clean-first
+
+test_script:
+- make test
