@@ -1,0 +1,12 @@
+version: 0.1.7.{build}
+
+image:
+- Visual Studio 2015
+- Visual Studio 2013
+
+build_script:
+- cmake .
+- cmake --build . --config release --clean-first
+- ctest -C release
+- C:\cygwin\bin\sh -c "export PATH=/usr/bin:/usr/local/bin:$PATH && ./bootstrap && ./configure && make && make test && make distclean"
+- C:\cygwin64\bin\sh -c "export PATH=/usr/bin:/usr/local/bin:$PATH && ./bootstrap && ./configure && make && make test && make distclean"

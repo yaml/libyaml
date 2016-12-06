@@ -8,3 +8,8 @@ script:
 - ./bootstrap
 - ./configure
 - make test
+- make distclean
+- cmake .
+- make
+- make test
+- make clean

@@ -14,3 +14,12 @@ include_directories (include win32)
 add_definitions (-DHAVE_CONFIG_H -DYAML_DECLARE_STATIC)
 add_library (yaml STATIC ${SRC})
 
+add_executable (test-version tests/test-version.c)
+target_link_libraries(test-version yaml)
+add_test(NAME version COMMAND test-version)
+
+add_executable (test-reader tests/test-reader.c)
+target_link_libraries(test-reader yaml)
+add_test(NAME reader COMMAND test-reader)
+
+enable_testing()
