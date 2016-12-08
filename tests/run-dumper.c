@@ -180,8 +180,8 @@ int print_output(char *name, unsigned char *buffer, size_t size, int count)
         if (feof(file)) break;
     }
     fclose(file);
-    printf("#### (length: %d)\n", total_size);
-    printf("OUTPUT:\n%s#### (length: %d)\n", buffer, size);
+    printf("#### (length: %zd)\n", total_size);
+    printf("OUTPUT:\n%s#### (length: %zd)\n", buffer, size);
     return 0;
 }
 
@@ -304,7 +304,7 @@ main(int argc, char *argv[])
             yaml_document_delete(documents+k);
         }
 
-        printf("PASSED (length: %d)\n", written);
+        printf("PASSED (length: %zd)\n", written);
         print_output(argv[number], buffer, written, -1);
     }
 

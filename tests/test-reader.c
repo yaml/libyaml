@@ -144,11 +144,11 @@ int check_utf8_sequences(void)
             }
             else if (parser.error == YAML_READER_ERROR) {
                 if (parser.problem_value != -1) {
-                    printf("(reader error: %s: #%X at %d)\n",
+                    printf("(reader error: %s: #%X at %zu)\n",
                             parser.problem, parser.problem_value, parser.problem_offset);
                 }
                 else {
-                    printf("(reader error: %s at %d)\n",
+                    printf("(reader error: %s at %zu)\n",
                             parser.problem, parser.problem_offset);
                 }
             }
@@ -180,12 +180,12 @@ int check_boms(void)
         yaml_parser_set_input_string(&parser, (unsigned char *)start, end-start);
         result = yaml_parser_update_buffer(&parser, end-start);
         if (!result) {
-            printf("- (reader error: %s at %d)\n", parser.problem, parser.problem_offset);
+            printf("- (reader error: %s at %zu)\n", parser.problem, parser.problem_offset);
             failed++;
         }
         else {
             if (parser.unread != check) {
-                printf("- (length=%d while expected length=%d)\n", parser.unread, check);
+                printf("- (length=%zu while expected length=%d)\n", parser.unread, check);
                 failed++;
             }
             else if (memcmp(parser.buffer.start, bom_original, check) != 0) {
@@ -232,7 +232,7 @@ int check_long_utf8(void)
     for (k = 0; k < LONG; k++) {
         if (!parser.unread) {
             if (!yaml_parser_update_buffer(&parser, 1)) {
-                printf("\treader error: %s at %d\n", parser.problem, parser.problem_offset);
+                printf("\treader error: %s at %zu\n", parser.problem, parser.problem_offset);
                 failed = 1;
                 break;
             }
@@ -262,11 +262,11 @@ int check_long_utf8(void)
     }
     if (!failed) {
         if (!yaml_parser_update_buffer(&parser, 1)) {
-            printf("\treader error: %s at %d\n", parser.problem, parser.problem_offset);
+            printf("\treader error: %s at %zu\n", parser.problem, parser.problem_offset);
             failed = 1;
         }
         else if (parser.buffer.pointer[0] != '\0') {
-            printf("\texpected NUL, found %X (eof=%d, unread=%d)\n", (int)parser.buffer.pointer[0], parser.eof, parser.unread);
+            printf("\texpected NUL, found %X (eof=%d, unread=%zu)\n", (int)parser.buffer.pointer[0], parser.eof, parser.unread);
             failed = 1;
         }
     }
@@ -303,7 +303,7 @@ int check_long_utf16(void)
     for (k = 0; k < LONG; k++) {
         if (!parser.unread) {
             if (!yaml_parser_update_buffer(&parser, 1)) {
-                printf("\treader error: %s at %d\n", parser.problem, parser.problem_offset);
+                printf("\treader error: %s at %zu\n", parser.problem, parser.problem_offset);
                 failed = 1;
                 break;
             }
@@ -333,11 +333,11 @@ int check_long_utf16(void)
     }
     if (!failed) {
         if (!yaml_parser_update_buffer(&parser, 1)) {
-            printf("\treader error: %s at %d\n", parser.problem, parser.problem_offset);
+            printf("\treader error: %s at %zu\n", parser.problem, parser.problem_offset);
             failed = 1;
         }
         else if (parser.buffer.pointer[0] != '\0') {
-            printf("\texpected NUL, found %X (eof=%d, unread=%d)\n", (int)parser.buffer.pointer[0], parser.eof, parser.unread);
+            printf("\texpected NUL, found %X (eof=%d, unread=%zu)\n", (int)parser.buffer.pointer[0], parser.eof, parser.unread);
             failed = 1;
         }
     }
