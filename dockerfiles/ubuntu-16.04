@@ -1,5 +1,6 @@
 # vim: ft=dockerfile
 FROM ubuntu:16.04
+MAINTAINER Ian Cordasco <graffatcolmingov@gmail.com>
 
 RUN apt-get update && \
     apt-get install -y \
