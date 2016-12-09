@@ -18,7 +18,7 @@ Post your questions and opinions to the YAML-Core mailing list:
 'http://lists.sourceforge.net/lists/listinfo/yaml-core'.
 
 Submit bug reports and feature requests to the LibYAML bug tracker:
-'https://bitbucket.org/xi/libyaml/issues/new'.
+'https://github.com/yaml/libyaml/issues/new'.
 
 LibYAML is written by Kirill Simonov <xi@resolvent.net>.  It is released
 under the MIT license.  See the file LICENSE for more details.
