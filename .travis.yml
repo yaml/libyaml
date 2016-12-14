@@ -11,7 +11,7 @@ compiler:
 script:
 - ./bootstrap
 - ./configure
-- make test
+- make test-all
 - make distclean
 - cmake .
 - make
