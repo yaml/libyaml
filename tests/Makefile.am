@@ -1,4 +1,4 @@
-AM_CPPFLAGS = -I$(top_srcdir)/include
+AM_CPPFLAGS = -I$(top_srcdir)/include -Wall
 #AM_CFLAGS = -Wno-pointer-sign
 LDADD = $(top_builddir)/src/libyaml.la
 TESTS = test-version test-reader
