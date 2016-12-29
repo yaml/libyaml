@@ -8,12 +8,4 @@ compiler:
 - clang
 - gcc
 
-script:
-- ./bootstrap
-- ./configure
-- make test-all
-- make distclean
-- cmake .
-- make
-- make test
-- make clean
+script: tests/run-tests.sh
