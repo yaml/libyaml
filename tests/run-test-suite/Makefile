@@ -23,7 +23,8 @@ data:
 	git clone $(TEST_SUITE_URL) $@ --branch=$@
 
 %/libyaml-parser %/libyaml-emitter: %
-	(cd $<; make build)
+	(cd $<; make clean build)
+	(cd $<; make clean build)
 
 libyaml-parser-emitter:
 	git clone $(GITHUB_ORG_URI)/$@ $@
