@@ -13,19 +13,18 @@ maintainer-clean-local:
 	-find ${builddir} -name Makefile.in -exec rm -f '{}' ';'
 
 distclean-local:
-	-rm -fr libyaml-test
+	-make -C tests/run-test-suite clean
 
 .PHONY: bootstrap
 bootstrap: maintainer-clean
 	./bootstrap
+	./configure
+	make
 
 test: all
 	make -C tests check-TESTS
 
-test-suite: libyaml-test
-	(export LIBYAML_DIR=$$PWD; make -C $< test)
-
-libyaml-test:
-	git clone https://github.com/yaml/$@
+test-suite:
+	(export LIBYAML_DIR=$$PWD; make -C tests/run-test-suite test)
 
 test-all: test test-suite

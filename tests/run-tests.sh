@@ -3,28 +3,24 @@
 set -e
 
 main() {
-  bootstrap
+  clean
 
+  ./bootstrap
+  ./configure
   make test-all
 
   clean
 
   cmake .
-
   make
   make test
-}
 
-bootstrap() {
   clean
-
-  ./bootstrap
-  ./configure
 }
 
 clean() {
   git clean -d -x -f
-  rm -fr libyaml-test
+  rm -fr tests/run-test-suite/data
 }
 
 main "$@"

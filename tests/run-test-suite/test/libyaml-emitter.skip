@@ -1,0 +1,31 @@
+27NA # %YAML 1.2
+2JQS # Null key emission not supported in libyaml
+2SXE # Colon in anchor
+2XXW # Emits space after colon for null mapping value
+35KP # Not adding tags to multiple docs
+4ABK # Null key
+5TYM # No libyaml-emitter %TAG support yet
+5WE3 # Emits space after colon for null mapping value
+6BCT # Tab after dash in sequence. XXX?
+6CK3 # No libyaml-emitter %TAG support yet
+6LVF # Unknown directive
+6M2F # Null key
+6ZKB # %YAML 1.2
+7W2P # Emits space after colon for null mapping value
+8KHE # Emits space after colon for null mapping value
+8MK2 # Emits '!<%21> a' for '! a'
+C2DT # Emits space after colon for null mapping value
+DFF7 # Null key
+FH7J # Null key && Emits space after colon for null mapping value
+FRK4 # Null key
+JTV5 # Emits space after colon for null mapping value
+KZN9 # Null key
+LE5A # Emits space after colon for null mapping value
+NHX8 # Null key
+PW8X # Null key && Emits space after colon for null mapping value
+S3PD # Null key
+S4JQ # Emits '!<%21> a' for '! a'
+UT92 # Emits space after --- for null document
+W42U # Emits space after - for null sequence entry
+W4TN # Emits space after --- for null document
+WZ62 # Null key value

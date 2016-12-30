@@ -1,0 +1,22 @@
+27NA # %YAML 1.2
+2JQS # Null keys
+2SXE # Colon in anchor
+4ABK # Null key
+6BCT # Test probably bad. tab after dash in sequence
+6LVF # Unknown directive
+6M2F # Null key
+6ZKB # %YAML 1.2
+A2M4 # Tab after dash in sequence. XXX?
+BEC7 # %YAML 1.3
+DBG4 # Colon in flow scalar
+FRK4 # XXX Why is explicit key in flow?
+KZN9 # Null key
+M7A3 # libyaml wants explicit --- for docs after ...
+N782 # --- and ... as flow values
+NHX8 # Null key
+R4YG # Tab char in possible indentation in folded scalar
+RTP8 # %YAML 1.2
+S3PD # Null key
+UT92 # Multiline plain key in flow does not work
+W4TN # %YAML 1.2
+WZ62 # Tagged empty values in flow mapping do not work
