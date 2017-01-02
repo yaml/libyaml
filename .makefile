@@ -14,6 +14,11 @@
 # bootstrapping tasks need to get a Makefile first, then we use the Makefile to
 # make our target.
 
+# Remind user when they are using GNUmakefile:
+ifeq ($(lastword $(MAKEFILE_LIST)),GNUmakefile)
+    $(info *** NOTE: GNUmakefile in use. ***)
+endif
+
 MAKE_TARGETS := \
 	all \
 	all-am \
