@@ -45,34 +45,60 @@ int main(int argc, char *argv[])
         int implicit;
 
         if (strncmp(line, "+STR", 4) == 0) {
-            ok = yaml_stream_start_event_initialize(&event, YAML_UTF8_ENCODING);
+            ok = yaml_stream_start_event_initialize(
+                &event,
+                YAML_UTF8_ENCODING
+            );
         }
         else if (strncmp(line, "-STR", 4) == 0) {
-            ok = yaml_stream_end_event_initialize(&event);
+            ok = yaml_stream_end_event_initialize(
+                &event
+            );
         }
         else if (strncmp(line, "+DOC", 4) == 0) {
             implicit = strncmp(line, "+DOC ---", 8) != 0;
-            ok = yaml_document_start_event_initialize(&event, NULL, NULL, NULL, implicit);
+            ok = yaml_document_start_event_initialize(
+                &event,
+                NULL,
+                NULL,
+                NULL,
+                implicit
+            );
         }
         else if (strncmp(line, "-DOC", 4) == 0) {
             implicit = strncmp(line, "-DOC ...", 8) != 0;
-            ok = yaml_document_end_event_initialize(&event, implicit);
+            ok = yaml_document_end_event_initialize(
+                &event,
+                implicit
+            );
         }
         else if (strncmp(line, "+MAP", 4) == 0) {
-            ok = yaml_mapping_start_event_initialize(&event, (yaml_char_t *)
-                                                     get_anchor('&', line, anchor), (yaml_char_t *)
-                                                     get_tag(line, tag), 0, YAML_BLOCK_MAPPING_STYLE);
+            ok = yaml_mapping_start_event_initialize(
+                &event,
+                (yaml_char_t *) get_anchor('&', line, anchor),
+                (yaml_char_t *) get_tag(line, tag),
+                0,
+                YAML_BLOCK_MAPPING_STYLE
+            );
         }
         else if (strncmp(line, "-MAP", 4) == 0) {
-            ok = yaml_mapping_end_event_initialize(&event);
+            ok = yaml_mapping_end_event_initialize(
+                &event
+            );
         }
         else if (strncmp(line, "+SEQ", 4) == 0) {
-            ok = yaml_sequence_start_event_initialize(&event, (yaml_char_t *)
-                                                      get_anchor('&', line, anchor), (yaml_char_t *)
-                                                      get_tag(line, tag), 0, YAML_BLOCK_SEQUENCE_STYLE);
+            ok = yaml_sequence_start_event_initialize(
+                &event,
+                (yaml_char_t *) get_anchor('&', line, anchor),
+                (yaml_char_t *) get_tag(line, tag),
+                0,
+                YAML_BLOCK_SEQUENCE_STYLE
+            );
         }
         else if (strncmp(line, "-SEQ", 4) == 0) {
-            ok = yaml_sequence_end_event_initialize(&event);
+            ok = yaml_sequence_end_event_initialize(
+                &event
+            );
         }
         else if (strncmp(line, "=VAL", 4) == 0) {
             char value[1024];
@@ -81,13 +107,22 @@ int main(int argc, char *argv[])
             get_value(line, value, &style);
             implicit = (get_tag(line, tag) == NULL);
 
-            ok = yaml_scalar_event_initialize(&event, (yaml_char_t *)
-                                              get_anchor('&', line, anchor), (yaml_char_t *) get_tag(line, tag), (yaml_char_t *) value, -1, implicit, implicit, style);
+            ok = yaml_scalar_event_initialize(
+                &event,
+                (yaml_char_t *) get_anchor('&', line, anchor),
+                (yaml_char_t *) get_tag(line, tag),
+                (yaml_char_t *) value,
+                -1,
+                implicit,
+                implicit,
+                style
+            );
         }
         else if (strncmp(line, "=ALI", 4) == 0) {
-            ok = yaml_alias_event_initialize(&event, (yaml_char_t *)
-                                             get_anchor('*', line, anchor)
-                );
+            ok = yaml_alias_event_initialize(
+                &event,
+                (yaml_char_t *) get_anchor('*', line, anchor)
+            );
         }
         else {
             fprintf(stderr, "Unknown event: '%s'\n", line);
