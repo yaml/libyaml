@@ -11,7 +11,7 @@ BEC7 # %YAML 1.3
 DBG4 # Colon in flow scalar
 FRK4 # XXX Why is explicit key in flow?
 KZN9 # Null key
-M7A3 # libyaml wants explicit --- for docs after ...
+M7A3 # No --- after ...
 N782 # --- and ... as flow values
 NHX8 # Null key
 R4YG # Tab char in possible indentation in folded scalar
