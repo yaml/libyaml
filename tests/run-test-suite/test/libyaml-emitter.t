@@ -5,7 +5,7 @@ set -e
 if [[ $# -gt 0 ]]; then
   ids=("$@")
 else
-  ids=(`find data | grep '/===$' | cut -d/ -f2 | sort`)
+  ids=($(cut -d: -f1 < test/libyaml-emitter.list))
 fi
 
 # Some environments like on OS X, the shell resets the following vars, so we
@@ -18,10 +18,6 @@ for id in "${ids[@]}"; do
   dir="data/$id"
   label="$id: $(< $dir/===)"
   [[ -e "$dir/in.yaml" ]] || continue
-  if grep "$id" test/libyaml-emitter.skip >/dev/null; then
-    echo "ok $((++count)) # SKIP $label"
-    continue
-  fi
   want="$dir/out.yaml"
   [[ -e $want ]] || want="$dir/in.yaml"
   ./src/libyaml-emitter "$dir/test.event" > /tmp/test.out || {

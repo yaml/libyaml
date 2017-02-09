@@ -5,7 +5,7 @@ set -e
 if [[ $# -gt 0 ]]; then
   ids=("$@")
 else
-  ids=(`find data | grep '/===$' | cut -d/ -f2 | sort`)
+  ids=($(cut -d: -f1 < test/libyaml-parser.list))
 fi
 
 count=0
@@ -13,10 +13,6 @@ for id in "${ids[@]}"; do
   dir="data/$id"
   label="$id: $(< $dir/===)"
   [[ -e "$dir/in.yaml" ]] || continue
-  if grep "$id" test/libyaml-parser.skip >/dev/null; then
-    echo "ok $((++count)) # SKIP $label"
-    continue
-  fi
   ./src/libyaml-parser "$dir/in.yaml" > /tmp/test.out || {
     (
       cat "$dir/in.yaml"
