@@ -1,0 +1,15 @@
+# - Config file for the FooBar package
+# It defines the following variables
+#  YAML_INCLUDE_DIRS        - include directories for yaml
+# provides yaml and yaml_static as imported targets
+
+ 
+# Compute paths
+get_filename_component(YAML_CMAKE_DIR "${CMAKE_CURRENT_LIST_FILE}" PATH)
+set(YAML_INCLUDE_DIRS "${YAML_CMAKE_DIR}/@REL_INCLUDE_DIR@")
+get_filename_component(YAML_INCLUDE_DIRS "${YAML_INCLUDE_DIRS}" REALPATH)
+ 
+# Our library dependencies (contains definitions for IMPORTED targets)
+if(NOT TARGET yaml AND NOT TARGET yaml_static)
+  include("${YAML_CMAKE_DIR}/yaml-targets.cmake")
+endif()
