@@ -5,8 +5,21 @@ image:
 - Visual Studio 2013
 
 build_script:
+
+#
+# CMake based in-source build and tests using Visual Studio
+#
+
+# Use 32-bit default generator ("Visual Studio 12 2013" or "Visual Studio 14 2015")
 - cmake .
 - cmake --build . --config release --clean-first
 - ctest -C release
+
+#
+# Autoconf based in-source build and tests under Cygwin using gcc
+#
+
+# 32-bit
 - C:\cygwin\bin\sh -c "export PATH=/usr/bin:/usr/local/bin:$PATH && ./bootstrap && ./configure && make && make test && make distclean"
+# 64-bit
 - C:\cygwin64\bin\sh -c "export PATH=/usr/bin:/usr/local/bin:$PATH && ./bootstrap && ./configure && make && make test && make distclean"
