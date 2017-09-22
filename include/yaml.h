@@ -1764,6 +1764,14 @@ typedef struct yaml_emitter_s {
 } yaml_emitter_t;
 
 /**
+ * Access to user defined malloc/realloc/free functions.
+ */
+
+extern void *(*yaml_user_malloc)(size_t size);
+extern void *(*yaml_user_realloc)(void *ptr, size_t size);
+extern void (*yaml_user_free)(void *ptr);
+
+/**
  * Initialize an emitter.
  *
  * This function creates a new emitter object.  An application is responsible
