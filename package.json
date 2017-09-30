@@ -1,0 +1,26 @@
+{
+  "name": "LibYAML",
+  "version": "0.1.8",
+  "description": "A C library for parsing and emitting YAML.",
+  "repo": "yaml/libyaml",
+  "license": "MIT",
+  "install": "./configure && make && make install",
+  "src": [
+    "include/yaml.h",
+    "src/api.c",
+    "src/dumper.c",
+    "src/emitter.c",
+    "src/loader.c",
+    "src/parser.c",
+    "src/reader.c",
+    "src/scanner.c",
+    "src/writer.c",
+    "src/yaml_private.h"
+  ],
+  "keywords": [
+    "yaml",
+    "library",
+    "yaml-parser",
+    "yaml-emmiter"
+  ]
+}

@@ -3,7 +3,7 @@
 # Define the package version numbers and the bug reporting link.
 m4_define([YAML_MAJOR], 0)
 m4_define([YAML_MINOR], 1)
-m4_define([YAML_PATCH], 7)
+m4_define([YAML_PATCH], 8)
 m4_define([YAML_BUGS], [https://github.com/yaml/libyaml/issues/new])
 
 # Define the libtool version numbers; check the Autobook, Section 11.4.
