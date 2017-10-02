@@ -12,7 +12,7 @@ $ make
 # make install
 
 For more information, check the LibYAML homepage:
-'http://pyyaml.org/wiki/LibYAML'.
+'https://github.com/yaml/libyaml'.
 
 Post your questions and opinions to the YAML-Core mailing list:
 'http://lists.sourceforge.net/lists/listinfo/yaml-core'.
