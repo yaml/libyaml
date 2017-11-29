@@ -14,7 +14,6 @@
 5KJE: Spec Example 7.13. Flow Sequence
 5NYZ: Spec Example 6.9. Separated Comment
 65WH: Single Entry Block Sequence
-6FWR: Block Scalar Keep
 6HB6: Spec Example 6.1. Indentation Spaces
 6JQW: Spec Example 2.13. In literals, newlines are preserved
 6JWB: Tags for Block Objects
@@ -55,7 +54,6 @@ D9TU: Single Pair Block Mapping
 DBG4: Spec Example 7.10. Plain Characters
 DHP8: Flow Sequence
 DWX9: Spec Example 8.8. Literal Content
-E76Z: Aliases in Implicit Block Mapping
 EHF6: Tags for Flow Objects
 F2C7: Anchors and Tags
 F8F9: Spec Example 8.5. Chomping Trailing Lines
@@ -68,7 +66,6 @@ H2RW: Blank lines
 HMK4: Spec Example 2.16. Indentation determines scope
 HMQ5: Spec Example 6.23. Node Properties
 HS5T: Spec Example 7.12. Plain Lines
-J3BT: Spec Example 5.12. Tabs and Spaces
 J5UC: Multiple Pair Block Mapping
 J7PZ: Spec Example 2.26. Ordered Mappings
 J7VC: Empty Lines Between Mapping Elements
@@ -87,12 +84,10 @@ LQZ7: Spec Example 7.4. Double Quoted Implicit Keys
 M29M: Literal Block Scalar
 M5C3: Spec Example 8.21. Block Scalar Nodes
 M5DY: Spec Example 2.11. Mapping between Sequences
-M9B4: Spec Example 8.7. Literal Scalar
 MJS9: Spec Example 6.7. Block Folding
 MXS3: Flow Mapping in Block Sequence
 MYW6: Block Scalar Strip
 MZX3: Non-Specific Tags on Scalars
-N782: Fake markers in flow style
 NP9H: Spec Example 7.5. Double Quoted Line Breaks
 P2AD: Spec Example 8.1. Block Scalar Header
 P76L: Spec Example 6.19. Secondary Tag Handle
