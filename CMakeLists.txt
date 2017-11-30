@@ -1,5 +1,10 @@
 
 cmake_minimum_required(VERSION 3.0)
+
+if (NOT DEFINED CMAKE_BUILD_TYPE)
+  set (CMAKE_BUILD_TYPE Release CACHE STRING "Build type")
+endif ()
+
 project (yaml C)
 
 set (YAML_VERSION_MAJOR 0)
