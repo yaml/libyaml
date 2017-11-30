@@ -10,6 +10,16 @@ set (YAML_VERSION_STRING "${YAML_VERSION_MAJOR}.${YAML_VERSION_MINOR}.${YAML_VER
 option(BUILD_SHARED_LIBS "Build libyaml as a shared library" OFF)
 
 #
+# Update CMake module path
+#
+list(INSERT CMAKE_MODULE_PATH 0 ${yaml_SOURCE_DIR}/cmake)
+
+#
+# Initialize Build Type
+#
+include(yamlInitializeBuildType)
+
+#
 # Output directories for a build tree
 #
 if(NOT DEFINED CMAKE_RUNTIME_OUTPUT_DIRECTORY)
