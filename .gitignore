@@ -60,4 +60,3 @@ tests/run-test-suite/src/libyaml-parser
 /tests/test-version
 /tests/test-version.log
 /tests/test-version.trs
-/win32/Makefile
