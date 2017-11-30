@@ -21,6 +21,7 @@ clean:
 
 data:
 	git clone $(TEST_SUITE_URL) $@ --branch=$@
+	cd $@ && git reset --hard 44093f5e300695a6474999476e7e05c3451e1e49
 
 %/libyaml-parser %/libyaml-emitter: %
 	(cd $<; make clean build)
