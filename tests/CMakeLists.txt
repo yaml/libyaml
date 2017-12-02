@@ -11,8 +11,10 @@ foreach(name IN ITEMS
   example-reformatter-alt
   run-dumper
   run-emitter
+  run-emitter-test-suite
   run-loader
   run-parser
+  run-parser-test-suite
   run-scanner
   test-reader
   test-version

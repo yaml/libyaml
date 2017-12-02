@@ -25,6 +25,6 @@ test: all
 	make -C tests check-TESTS
 
 test-suite:
-	(export LIBYAML_DIR=$$PWD; make -C tests/run-test-suite test)
+	make -C tests/run-test-suite test
 
 test-all: test test-suite

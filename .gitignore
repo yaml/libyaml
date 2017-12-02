@@ -32,8 +32,10 @@ Makefile.in
 /libyaml.a
 /run-dumper
 /run-emitter
+/run-emitter-test-suite
 /run-loader
 /run-parser
+/run-parser-test-suite
 /run-scanner
 /src/Makefile
 /stamp-h1
@@ -46,8 +48,10 @@ Makefile.in
 /tests/example-reformatter-alt
 /tests/run-dumper
 /tests/run-emitter
+/tests/run-emitter-test-suite
 /tests/run-loader
 /tests/run-parser
+/tests/run-parser-test-suite
 /tests/run-scanner
 /tests/run-test-suite/data
 tests/run-test-suite/src/libyaml/
