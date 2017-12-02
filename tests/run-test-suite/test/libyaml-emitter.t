@@ -20,7 +20,7 @@ for id in "${ids[@]}"; do
   [[ -e "$dir/in.yaml" ]] || continue
   want="$dir/out.yaml"
   [[ -e $want ]] || want="$dir/in.yaml"
-  ./src/libyaml-emitter "$dir/test.event" > /tmp/test.out || {
+  ../../tests/run-emitter-test-suite "$dir/test.event" > /tmp/test.out || {
     (
       cat "$dir/test.event"
       cat "$want"
