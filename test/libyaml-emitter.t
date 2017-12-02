@@ -8,11 +8,6 @@ else
   ids=($(cut -d: -f1 < test/libyaml-emitter.list))
 fi
 
-# Some environments like on OS X, the shell resets the following vars, so we
-# work around it like so:
-export LD_LIBRARY_PATH="${MY_LD_LIBRARY_PATH:?}"
-export DYLD_LIBRARY_PATH="${MY_LD_LIBRARY_PATH:?}"
-
 count=0
 for id in "${ids[@]}"; do
   dir="data/$id"
@@ -20,7 +15,7 @@ for id in "${ids[@]}"; do
   [[ -e "$dir/in.yaml" ]] || continue
   want="$dir/out.yaml"
   [[ -e $want ]] || want="$dir/in.yaml"
-  ./src/libyaml-emitter "$dir/test.event" > /tmp/test.out || {
+  ../../tests/run-emitter-test-suite "$dir/test.event" > /tmp/test.out || {
     (
       cat "$dir/test.event"
       cat "$want"

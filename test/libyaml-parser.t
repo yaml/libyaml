@@ -13,7 +13,7 @@ for id in "${ids[@]}"; do
   dir="data/$id"
   label="$id: $(< $dir/===)"
   [[ -e "$dir/in.yaml" ]] || continue
-  ./src/libyaml-parser "$dir/in.yaml" > /tmp/test.out || {
+  ../../tests/run-parser-test-suite "$dir/in.yaml" > /tmp/test.out || {
     (
       cat "$dir/in.yaml"
       cat "$dir/test.event"
