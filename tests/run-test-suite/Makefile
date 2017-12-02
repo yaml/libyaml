@@ -1,7 +1,6 @@
 .PHONY: test
 GITHUB_ORG_URI := https://github.com/yaml
 TEST_SUITE_URL := $(GITHUB_ORG_URI)/yaml-test-suite
-LIBYAML_DIR ?= $(PWD)/libyaml-parser-emitter/libyaml
 
 default: help
 
