@@ -10,6 +10,13 @@
 
 #ifndef _MSC_VER
 #include <stdint.h>
+#ifndef PTRDIFF_MAX /* gcc on HP-UX sucks */
+#ifdef _LP64
+#define PTRDIFF_MAX 0x7FFFFFFFFFFFFFFFLL
+#else
+#define PTRDIFF_MAX 0x7FFFFFFFL
+#endif
+#endif
 #else
 #ifdef _WIN64
 #define PTRDIFF_MAX _I64_MAX
