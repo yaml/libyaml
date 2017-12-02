@@ -10,10 +10,8 @@ help:
 	@echo 'clean - Remove generated files'
 	@echo 'help  - Show help'
 
-# Note: Some environments like on OS X, the
-# shell resets the {DY,}LD_LIBRARY_PATH vars, so we work around it like so:
 test: data
-	(export MY_LD_LIBRARY_PATH=$(LIBYAML_DIR)/src/.libs; prove -lv test)
+	prove -lv test
 
 clean:
 	rm -fr data
