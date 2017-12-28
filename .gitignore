@@ -53,10 +53,7 @@ Makefile.in
 /tests/run-parser
 /tests/run-parser-test-suite
 /tests/run-scanner
-/tests/run-test-suite/data
-tests/run-test-suite/src/libyaml/
-tests/run-test-suite/src/libyaml-emitter
-tests/run-test-suite/src/libyaml-parser
+/tests/run-test-suite/
 /tests/test-reader
 /tests/test-reader.log
 /tests/test-reader.trs

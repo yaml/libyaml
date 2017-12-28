@@ -58,5 +58,6 @@ indent:
 	$(INDENT) $(SOURCE_FILES)
 
 distclean purge:
-	rm -fr tests/run-test-suite/data
 	git clean -dxf -e GNUmakefile
+	rm -fr tests/run-test-suite
+	git worktree prune
