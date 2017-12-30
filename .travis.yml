@@ -1,20 +1,22 @@
+language: c
 
 matrix:
   include:
-    - os: linux
-      sudo: required
-      compiler: gcc
-    - os: linux
-      sudo: required
-      compiler: clang
-    - os: osx
-      compiler: gcc
-    - os: osx
-      compiler: clang
-
-language: c
+  - os: linux
+    compiler: gcc
+    sudo: required
+  - os: linux
+    compiler: clang
+    sudo: required
+  - os: osx
+    compiler: gcc
+  - os: osx
+    compiler: clang
 
 before_install:
-- if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then pip install --user scikit-ci-addons==0.15.0; ci_addons travis/install_cmake 3.2.0; fi
+- if [[ "$TRAVIS_OS_NAME" == "linux" ]];
+    then pip install --user scikit-ci-addons==0.15.0;
+    ci_addons travis/install_cmake 3.2.0;
+  fi
 
 script: tests/run-tests.sh
