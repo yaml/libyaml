@@ -1,0 +1,53 @@
+236B: Invalid value after mapping
+2CMS: Invalid mapping in plain multiline
+3HFZ: Invalid content after document end marker
+4H7K: Flow sequence with invalid extra closing bracket
+4HVU: Wrong indendation in Sequence
+4JVG: Scalar value with two anchors
+55WF: Invalid escape in double quoted string
+5LLU: Block scalar with wrong indented line after spaces only
+5TRB: Invalid document-start marker in doublequoted tring
+5U3A: Sequence on same Line as Mapping Key
+6JTT: Flow sequence without closing bracket
+6S55: Invalid scalar at the end of sequence
+7LBH: Multiline double quoted implicit keys
+7MNF: Missing colon
+8XDJ: Comment in plain multiline value
+9CWY: Invalid scalar at the end of mapping
+9KBC: Mapping starting at --- line
+9MAG: Flow sequence with invalid comma at the beginning
+B63P: Directive without document
+BD7L: Invalid mapping after sequence
+BF9H: Trailing comment in multiline plain scalar
+BS4K: Comment between plain scalar lines
+C2SP: Flow Mapping Key on two lines
+CML9: Missing comma in flow
+CQ3W: Double quoted string without closing quote
+CTN5: Flow sequence with invalid extra comma
+D49Q: Multiline single quoted implicit keys
+DMG6: Wrong indendation in Map
+EB22: Missing document-end marker before directive
+EW3V: Wrong indendation in mapping
+G7JE: Multiline implicit keys
+G9HC: Invalid anchor in zero indented sequence
+GDY7: Comment that looks like a mapping key
+GT5M: Node anchor in sequence
+H7J7: Node anchor not indented
+HRE5: Double quoted scalar with escaped single quote
+HU3P: Invalid Mapping in plain scalar
+JY7Z: Trailing content that looks like a mapping
+LHL4: Invalid tag
+N4JP: Bad indentation in mapping
+N782: Invalid document markers in flow style
+Q4CL: Trailing content after quoted value
+QLJ7: Tag shorthand used in documents but only defined in the first
+RXY3: Invalid document-end marker in single quoted string
+SR86: Anchor plus Alias
+SU74: Anchor and alias as mapping key
+SY6V: Anchor before sequence entry on same line
+TD5N: Invalid scalar after sequence
+U44R: Bad indentation in mapping
+W9L4: Literal block scalar with more spaces in first line
+ZCZ6: Invalid mapping in plain single line value
+ZL4Z: Invalid nested mapping
+ZVH3: Wrong indented sequence item
