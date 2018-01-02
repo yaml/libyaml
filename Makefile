@@ -1,6 +1,10 @@
 .PHONY: test
-GITHUB_ORG_URI := https://github.com/yaml
-TEST_SUITE_URL := $(GITHUB_ORG_URI)/yaml-test-suite
+
+PINNED_COMMITS := $(shell ./bin/pin)
+
+$(eval MASTER_COMMIT = $(word 1, $(PINNED_COMMITS)))
+$(eval LIST_COMMIT = $(word 2, $(PINNED_COMMITS)))
+$(eval DATA_COMMIT = $(word 3, $(PINNED_COMMITS)))
 
 default: help
 
@@ -9,12 +13,18 @@ help:
 	@echo 'clean - Remove generated files'
 	@echo 'help  - Show help'
 
-test: data
+test: data list
 	prove -lv test
 
 clean:
-	rm -fr data
+	rm -fr data list
+	git worktree prune
 
 data:
-	git clone $(TEST_SUITE_URL) $@ --branch=$@
+	git clone https://github.com/yaml/yaml-test-suite $@ --branch=$@
+	(cd $@ && git reset --hard $(DATA_COMMIT))
 
+list:
+	git fetch origin run-test-suite-list:run-test-suite-list
+	git worktree add $@ run-test-suite-list
+	(cd $@ && git reset --hard $(LIST_COMMIT))

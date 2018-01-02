@@ -5,7 +5,7 @@ set -e
 if [[ $# -gt 0 ]]; then
   ids=("$@")
 else
-  ids=($(cut -d: -f1 < test/libyaml-parser-error.list))
+  ids=($(cut -d: -f1 < list/libyaml-parser-error.list))
 fi
 
 count=0

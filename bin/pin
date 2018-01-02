@@ -1,0 +1,19 @@
+#!/bin/bash
+
+(
+  while read line; do
+    commit_master=$(echo "$line" | cut -f1)
+
+    if (cd ../..; git merge-base --is-ancestor $commit_master HEAD 2>/dev/null); then
+      echo "$line"
+      exit
+    fi
+  done
+
+  echo 'WARNING: No repository pinning found for libyaml/yaml-test-suite testing.' >&2
+  echo 'WARNING: Defaulting to HEAD...' >&2
+
+  echo -e "HEAD\tHEAD\tHEAD"
+
+) < conf/pin.tsv
+

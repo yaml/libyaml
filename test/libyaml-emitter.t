@@ -5,7 +5,7 @@ set -e
 if [[ $# -gt 0 ]]; then
   ids=("$@")
 else
-  ids=($(cut -d: -f1 < test/libyaml-emitter.list))
+  ids=($(cut -d: -f1 < list/libyaml-emitter.list))
 fi
 
 count=0

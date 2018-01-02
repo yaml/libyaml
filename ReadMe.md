@@ -1,23 +1,48 @@
-LibYAML Test Runner
-===================
+run-test-suite
+==============
 
-Run run-parser-test-suite and run-emitter-test-suite against yaml-test-suite
+Branch to support testing libyaml with yaml-test-suite
 
 # Synopsis
 
+From libyaml master branch:
+
 ```
+./bootstrap
+./configure
 make test
-# Run tests from yaml-test-suite
 make test-suite
 ```
 
 # Overview
 
+This code lives in the `libyaml` git repository on the `run-test-suite` branch.
+It is used to test libyaml against the YAML Test Suite. The master branch has a
+Makefile rule to run this using `make test-suite`.
+
+That command will checkout this branch under the `tests/run-test-suite`
+directory and then call this Makefile's `make test`.
+
 See:
 
 * https://github.com/yaml/yaml-test-suite
 
-# Usage
+# Pinning
+
+You can test older versions of master simply by checking out a version of
+master and running `make test-suite`.
+
+The HEAD commit of your master is checked against `conf/pin.tsv`. The first row
+in the tsv file whose master-commit is found in your master history is used.
+This will pin to the correct yaml-test-suite commit and the correct whitelist
+commit.
+
+The whitelists are stored in the libyaml branch `run-test-suite-list`.
+
+NOTE: If no pinning is found, you will get a warning and the HEAD commit will
+be used for the data and whitelist commits.
+
+# Test Runner Usage
 
 Print parse events for a YAML file (or stdin):
 ```
