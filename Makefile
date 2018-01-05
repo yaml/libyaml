@@ -25,6 +25,7 @@ data:
 	(cd $@ && git reset --hard $(DATA_COMMIT))
 
 list:
-	git fetch origin run-test-suite-list:run-test-suite-list
+	-git branch --track run-test-suite-list origin/run-test-suite-list
+	-git worktree prune
 	git worktree add $@ run-test-suite-list
 	(cd $@ && git reset --hard $(LIST_COMMIT))
