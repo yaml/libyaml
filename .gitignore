@@ -1,11 +1,15 @@
 .deps/
 .libs/
-*~
 *.BAK
+*.a
+*.dll
+*.exe
 *.la
 *.lo
 *.o
 *.pc
+*.so
+*~
 /CMakeCache.txt
 /CMakeFiles/
 /CTestTestfile.cmake
