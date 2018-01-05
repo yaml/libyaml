@@ -18,7 +18,7 @@ test: data list
 
 clean:
 	rm -fr data list
-	git worktree prune
+	-git worktree prune
 
 data:
 	git clone https://github.com/yaml/yaml-test-suite $@ --branch=$@
@@ -27,5 +27,6 @@ data:
 list:
 	-git branch --track run-test-suite-list origin/run-test-suite-list
 	-git worktree prune
-	git worktree add $@ run-test-suite-list
+	git worktree add $@ run-test-suite-list || \
+	    git clone --branch=run-test-suite-list $$PWD/../../.git $@
 	(cd $@ && git reset --hard $(LIST_COMMIT))
