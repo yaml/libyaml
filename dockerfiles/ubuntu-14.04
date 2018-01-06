@@ -4,6 +4,11 @@ MAINTAINER Ian Cordasco <graffatcolmingov@gmail.com>
 
 RUN apt-get update && \
     apt-get install -y \
+        software-properties-common \
+        python-software-properties && \
+    add-apt-repository ppa:git-core/ppa && \
+    apt-get update && \
+    apt-get install -y \
         autoconf \
         build-essential \
         git \
