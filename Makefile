@@ -27,6 +27,5 @@ data:
 list:
 	-git branch --track run-test-suite-list origin/run-test-suite-list
 	-git worktree prune
-	git worktree add $@ run-test-suite-list || \
-	    git clone --branch=run-test-suite-list $$PWD/../../.git $@
+	git worktree add $@ run-test-suite-list
 	(cd $@ && git reset --hard $(LIST_COMMIT))
