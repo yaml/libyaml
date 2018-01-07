@@ -7,18 +7,18 @@ RUN apt-get update && \
         autoconf \
         build-essential \
         git \
-        libtool \
-        vim && \
-    rm -rf /var/lib/apt/lists/*
+        libtool && \
+    rm -rf /var/lib/apt/lists/* && \
+    mkdir /libyaml
 
-RUN mkdir /libyaml
 COPY . /libyaml/
 WORKDIR /libyaml
 
 ENV LD_LIBRARY_PATH=/libyaml/src/.libs
 
-RUN ./bootstrap
-RUN ./configure
-RUN make
-RUN make install
+RUN ./bootstrap && \
+    ./configure && \
+    make && \
+    make install
+
 CMD ["bash"]
