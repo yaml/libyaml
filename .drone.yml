@@ -1,0 +1,17 @@
+build:
+  image: teaci/msys$$arch
+  pull: true
+  shell: $$prefix$$arch
+  commands:
+    - ./bootstrap
+    - ./configure
+    - make
+    - make check
+
+matrix:
+  prefix:
+    - msys
+    - mingw
+  arch:
+    - 32
+    - 64
