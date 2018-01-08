@@ -8,28 +8,6 @@
 #include <limits.h>
 #include <stddef.h>
 
-#ifndef _MSC_VER
-#if defined(__sun) || defined(__sun__)
-#include <sys/inttypes.h>
-#define PTRDIFF_MAX INT_MAX
-#else
-#include <stdint.h>
-#ifndef PTRDIFF_MAX /* gcc on HP-UX */
-#ifdef _LP64
-#define PTRDIFF_MAX 0x7FFFFFFFFFFFFFFFLL
-#else
-#define PTRDIFF_MAX 0x7FFFFFFFL
-#endif
-#endif
-#endif
-#else
-#ifdef _WIN64
-#define PTRDIFF_MAX _I64_MAX
-#else
-#define PTRDIFF_MAX INT_MAX
-#endif
-#endif
-
 /*
  * Memory management.
  */
@@ -87,6 +65,17 @@ yaml_parser_fetch_more_tokens(yaml_parser_t *parser);
  */
 
 #define OUTPUT_RAW_BUFFER_SIZE  (OUTPUT_BUFFER_SIZE*2+2)
+
+/*
+ * The maximum size of a YAML input file.
+ * This used to be PTRDIFF_MAX, but that's not entirely portable
+ * because stdint.h isn't available on all platforms.
+ * It is not entirely clear why this isn't the maximum value
+ * that can fit into the parser->offset field.
+ */
+
+#define MAX_FILE_SIZE (~(size_t)0 / 2)
+
 
 /*
  * The size of other stacks and queues.
