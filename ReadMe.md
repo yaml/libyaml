@@ -34,13 +34,14 @@ master and running `make test-suite`.
 
 The HEAD commit of your master is checked against `conf/pin.tsv`. The first row
 in the tsv file whose master-commit is found in your master history is used.
-This will pin to the correct yaml-test-suite commit and the correct whitelist
-commit.
+This will pin to the correct yaml-test-suite commit and the correct
+run-test-suite-code branch commit.
 
-The whitelists are stored in the libyaml branch `run-test-suite-list`.
+The test code and whitelists are stored in the libyaml branch
+`run-test-suite-code`.
 
 NOTE: If no pinning is found, you will get a warning and the HEAD commit will
-be used for the data and whitelist commits.
+be used for the data and test code commits.
 
 # Test Runner Usage
 
