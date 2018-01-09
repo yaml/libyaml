@@ -1,0 +1,35 @@
+#include "winresrc.h"
+#include "config.h"
+
+LANGUAGE LANG_ENGLISH, SUBLANG_ENGLISH_US
+
+VS_VERSION_INFO VERSIONINFO
+ FILEVERSION YAML_VERSION_MAJOR,YAML_VERSION_MINOR,YAML_VERSION_PATCH
+ PRODUCTVERSION YAML_VERSION_MAJOR,YAML_VERSION_MINOR,YAML_VERSION_PATCH
+ FILEFLAGSMASK VS_FFI_FILEFLAGSMASK
+#ifdef DEBUG
+ FILEFLAGS 1
+#else
+ FILEFLAGS 0
+#endif
+ FILEOS VOS_NT
+ FILETYPE VFT_DLL
+BEGIN
+    BLOCK "StringFileInfo"
+    BEGIN
+        BLOCK "040904b0"
+	BEGIN
+	    VALUE "CompanyName", ""
+	    VALUE "FileDescription", PACKAGE_STRING
+	    VALUE "InternalName", "yaml.dll"
+	    VALUE "LegalCopyright", "Copyright (c) 2006-2016 Kirill Simonov"
+	    VALUE "OriginalFilename", "yaml.dll"
+	    VALUE "ProductName", "YAML Ain't Markup Language"
+	    VALUE "ProductVersion", YAML_VERSION_STRING
+	END
+    END
+    BLOCK "VarFileInfo"
+    BEGIN
+        VALUE "Translation", 0x0409, 1252 //en-US
+    END
+END
