@@ -26,7 +26,7 @@ m4_define([YAML_AGE], 0)
 AC_PREREQ(2.59)
 AC_INIT([yaml], [YAML_MAJOR.YAML_MINOR.YAML_PATCH], [YAML_BUGS])
 AC_CONFIG_AUX_DIR([config])
-AC_CONFIG_HEADERS([config.h])
+AC_CONFIG_HEADERS([include/config.h])
 AM_INIT_AUTOMAKE([1.9 foreign])
 
 # Define macro variables for the package version numbers.
