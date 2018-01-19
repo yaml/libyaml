@@ -82,7 +82,7 @@ int main(int argc, char *argv[])
             implicit = (get_tag(line, tag) == NULL);
 
             ok = yaml_scalar_event_initialize(&event, (yaml_char_t *)
-                                              get_anchor('&', line, anchor), (yaml_char_t *) get_tag(line, tag), (yaml_char_t *) value, -1, implicit, implicit, style);
+                                              get_anchor('&', line, anchor), (yaml_char_t *) get_tag(line, tag), (yaml_char_t *) value, 0, implicit, implicit, style);
         }
         else if (strncmp(line, "=ALI", 4) == 0) {
             ok = yaml_alias_event_initialize(&event, (yaml_char_t *)
@@ -120,7 +120,7 @@ int main(int argc, char *argv[])
         break;
     default:
         /*
-         * Couldn't happen. 
+         * Couldn't happen.
          */
         fprintf(stderr, "Internal error\n");
         break;
