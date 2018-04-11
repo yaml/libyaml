@@ -751,7 +751,7 @@ yaml_parser_scan(yaml_parser_t *parser, yaml_token_t *token)
     /* No tokens after STREAM-END or error. */
 
     if (parser->stream_end_produced || parser->error) {
-        return 1;
+        return 0;
     }
 
     /* Ensure that the tokens queue contains enough tokens. */
