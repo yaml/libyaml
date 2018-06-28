@@ -25,7 +25,6 @@ on the #yaml-dev and #libyaml IRC channels on irc.freenode.net.
 Changes
 =======
 
-* https://github.com/yaml/libyaml/pull/7  -- Fixed most compiler warnings -Wall -Wextra
 * https://github.com/yaml/libyaml/pull/10 -- Support static and dynamic libraries
 * https://github.com/yaml/libyaml/pull/12 -- Use .gitignore instead of .hgignore
 * https://github.com/yaml/libyaml/pull/13 -- Add support for `make test` and travis
@@ -59,14 +58,17 @@ Changes
 * https://github.com/yaml/libyaml/pull/64 -- README: Update libyaml link
 * https://github.com/yaml/libyaml/pull/69 -- Skip 5 tests in libyaml-emitter.list
 * https://github.com/yaml/libyaml/pull/74 -- Forbid escaped singlequote in doublequotes
+* https://github.com/yaml/libyaml/pull/76 -- Rewrite make test-suite
 * https://github.com/yaml/libyaml/pull/77 -- Undefined PTRDIFF_MAX on HP-UX
 * https://github.com/yaml/libyaml/pull/78 -- Fixed most compiler warnings -Wall -Wextra
+* https://github.com/yaml/libyaml/pull/82 -- Move yaml-test-suite integration onto a separate branch.
 * https://github.com/yaml/libyaml/pull/86 -- Fix problems in CI failures (travis and semaphore)
 * https://github.com/yaml/libyaml/pull/87 -- appveyor.yml: add mingw-w64 builds
 * https://github.com/yaml/libyaml/pull/88 -- add -no-undefined to src/Makefile.am
 * https://github.com/yaml/libyaml/pull/89 -- Added alpine linux testing to dockerfiles
 * https://github.com/yaml/libyaml/pull/93 -- remove need for PTRDIFF_MAX
 * https://github.com/yaml/libyaml/pull/94 -- .gitignore: major cleanup
+* https://github.com/yaml/libyaml/pull/120 -- Fix doc.
 
 
 Resources
