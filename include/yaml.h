@@ -232,7 +232,7 @@ typedef enum yaml_token_type_e {
 
     /** A BLOCK-SEQUENCE-START token. */
     YAML_BLOCK_SEQUENCE_START_TOKEN,
-    /** A BLOCK-SEQUENCE-END token. */
+    /** A BLOCK-MAPPING-START token. */
     YAML_BLOCK_MAPPING_START_TOKEN,
     /** A BLOCK-END token. */
     YAML_BLOCK_END_TOKEN,
