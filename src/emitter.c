@@ -2004,6 +2004,9 @@ yaml_emitter_write_single_quoted_scalar(yaml_emitter_t *emitter,
         }
     }
 
+    if (breaks)
+        if (!yaml_emitter_write_indent(emitter)) return 0;
+
     if (!yaml_emitter_write_indicator(emitter, "'", 0, 0, 0))
         return 0;
 
