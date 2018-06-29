@@ -3430,11 +3430,22 @@ yaml_parser_scan_plain_scalar(yaml_parser_t *parser, yaml_token_t *token)
 
         while (!IS_BLANKZ(parser->buffer))
         {
-            /* Check for 'x:x' in the flow context. TODO: Fix the test "spec-08-13". */
+            /* Check for "x:" + one of ',?[]{}' in the flow context. TODO: Fix the test "spec-08-13".
+             * This is not completely according to the spec
+             * See http://yaml.org/spec/1.1/#id907281 9.1.3. Plain
+             */
 
             if (parser->flow_level
                     && CHECK(parser->buffer, ':')
-                    && !IS_BLANKZ_AT(parser->buffer, 1)) {
+                    && (
+                        CHECK_AT(parser->buffer, ',', 1)
+                        || CHECK_AT(parser->buffer, '?', 1)
+                        || CHECK_AT(parser->buffer, '[', 1)
+                        || CHECK_AT(parser->buffer, ']', 1)
+                        || CHECK_AT(parser->buffer, '{', 1)
+                        || CHECK_AT(parser->buffer, '}', 1)
+                    )
+                    ) {
                 yaml_parser_set_scanner_error(parser, "while scanning a plain scalar",
                         start_mark, "found unexpected ':'");
                 goto error;
@@ -3444,7 +3455,7 @@ yaml_parser_scan_plain_scalar(yaml_parser_t *parser, yaml_token_t *token)
 
             if ((CHECK(parser->buffer, ':') && IS_BLANKZ_AT(parser->buffer, 1))
                     || (parser->flow_level &&
-                        (CHECK(parser->buffer, ',') || CHECK(parser->buffer, ':')
+                        (CHECK(parser->buffer, ',')
                          || CHECK(parser->buffer, '?') || CHECK(parser->buffer, '[')
                          || CHECK(parser->buffer, ']') || CHECK(parser->buffer, '{')
                          || CHECK(parser->buffer, '}'))))
