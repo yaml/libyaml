@@ -649,13 +649,6 @@ yaml_emitter_emit_document_start(yaml_emitter_t *emitter,
 
     else if (event->type == YAML_STREAM_END_EVENT)
     {
-        if (emitter->open_ended)
-        {
-            if (!yaml_emitter_write_indicator(emitter, "...", 1, 0, 0))
-                return 0;
-            if (!yaml_emitter_write_indent(emitter))
-                return 0;
-        }
 
         if (!yaml_emitter_flush(emitter))
             return 0;
