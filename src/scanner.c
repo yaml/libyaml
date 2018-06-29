@@ -3430,21 +3430,11 @@ yaml_parser_scan_plain_scalar(yaml_parser_t *parser, yaml_token_t *token)
 
         while (!IS_BLANKZ(parser->buffer))
         {
-            /* Check for 'x:x' in the flow context. TODO: Fix the test "spec-08-13". */
-
-            if (parser->flow_level
-                    && CHECK(parser->buffer, ':')
-                    && !IS_BLANKZ_AT(parser->buffer, 1)) {
-                yaml_parser_set_scanner_error(parser, "while scanning a plain scalar",
-                        start_mark, "found unexpected ':'");
-                goto error;
-            }
-
             /* Check for indicators that may end a plain scalar. */
 
             if ((CHECK(parser->buffer, ':') && IS_BLANKZ_AT(parser->buffer, 1))
                     || (parser->flow_level &&
-                        (CHECK(parser->buffer, ',') || CHECK(parser->buffer, ':')
+                        (CHECK(parser->buffer, ',')
                          || CHECK(parser->buffer, '?') || CHECK(parser->buffer, '[')
                          || CHECK(parser->buffer, ']') || CHECK(parser->buffer, '{')
                          || CHECK(parser->buffer, '}'))))
