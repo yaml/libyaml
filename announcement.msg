@@ -69,6 +69,13 @@ Changes
 * https://github.com/yaml/libyaml/pull/93 -- remove need for PTRDIFF_MAX
 * https://github.com/yaml/libyaml/pull/94 -- .gitignore: major cleanup
 * https://github.com/yaml/libyaml/pull/120 -- Fix doc.
+* https://github.com/yaml/libyaml/pull/103 -- Remove unused code in yaml_document_delete
+* https://github.com/yaml/libyaml/pull/104 -- Allow colons in plain scalars inside flow collections
+* https://github.com/yaml/libyaml/pull/109 -- Fix comparison in tests/run-emitter.c
+* https://github.com/yaml/libyaml/pull/117 -- Fix typo error
+* https://github.com/yaml/libyaml/pull/119 -- The closing single quote needs to be indented
+* https://github.com/yaml/libyaml/pull/121 -- fix token name typos in comments
+* https://github.com/yaml/libyaml/pull/122 -- Revert removing of open_ended after top level plain scalar
 
 
 Resources
