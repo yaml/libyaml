@@ -1,36 +1,12 @@
 
 cmake_minimum_required(VERSION 3.0)
 project (yaml C)
+include(GNUInstallDirs)
 
 set (YAML_VERSION_MAJOR 0)
 set (YAML_VERSION_MINOR 1)
 set (YAML_VERSION_PATCH 7)
 set (YAML_VERSION_STRING "${YAML_VERSION_MAJOR}.${YAML_VERSION_MINOR}.${YAML_VERSION_PATCH}")
-
-option(BUILD_SHARED_LIBS "Build libyaml as a shared library" OFF)
-
-#
-# Output directories for a build tree
-#
-if(NOT DEFINED CMAKE_RUNTIME_OUTPUT_DIRECTORY)
-  set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR})
-endif()
-
-#
-# Install relative directories
-#
-if(NOT DEFINED INSTALL_LIB_DIR)
-  set(INSTALL_LIB_DIR lib)
-endif()
-if(NOT DEFINED INSTALL_BIN_DIR)
-  set(INSTALL_BIN_DIR bin)
-endif()
-if(NOT DEFINED INSTALL_INCLUDE_DIR)
-  set(INSTALL_INCLUDE_DIR include)
-endif()
-if(NOT DEFINED INSTALL_CMAKE_DIR)
-  set(INSTALL_CMAKE_DIR cmake)
-endif()
 
 #
 # Build library
@@ -46,36 +22,52 @@ set(SRCS
   src/writer.c
   )
 
+include_directories(${CMAKE_SOURCE_DIR}/src)
+include_directories(${CMAKE_SOURCE_DIR}/include)
+include_directories(${CMAKE_CURRENT_BINARY_DIR}/include)
+
+add_definitions(-DHAVE_CONFIG_H)
+if(MSVC)
+  add_definitions(-D_CRT_SECURE_NO_WARNINGS)
+endif()
+
 set(config_h ${CMAKE_CURRENT_BINARY_DIR}/include/config.h)
 configure_file(
   cmake/config.h.in
   ${config_h}
   )
 
-add_library(yaml ${SRCS})
-
-if(NOT BUILD_SHARED_LIBS)
-  set_target_properties(yaml
-    PROPERTIES OUTPUT_NAME yaml_static
-    )
+option(YAML_BUILD_STATIC "Build static library" TRUE)
+if(YAML_BUILD_STATIC)
+  add_library(yaml-static STATIC ${SRCS})
+  set_target_properties(yaml-static PROPERTIES OUTPUT_NAME yaml)
+  if(MSVC)
+    set_target_properties(yaml-static PROPERTIES PREFIX "lib")
+    # compiler: import, runtime, static
+    # msvc: yaml.lib, yaml.dll, libyaml.lib
+    # mingw: libyaml.dll.a, libyaml.dll, libyaml.a
+  endif()
+  set(YAML_LIB_TARGET yaml-static)
+  target_compile_definitions(yaml-static
+    PUBLIC
+      YAML_DECLARE_EXPORT=1
+      YAML_DECLARE_STATIC=1
+  )
+  list(APPEND YAML_INSTALL_TARGETS yaml-static)
 endif()
 
-set_target_properties(yaml
-  PROPERTIES DEFINE_SYMBOL YAML_DECLARE_EXPORT
-  )
+option(YAML_BUILD_SHARED "Build shared library" TRUE)
+if(YAML_BUILD_SHARED)
+  add_library(yaml SHARED ${SRCS})
+  set(YAML_LIB_TARGET yaml)
+  set_target_properties(yaml PROPERTIES DEFINE_SYMBOL YAML_DECLARE_EXPORT)
+  list(APPEND YAML_INSTALL_TARGETS yaml)
+endif()
 
-target_compile_definitions(yaml
-  PRIVATE HAVE_CONFIG_H
-  PUBLIC
-    $<$<NOT:$<BOOL:${BUILD_SHARED_LIBS}>>:YAML_DECLARE_STATIC>
-    $<$<BOOL:${MSVC}>:_CRT_SECURE_NO_WARNINGS>
-  )
-
-target_include_directories(yaml PUBLIC
-  $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
-  $<BUILD_INTERFACE:${CMAKE_CURRENT_BINARY_DIR}/include>
-  $<INSTALL_INTERFACE:${INSTALL_INCLUDE_DIR}>
-  )
+if(YAML_BUILD_SHARED AND YAML_BUILD_STATIC)
+  set_target_properties(yaml PROPERTIES CLEAN_DIRECT_OUTPUT 1)
+  set_target_properties(yaml-static PROPERTIES CLEAN_DIRECT_OUTPUT 1)
+endif()
 
 #
 # Install rules
@@ -84,15 +76,15 @@ install(
   FILES
     include/yaml.h
     ${config_h}
-  DESTINATION include COMPONENT Development
+    DESTINATION ${CMAKE_INSTALL_INCLUDEDIR} COMPONENT Development
   )
 
 install(
-  TARGETS yaml
+  TARGETS ${YAML_INSTALL_TARGETS}
   EXPORT yamlTargets
-  RUNTIME DESTINATION "${INSTALL_BIN_DIR}" COMPONENT Runtime
-  LIBRARY DESTINATION "${INSTALL_LIB_DIR}" COMPONENT Development
-  ARCHIVE DESTINATION "${INSTALL_LIB_DIR}" COMPONENT Development
+  RUNTIME DESTINATION "${CMAKE_INSTALL_BINDIR}" COMPONENT Runtime
+  LIBRARY DESTINATION "${CMAKE_INSTALL_LIBDIR}" COMPONENT Development
+  ARCHIVE DESTINATION "${CMAKE_INSTALL_LIBDIR}" COMPONENT Development
   )
 
 #
@@ -109,13 +101,11 @@ endif()
 include(CMakePackageConfigHelpers)
 
 # Configure 'yamlConfig.cmake' for a build tree
-set(CONFIG_DIR_CONFIG ${PROJECT_BINARY_DIR})
 set(config_file ${PROJECT_BINARY_DIR}/yamlConfig.cmake)
 configure_package_config_file(
   yamlConfig.cmake.in
   ${config_file}
-  INSTALL_DESTINATION ${PROJECT_BINARY_DIR}
-  PATH_VARS CONFIG_DIR_CONFIG
+  INSTALL_DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake
   NO_CHECK_REQUIRED_COMPONENTS_MACRO
   )
 
@@ -131,18 +121,17 @@ configure_package_config_file(
   yamlConfig.cmake.in
   ${install_config_file}
   INSTALL_DESTINATION ${CMAKE_INSTALL_PREFIX}/${INSTALL_CMAKE_DIR}
-  PATH_VARS CONFIG_DIR_CONFIG
   NO_CHECK_REQUIRED_COMPONENTS_MACRO
   )
 install(
   FILES ${install_config_file}
-  DESTINATION ${INSTALL_CMAKE_DIR} COMPONENT Development
+  DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake COMPONENT Development
   )
 
 # Configure and install 'yamlTargets.cmake' for an install tree
 install(EXPORT yamlTargets
   FILE yamlTargets.cmake
-  DESTINATION ${INSTALL_CMAKE_DIR}
+  DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake
   COMPONENT Development
   )
 
@@ -156,5 +145,5 @@ write_basic_package_version_file(
 # ... and install for an install tree
 install(
   FILES ${config_version_file}
-  DESTINATION ${INSTALL_CMAKE_DIR} COMPONENT Development
+  DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake COMPONENT Development
   )
