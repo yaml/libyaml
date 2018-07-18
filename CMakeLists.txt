@@ -46,7 +46,7 @@ set(SRCS
   src/writer.c
   )
 
-set(config_h ${CMAKE_CURRENT_BINARY_DIR}/include/config.h)
+set(config_h ${CMAKE_CURRENT_BINARY_DIR}/include/yaml_config.h)
 configure_file(
   cmake/config.h.in
   ${config_h}
