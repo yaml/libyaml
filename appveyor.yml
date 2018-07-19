@@ -12,8 +12,8 @@ build_script:
 
 # Use 32-bit default generator ("Visual Studio 12 2013" or "Visual Studio 14 2015")
 - cmake .
-- cmake --build . --config release --clean-first
-- ctest -C release
+- cmake --build . --config Release --clean-first
+- ctest -C Release
 
 #
 # Autoconf based in-source build and tests under Cygwin using gcc
