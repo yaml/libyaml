@@ -3518,7 +3518,7 @@ yaml_parser_scan_plain_scalar(yaml_parser_t *parser, yaml_token_t *token)
         {
             if (IS_BLANK(parser->buffer))
             {
-                /* Check for tab character that abuse indentation. */
+                /* Check for tab characters that abuse indentation. */
 
                 if (leading_blanks && (int)parser->mark.column < indent
                         && IS_TAB(parser->buffer)) {
