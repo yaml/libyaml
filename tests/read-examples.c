@@ -31,10 +31,20 @@ main(void)
                 strcpy(filename, reldir);
                 strcat(filename, fileitem->d_name); 
               
-       //         yaml_parser_initialize(&parser);
+                yaml_parser_initialize(&parser);
                 FILE *input = fopen(filename, "rb");
-              //  yaml_parser_set_input_file(&parser, input);
-              //  printf("%s\n", fileitem->d_name);
+                yaml_parser_set_input_file(&parser, input);
+                while (!done) {
+                    if (!yaml_parser_parse(&parser, &event)) {
+                        yaml_parser_delete(&parser);
+                        fclose(input);
+                        closedir(dir);
+                        return(1);
+                    }
+                    done = (event.type == YAML_STREAM_END_EVENT);
+                    yaml_event_delete(&event);
+                }
+                yaml_parser_delete(&parser);
                 fclose(input);
             }
         }
