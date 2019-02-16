@@ -25,4 +25,4 @@ endforeach()
 
 add_test(NAME version COMMAND test-version)
 add_test(NAME reader COMMAND test-reader)
-add_test(NAME reader COMMAND read-examples)
+add_test(NAME examples COMMAND read-examples)
