@@ -279,6 +279,36 @@ yaml_string_join(
 #define IS_PRINTABLE(string)    IS_PRINTABLE_AT((string),0)
 
 /*
+ * Check if the characters can be used as an anchor or an alias.
+ * \0 \t\r\n\x85\u2028\u2029?:,[]{}%@=
+ */
+
+#define IS_ANCHOR_AT(string,offset)                                          \
+     (((string).pointer[offset] >= (yaml_char_t) '0' &&                         \
+       (string).pointer[offset] <= (yaml_char_t) '9') ||                        \
+      ((string).pointer[offset] >= (yaml_char_t) 'A' &&                         \
+       (string).pointer[offset] <= (yaml_char_t) 'Z') ||                        \
+      ((string).pointer[offset] >= (yaml_char_t) 'a' &&                         \
+       (string).pointer[offset] <= (yaml_char_t) 'z') ||                        \
+      (string).pointer[offset] == '_' ||                                        \
+      (string).pointer[offset] == '-'                                          \
+     || ((string).pointer[offset] == 0xC2       /* #0xA0 <= . <= #xD7FF */      \
+         && (string).pointer[offset+1] >= 0xA0)                                 \
+     || ((string).pointer[offset] > 0xC2                                        \
+         && (string).pointer[offset] < 0xED)                                    \
+     || ((string).pointer[offset] == 0xED                                       \
+         && (string).pointer[offset+1] < 0xA0)                                  \
+     || ((string).pointer[offset] == 0xEE)                                      \
+     || ((string).pointer[offset] == 0xEF      /* #xE000 <= . <= #xFFFD */      \
+         && !((string).pointer[offset+1] == 0xBB        /* && . != #xFEFF */    \
+             && (string).pointer[offset+2] == 0xBF)                             \
+         && !((string).pointer[offset+1] == 0xBF                                \
+             && ((string).pointer[offset+2] == 0xBE                             \
+                 || (string).pointer[offset+2] == 0xBF))))
+
+#define IS_ANCHOR(string)    IS_ANCHOR_AT((string),0)
+
+/*
  * Check if the character at the specified position is NUL.
  */
 

@@ -3,9 +3,9 @@
 # This file showing that anchors and aliases can be smileys.
 - &α "A great philosopher once wrote"
 - &β "Naughty, naughty, very naughty"
-- &γ "Ha ha ha ha ha"
-- &😖 "There's a guy in the place who's got a bittersweet face"
-- &😃 "And he goes by the name of Ebeneezer Goode"
+- &γ "Ha ha ha ha ha 😁"
+- &汉 "There's a guy in the place who's got a bittersweet face"
+- &语 "And he goes by the name of Ebeneezer Goode"
 - "His friends call him 'Ezeer and he is the main geezer"
 - "And he'll vibe up the place like no other man could"
 - "He's refined, sublime, he makes you feel fine"

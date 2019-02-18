@@ -2336,7 +2336,7 @@ yaml_parser_scan_anchor(yaml_parser_t *parser, yaml_token_t *token,
 
     if (!CACHE(parser, 1)) goto error;
 
-    while (IS_ALPHA(parser->buffer)) {
+    while (IS_ANCHOR(parser->buffer)) {
         if (!READ(parser, string)) goto error;
         if (!CACHE(parser, 1)) goto error;
         length ++;
