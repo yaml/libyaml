@@ -2358,7 +2358,7 @@ yaml_parser_scan_anchor(yaml_parser_t *parser, yaml_token_t *token,
                 || CHECK(parser->buffer, '`'))) {
         yaml_parser_set_scanner_error(parser, type == YAML_ANCHOR_TOKEN ?
                 "while scanning an anchor" : "while scanning an alias", start_mark,
-                "did not find expected alphabetic or numeric character");
+                "did not find expected acceptable character");
         goto error;
     }
 

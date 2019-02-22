@@ -198,6 +198,61 @@ yaml_string_join(
 #define IS_ALPHA(string)    IS_ALPHA_AT((string),0)
 
 /*
+ * Check if the character at the specified position is an anchor character
+ */
+
+#define IS_ANCHOR_AT(string,offset)                                            \
+     (((string).pointer[offset] >= (yaml_char_t) '0' &&                        \
+       (string).pointer[offset] <= (yaml_char_t) '9') ||                       \
+      ((string).pointer[offset] >= (yaml_char_t) 'A' &&                        \
+       (string).pointer[offset] <= (yaml_char_t) 'Z') ||                       \
+      ((string).pointer[offset] >= (yaml_char_t) 'a' &&                        \
+       (string).pointer[offset] <= (yaml_char_t) 'z') ||                       \
+      (string).pointer[offset] == '_' ||                                       \
+      (string).pointer[offset] == '-' ||                                       \
+      (string).pointer[offset] == '!' ||                                       \
+      (string).pointer[offset] == '#' ||                                       \
+      (string).pointer[offset] == '$' ||                                       \
+      (string).pointer[offset] == '+' ||                                       \
+      (string).pointer[offset] == '.' ||                                       \
+      (string).pointer[offset] == '/' ||                                       \
+      (string).pointer[offset] == '(' ||                                       \
+      (string).pointer[offset] == ')' ||                                       \
+      (string).pointer[offset] == '=' ||                                       \
+      (string).pointer[offset] == '\\' ||                                      \
+      (string).pointer[offset] == '^' ||                                       \
+      (string).pointer[offset] == '|' ||                                       \
+      (string).pointer[offset] == '~' ||                                       \ 
+      ((string).pointer[offset] == 0xC2       /* #0xA0 <= . <= #xBF */         \
+       && (string).pointer[offset+1] >= 0xA0                                   \
+       && (string).pointer[offset+1] <= 0xBF) ||                               \
+      ((string).pointer[offset] > 0xC2       /* #0xC0 <= . <= #x7FF */         \
+       && (string).pointer[offset] <= 0xDF                                     \
+       && (string).pointer[offset+1] >= 0x80                                   \
+       && (string).pointer[offset+1] <= 0xBF) ||                               \
+      ((string).pointer[offset] >= 0xE0       /* #0x800 <= . <= #xFFFF */      \
+       && (string).pointer[offset] <= 0xEF                                     \
+       && (string).pointer[offset+1] >= 0x80                                   \
+       && (string).pointer[offset+2] >= 0x80                                   \
+       && !((string).pointer[offset] == 0xE2  /* . != #x2028, #x2029 */        \
+        && (string).pointer[offset+1] == 0x80                                  \ 
+        && ((string).pointer[offset+2] == 0xA8                                 \
+          || (string).pointer[offset+2] == 0xA9 ))                             \
+       && !((string).pointer[offset] == 0xEF  /* . != #xFEFF */                \
+        && (string).pointer[offset+1] == 0xBB                                  \ 
+        && (string).pointer[offset+2] == 0xBF)                                 \
+       && !((string).pointer[offset] == 0xEF  /* . != #xFFFE, #xFFFF */        \
+        && (string).pointer[offset+1] == 0xBF                                  \ 
+        && ((string).pointer[offset+2] == 0xBE                                 \
+          || (string).pointer[offset+2] == 0xBF ))) ||                         \
+      ((string).pointer[offset] >= 0xF0       /* #0x10000 <= . <= #x10FFFF */  \
+       && (string).pointer[offset+1] >= 0x80                                   \
+       && (string).pointer[offset+2] >= 0x80                                   \
+       && (string).pointer[offset+3] >= 0x80))                                    
+
+#define IS_ANCHOR(string)    IS_ANCHOR_AT((string),0)
+
+/*
  * Check if the character at the specified position is a digit.
  */
 
@@ -277,36 +332,6 @@ yaml_string_join(
                  || (string).pointer[offset+2] == 0xBF))))
 
 #define IS_PRINTABLE(string)    IS_PRINTABLE_AT((string),0)
-
-/*
- * Check if the characters can be used as an anchor or an alias.
- * \0 \t\r\n\x85\u2028\u2029?:,[]{}%@=
- */
-
-#define IS_ANCHOR_AT(string,offset)                                          \
-     (((string).pointer[offset] >= (yaml_char_t) '0' &&                         \
-       (string).pointer[offset] <= (yaml_char_t) '9') ||                        \
-      ((string).pointer[offset] >= (yaml_char_t) 'A' &&                         \
-       (string).pointer[offset] <= (yaml_char_t) 'Z') ||                        \
-      ((string).pointer[offset] >= (yaml_char_t) 'a' &&                         \
-       (string).pointer[offset] <= (yaml_char_t) 'z') ||                        \
-      (string).pointer[offset] == '_' ||                                        \
-      (string).pointer[offset] == '-'                                          \
-     || ((string).pointer[offset] == 0xC2       /* #0xA0 <= . <= #xD7FF */      \
-         && (string).pointer[offset+1] >= 0xA0)                                 \
-     || ((string).pointer[offset] > 0xC2                                        \
-         && (string).pointer[offset] < 0xED)                                    \
-     || ((string).pointer[offset] == 0xED                                       \
-         && (string).pointer[offset+1] < 0xA0)                                  \
-     || ((string).pointer[offset] == 0xEE)                                      \
-     || ((string).pointer[offset] == 0xEF      /* #xE000 <= . <= #xFFFD */      \
-         && !((string).pointer[offset+1] == 0xBB        /* && . != #xFEFF */    \
-             && (string).pointer[offset+2] == 0xBF)                             \
-         && !((string).pointer[offset+1] == 0xBF                                \
-             && ((string).pointer[offset+2] == 0xBE                             \
-                 || (string).pointer[offset+2] == 0xBF))))
-
-#define IS_ANCHOR(string)    IS_ANCHOR_AT((string),0)
 
 /*
  * Check if the character at the specified position is NUL.
