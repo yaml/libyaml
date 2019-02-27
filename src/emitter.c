@@ -2116,8 +2116,13 @@ yaml_emitter_write_double_quoted_scalar(yaml_emitter_t *emitter,
                     break;
 
                 default:
-                    if (value <= 0xFF) {
+                    if (value <= 0x7F) {
                         if (!PUT(emitter, 'x')) return 0;
+                        width = 2;
+                    } else if (value <= 0xFF) {
+                        if (!PUT(emitter, 'u')) return 0;
+                        if (!PUT(emitter, '0')) return 0;
+                        if (!PUT(emitter, '0')) return 0;
                         width = 2;
                     }
                     else if (value <= 0xFFFF) {
