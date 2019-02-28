@@ -79,10 +79,12 @@ error:
 int compare_nodes(yaml_document_t *document1, int index1,
         yaml_document_t *document2, int index2, int level)
 {
-    if (level++ > 1000) return 0;
-    yaml_node_t *node1 = yaml_document_get_node(document1, index1);
-    yaml_node_t *node2 = yaml_document_get_node(document2, index2);
     int k;
+    yaml_node_t *node1;
+    yaml_node_t *node2;
+    if (level++ > 1000) return 0;
+    node1 = yaml_document_get_node(document1, index1);
+    node2 = yaml_document_get_node(document2, index2);
 
     assert(node1);
     assert(node2);
