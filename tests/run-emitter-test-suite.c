@@ -2,10 +2,9 @@
 
 #include <stdlib.h>
 #include <stdio.h>
-#include <stdbool.h>
 #include <assert.h>
 
-bool get_line(FILE * input, char *line);
+int get_line(FILE * input, char *line);
 char *get_anchor(char sigil, char *line, char *anchor);
 char *get_tag(char *line, char *tag);
 void get_value(char *line, char *value, int *style);
@@ -134,12 +133,12 @@ int main(int argc, char *argv[])
     return 1;
 }
 
-bool get_line(FILE * input, char *line)
+int get_line(FILE * input, char *line)
 {
     char *newline;
 
     if (!fgets(line, 1024 - 1, input))
-        return false;
+        return 0;
 
     if ((newline = strchr(line, '\n')) == NULL) {
         fprintf(stderr, "Line too long: '%s'", line);
@@ -147,7 +146,7 @@ bool get_line(FILE * input, char *line)
     }
     *newline = '\0';
 
-    return true;
+    return 1;
 }
 
 char *get_anchor(char sigil, char *line, char *anchor)
