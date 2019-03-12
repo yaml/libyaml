@@ -1,22 +1,13 @@
 From: Ingy döt Net <ingy@ingy.net>
 To: yaml-core@lists.sourceforge.net
-Subject: [ANN] LibYAML-0.2.1: A new release
+Subject: [ANN] LibYAML-0.2.2: A new release
 
 =========================
- Announcing LibYAML-0.2.1
+ Announcing LibYAML-0.2.2
 =========================
 
-A new MAJOR RELEASE of LibYAML is now available:
-https://github.com/yaml/libyaml/tree/0.2.1
-
-This is the first release of LibYAML under a new maintenance team. In August
-2016, maintenance of LibYAML and PyYAML was turned over from the original
-author, Kirill Simonov, to Ian Cordasco and Ingy döt Net.
-
-The canonical source repo moved:
-
-    from: https://bitbucket.org/xi/libyaml/
-    to:   https://github.com/yaml/libyaml
+A new release of LibYAML is now available:
+https://github.com/yaml/libyaml/tree/0.2.2
 
 The LibYAML project is now maintained by the YAML community. Planning happens
 on the #yaml-dev and #libyaml IRC channels on irc.freenode.net.
@@ -25,48 +16,19 @@ on the #yaml-dev and #libyaml IRC channels on irc.freenode.net.
 Changes
 =======
 
-* https://github.com/yaml/libyaml/pull/7  -- Fixed most compiler warnings -Wall -Wextra
-* https://github.com/yaml/libyaml/pull/10 -- Support static and dynamic libraries
-* https://github.com/yaml/libyaml/pull/12 -- Use .gitignore instead of .hgignore
-* https://github.com/yaml/libyaml/pull/13 -- Add support for `make test` and travis
-* https://github.com/yaml/libyaml/pull/14 -- Dockerfile for testing
-* https://github.com/yaml/libyaml/pull/15 -- Apply old fix for `\/` that is not in master.
-* https://github.com/yaml/libyaml/pull/17 -- Update license to include all years until now.
-* https://github.com/yaml/libyaml/pull/18 -- Port bug fix from Perl binding
-* https://github.com/yaml/libyaml/pull/22 -- Fix misspell: preceed
-* https://github.com/yaml/libyaml/pull/23 -- Removed trailing-whitespaces
-* https://github.com/yaml/libyaml/pull/24 -- Fix typo
-* https://github.com/yaml/libyaml/pull/25 -- added an examples directory with a few yaml examples
-* https://github.com/yaml/libyaml/pull/26 -- Added missing Cflags path in pkg-config file
-* https://github.com/yaml/libyaml/pull/31 -- add unit tests to cmake configuration
-* https://github.com/yaml/libyaml/pull/32 -- Include an example of a custom tag from Python
-* https://github.com/yaml/libyaml/pull/33 -- Include an example of a %YAML tag
-* https://github.com/yaml/libyaml/pull/34 -- Added an example of using a global tag
-* https://github.com/yaml/libyaml/pull/36 -- Fix -Wformat compilation errors in tests
-* https://github.com/yaml/libyaml/pull/37 -- Update bug report URL in LibYAML
-* https://github.com/yaml/libyaml/pull/38 -- Use AM_CPPFLAGS since autotools deprecated INCLUDE
-* https://github.com/yaml/libyaml/pull/39 -- Update bug report URL in README
-* https://github.com/yaml/libyaml/pull/41 -- Add travis and Makefile support for libyaml-test
-* https://github.com/yaml/libyaml/pull/43 -- Add Dockerfile for Fedora 25
-* https://github.com/yaml/libyaml/pull/44 -- WIP: Enable all warnings (-Wall) in libyaml and tests
-* https://github.com/yaml/libyaml/pull/45 -- Fix typo
-* https://github.com/yaml/libyaml/pull/47 -- Move travis script guts to separate file
-* https://github.com/yaml/libyaml/pull/48 -- `yaml/libyaml-test` should become part of `yaml/libyaml`
-* https://github.com/yaml/libyaml/pull/50 -- Add a GNUMakefile for immediate make targets
-* https://github.com/yaml/libyaml/pull/53 -- Switch from test blacklist to whitelist
-* https://github.com/yaml/libyaml/pull/55 -- Update defs for MingGW support on Windows
-* https://github.com/yaml/libyaml/pull/58 -- Improve CMakeLists
-* https://github.com/yaml/libyaml/pull/64 -- README: Update libyaml link
-* https://github.com/yaml/libyaml/pull/69 -- Skip 5 tests in libyaml-emitter.list
-* https://github.com/yaml/libyaml/pull/74 -- Forbid escaped singlequote in doublequotes
-* https://github.com/yaml/libyaml/pull/77 -- Undefined PTRDIFF_MAX on HP-UX
-* https://github.com/yaml/libyaml/pull/78 -- Fixed most compiler warnings -Wall -Wextra
-* https://github.com/yaml/libyaml/pull/86 -- Fix problems in CI failures (travis and semaphore)
-* https://github.com/yaml/libyaml/pull/87 -- appveyor.yml: add mingw-w64 builds
-* https://github.com/yaml/libyaml/pull/88 -- add -no-undefined to src/Makefile.am
-* https://github.com/yaml/libyaml/pull/89 -- Added alpine linux testing to dockerfiles
-* https://github.com/yaml/libyaml/pull/93 -- remove need for PTRDIFF_MAX
-* https://github.com/yaml/libyaml/pull/94 -- .gitignore: major cleanup
+* https://github.com/yaml/libyaml/pull/95 -- build: do not install config.h
+* https://github.com/yaml/libyaml/pull/97 -- appveyor.yml: fix Release build
+* https://github.com/yaml/libyaml/pull/103 -- Remove unused code in yaml_document_delete
+* https://github.com/yaml/libyaml/pull/104 -- Allow colons in plain scalars inside flow collections
+* https://github.com/yaml/libyaml/pull/109 -- Fix comparison in tests/run-emitter.c
+* https://github.com/yaml/libyaml/pull/117 -- Fix typo error
+* https://github.com/yaml/libyaml/pull/119 -- The closing single quote needs to be indented...
+* https://github.com/yaml/libyaml/pull/121 -- fix token name typos in comments
+* https://github.com/yaml/libyaml/pull/122 -- Revert removing of open_ended after top level plain scalar
+* https://github.com/yaml/libyaml/pull/125 -- Cherry-picks from PR 27
+* https://github.com/yaml/libyaml/pull/135 -- Windows/C89 compatibility
+* https://github.com/yaml/libyaml/pull/136 -- allow override of Windows static lib name
+
 
 
 Resources
@@ -74,7 +36,7 @@ Resources
 
 LibYAML IRC Channel:  #libyaml on irc.freenode.net
 LibYAML homepage:     https://github.com/yaml/libyaml
-Source download:      https://github.com/yaml/libyaml/archive/dist-0.2.1.zip
+Source download:      https://github.com/yaml/libyaml/archive/dist-0.2.2.zip
 GitHub repository:    https://github.com/yaml/libyaml
 Bug tracking:          https://github.com/yaml/libyaml/issues
 
@@ -98,7 +60,6 @@ Maintainers
 The following people are responsible for maintaining LibYAML:
 
 * Ingy döt Net
-* Ian Cordasco
 * Tina Mueller
 
 and many thanks to all who have contribributed!
@@ -108,10 +69,10 @@ See: https://github.com/yaml/libyaml/pulls
 Copyright
 =========
 
-Copyright (c) 2017-2018 Ingy döt Net <ingy@ingy.net>
+Copyright (c) 2017-2019 Ingy döt Net <ingy@ingy.net>
 Copyright (c) 2006-2016 Kirill Simonov <xi@resolvent.net>
 
-The LibYAML module was written by Kirill Simonov <xi@resolvent.net>.
+The LibYAML module was written by Kirill Simonov.
 It is currently maintained by the YAML community.
 
 LibYAML is released under the MIT license.

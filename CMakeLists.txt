@@ -3,8 +3,8 @@ cmake_minimum_required(VERSION 3.0)
 project (yaml C)
 
 set (YAML_VERSION_MAJOR 0)
-set (YAML_VERSION_MINOR 1)
-set (YAML_VERSION_PATCH 7)
+set (YAML_VERSION_MINOR 2)
+set (YAML_VERSION_PATCH 2)
 set (YAML_VERSION_STRING "${YAML_VERSION_MAJOR}.${YAML_VERSION_MINOR}.${YAML_VERSION_PATCH}")
 
 option(BUILD_SHARED_LIBS "Build libyaml as a shared library" OFF)
