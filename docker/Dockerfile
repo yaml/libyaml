@@ -1,0 +1,33 @@
+FROM debian:stretch
+
+RUN apt-get update && \
+    apt-get install -y \
+    build-essential \
+    doxygen \
+    less \
+    cmake \
+    python \
+    flex \
+    bison \
+    automake \
+    libtool \
+    curl \
+    vim \
+    git \
+   && true
+
+# http://www.doxygen.nl/manual/install.html
+
+RUN curl https://sourceforge.net/projects/doxygen/files/rel-1.8.14/doxygen-1.8.14.src.tar.gz/download \
+    -L -o /doxygen-1.8.14.src.tar.gz && \
+    cd / && \
+    tar -xvf doxygen-1.8.14.src.tar.gz && \
+    cd doxygen-1.8.14 && \
+    mkdir build && \
+    cd build && \
+    cmake -G "Unix Makefiles" .. && \
+    make && \
+    make install
+
+COPY scripts/libyaml-dist.sh /libyaml-dist.sh
+
