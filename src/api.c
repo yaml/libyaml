@@ -820,7 +820,7 @@ yaml_alias_event_initialize(yaml_event_t *event, yaml_char_t *anchor)
 YAML_DECLARE(int)
 yaml_scalar_event_initialize(yaml_event_t *event,
         yaml_char_t *anchor, yaml_char_t *tag,
-        yaml_char_t *value, int length,
+        yaml_char_t *value, size_t length,
         int plain_implicit, int quoted_implicit,
         yaml_scalar_style_t style)
 {
@@ -844,7 +844,7 @@ yaml_scalar_event_initialize(yaml_event_t *event,
         if (!tag_copy) goto error;
     }
 
-    if (length < 0) {
+    if (!length) {
         length = strlen((char *)value);
     }
 

@@ -1,7 +1,7 @@
 /**
  * @file yaml.h
  * @brief Public interface for libyaml.
- * 
+ *
  * Include the header file with the code:
  * @code
  * #include <yaml.h>
@@ -390,7 +390,7 @@ typedef struct yaml_event_s {
 
     /** The event data. */
     union {
-        
+
         /** The stream parameters (for @c YAML_STREAM_START_EVENT). */
         struct {
             /** The document encoding. */
@@ -579,7 +579,7 @@ yaml_alias_event_initialize(yaml_event_t *event, yaml_char_t *anchor);
 YAML_DECLARE(int)
 yaml_scalar_event_initialize(yaml_event_t *event,
         yaml_char_t *anchor, yaml_char_t *tag,
-        yaml_char_t *value, int length,
+        yaml_char_t *value, size_t length,
         int plain_implicit, int quoted_implicit,
         yaml_scalar_style_t style);
 
@@ -726,7 +726,7 @@ struct yaml_node_s {
 
     /** The node data. */
     union {
-        
+
         /** The scalar parameters (for @c YAML_SCALAR_NODE). */
         struct {
             /** The scalar value. */
