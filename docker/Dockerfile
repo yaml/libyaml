@@ -14,6 +14,7 @@ RUN apt-get update && \
     curl \
     vim \
     git \
+    zip \
    && true
 
 # http://www.doxygen.nl/manual/install.html
