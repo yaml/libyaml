@@ -16,7 +16,7 @@
 #define PUT(emitter,value)                                                      \
     (FLUSH(emitter)                                                             \
      && (*(emitter->buffer.pointer++) = (yaml_char_t)(value),                   \
-         emitter->column ++,                                                    \
+         emitter->column++,                                             	\
          1))
 
 /*
@@ -221,7 +221,7 @@ yaml_emitter_write_indent(yaml_emitter_t *emitter);
 
 static int
 yaml_emitter_write_indicator(yaml_emitter_t *emitter,
-        char *indicator, int need_whitespace,
+        const char *indicator, int need_whitespace,
         int is_whitespace, int is_indention);
 
 static int
@@ -649,13 +649,6 @@ yaml_emitter_emit_document_start(yaml_emitter_t *emitter,
 
     else if (event->type == YAML_STREAM_END_EVENT)
     {
-        if (emitter->open_ended)
-        {
-            if (!yaml_emitter_write_indicator(emitter, "...", 1, 0, 0))
-                return 0;
-            if (!yaml_emitter_write_indent(emitter))
-                return 0;
-        }
 
         if (!yaml_emitter_flush(emitter))
             return 0;
@@ -1784,7 +1777,7 @@ yaml_emitter_write_indent(yaml_emitter_t *emitter)
 
 static int
 yaml_emitter_write_indicator(yaml_emitter_t *emitter,
-        char *indicator, int need_whitespace,
+        const char *indicator, int need_whitespace,
         int is_whitespace, int is_indention)
 {
     size_t indicator_length;
@@ -1946,6 +1939,10 @@ yaml_emitter_write_plain_scalar(yaml_emitter_t *emitter,
 
     emitter->whitespace = 0;
     emitter->indention = 0;
+    if (emitter->root_context)
+    {
+        emitter->open_ended = 1;
+    }
 
     return 1;
 }
@@ -2003,6 +2000,9 @@ yaml_emitter_write_single_quoted_scalar(yaml_emitter_t *emitter,
             breaks = 0;
         }
     }
+
+    if (breaks)
+        if (!yaml_emitter_write_indent(emitter)) return 0;
 
     if (!yaml_emitter_write_indicator(emitter, "'", 0, 0, 0))
         return 0;
@@ -2174,7 +2174,7 @@ yaml_emitter_write_block_scalar_hints(yaml_emitter_t *emitter,
         yaml_string_t string)
 {
     char indent_hint[2];
-    char *chomp_hint = NULL;
+    const char *chomp_hint = NULL;
 
     if (IS_SPACE(string) || IS_BREAK(string))
     {

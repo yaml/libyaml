@@ -38,8 +38,8 @@
  *      BLOCK-END                       # Indentation decrease.
  *      FLOW-SEQUENCE-START             # '['
  *      FLOW-SEQUENCE-END               # ']'
- *      BLOCK-SEQUENCE-START            # '{'
- *      BLOCK-SEQUENCE-END              # '}'
+ *      FLOW-MAPPING-START              # '{'
+ *      FLOW-MAPPING-END                # '}'
  *      BLOCK-ENTRY                     # '-'
  *      FLOW-ENTRY                      # ','
  *      KEY                             # '?' or nothing (simple keys).
@@ -1636,7 +1636,7 @@ yaml_parser_fetch_key(yaml_parser_t *parser)
 
     if (!parser->flow_level)
     {
-        /* Check if we are allowed to start a new key (not nessesary simple). */
+        /* Check if we are allowed to start a new key (not necessary simple). */
 
         if (!parser->simple_key_allowed) {
             return yaml_parser_set_scanner_error(parser, NULL, parser->mark,
@@ -2860,7 +2860,7 @@ yaml_parser_scan_block_scalar(yaml_parser_t *parser, yaml_token_t *token,
 
     if (!CACHE(parser, 1)) goto error;
 
-    while ((int)parser->mark.column == indent && !IS_Z(parser->buffer))
+    while ((int)parser->mark.column == indent && !(IS_Z(parser->buffer)))
     {
         /*
          * We are at the beginning of a non-empty line.
@@ -3430,11 +3430,22 @@ yaml_parser_scan_plain_scalar(yaml_parser_t *parser, yaml_token_t *token)
 
         while (!IS_BLANKZ(parser->buffer))
         {
-            /* Check for 'x:x' in the flow context. TODO: Fix the test "spec-08-13". */
+            /* Check for "x:" + one of ',?[]{}' in the flow context. TODO: Fix the test "spec-08-13".
+             * This is not completely according to the spec
+             * See http://yaml.org/spec/1.1/#id907281 9.1.3. Plain
+             */
 
             if (parser->flow_level
                     && CHECK(parser->buffer, ':')
-                    && !IS_BLANKZ_AT(parser->buffer, 1)) {
+                    && (
+                        CHECK_AT(parser->buffer, ',', 1)
+                        || CHECK_AT(parser->buffer, '?', 1)
+                        || CHECK_AT(parser->buffer, '[', 1)
+                        || CHECK_AT(parser->buffer, ']', 1)
+                        || CHECK_AT(parser->buffer, '{', 1)
+                        || CHECK_AT(parser->buffer, '}', 1)
+                    )
+                    ) {
                 yaml_parser_set_scanner_error(parser, "while scanning a plain scalar",
                         start_mark, "found unexpected ':'");
                 goto error;
@@ -3444,7 +3455,7 @@ yaml_parser_scan_plain_scalar(yaml_parser_t *parser, yaml_token_t *token)
 
             if ((CHECK(parser->buffer, ':') && IS_BLANKZ_AT(parser->buffer, 1))
                     || (parser->flow_level &&
-                        (CHECK(parser->buffer, ',') || CHECK(parser->buffer, ':')
+                        (CHECK(parser->buffer, ',')
                          || CHECK(parser->buffer, '?') || CHECK(parser->buffer, '[')
                          || CHECK(parser->buffer, ']') || CHECK(parser->buffer, '{')
                          || CHECK(parser->buffer, '}'))))

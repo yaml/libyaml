@@ -3,11 +3,12 @@ cmake_minimum_required(VERSION 3.0)
 project (yaml C)
 
 set (YAML_VERSION_MAJOR 0)
-set (YAML_VERSION_MINOR 1)
-set (YAML_VERSION_PATCH 7)
+set (YAML_VERSION_MINOR 2)
+set (YAML_VERSION_PATCH 2)
 set (YAML_VERSION_STRING "${YAML_VERSION_MAJOR}.${YAML_VERSION_MINOR}.${YAML_VERSION_PATCH}")
 
 option(BUILD_SHARED_LIBS "Build libyaml as a shared library" OFF)
+option(YAML_STATIC_LIB_NAME "base name of static library output" yaml)
 
 #
 # Output directories for a build tree
@@ -56,8 +57,8 @@ add_library(yaml ${SRCS})
 
 if(NOT BUILD_SHARED_LIBS)
   set_target_properties(yaml
-    PROPERTIES OUTPUT_NAME yaml_static
-    )
+    PROPERTIES OUTPUT_NAME ${YAML_STATIC_LIB_NAME}
+  )
 endif()
 
 set_target_properties(yaml
@@ -83,7 +84,6 @@ target_include_directories(yaml PUBLIC
 install(
   FILES
     include/yaml.h
-    ${config_h}
   DESTINATION include COMPONENT Development
   )
 

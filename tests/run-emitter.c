@@ -139,7 +139,7 @@ int compare_events(yaml_event_t *event1, yaml_event_t *event2)
                         event1->data.scalar.length) != 0)
                 return 0;
             if ((event1->data.scalar.plain_implicit != event2->data.scalar.plain_implicit)
-                    || (event2->data.scalar.quoted_implicit != event2->data.scalar.quoted_implicit)
+                    || (event1->data.scalar.quoted_implicit != event2->data.scalar.quoted_implicit)
                     /* || (event2->data.scalar.style != event2->data.scalar.style) */)
                 return 0;
             return 1;

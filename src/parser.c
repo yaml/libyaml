@@ -1316,6 +1316,8 @@ yaml_parser_process_directives(yaml_parser_t *parser,
         STACK_DEL(parser, tag_directives);
     }
 
+    if (!version_directive_ref)
+        yaml_free(version_directive);
     return 1;
 
 error:

@@ -232,7 +232,7 @@ typedef enum yaml_token_type_e {
 
     /** A BLOCK-SEQUENCE-START token. */
     YAML_BLOCK_SEQUENCE_START_TOKEN,
-    /** A BLOCK-SEQUENCE-END token. */
+    /** A BLOCK-MAPPING-START token. */
     YAML_BLOCK_MAPPING_START_TOKEN,
     /** A BLOCK-END token. */
     YAML_BLOCK_END_TOKEN,
@@ -1517,6 +1517,18 @@ typedef enum yaml_emitter_state_e {
     YAML_EMIT_END_STATE
 } yaml_emitter_state_t;
 
+
+/* This is needed for C++ */
+
+typedef struct yaml_anchors_s {
+    /** The number of references. */
+    int references;
+    /** The anchor id. */
+    int anchor;
+    /** If the node has been emitted? */
+    int serialized;
+} yaml_anchors_t;
+
 /**
  * The emitter structure.
  *
@@ -1742,14 +1754,7 @@ typedef struct yaml_emitter_s {
     int closed;
 
     /** The information associated with the document nodes. */
-    struct {
-        /** The number of references. */
-        int references;
-        /** The anchor id. */
-        int anchor;
-        /** If the node has been emitted? */
-        int serialized;
-    } *anchors;
+    yaml_anchors_t *anchors;
 
     /** The last assigned anchor id. */
     int last_anchor_id;
