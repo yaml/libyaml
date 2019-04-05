@@ -13,8 +13,8 @@ cd libyaml.git
 make dist
 
 # get the tarball filename
-tarball="$(ls yaml-*.tar.gz | head -1)"
-dirname="${tarball/.tar.gz/}"
+tarball=$(ls yaml-*.tar.gz | head -1)
+dirname=${tarball/.tar.gz/}
 
 # Copy to output dir
 cp "$tarball" /output
