@@ -7,7 +7,7 @@ $ make
 
 Required packages:
 - gcc
-- libool
+- libtool
 - make
 
 If you checked the source code from the Git repository, run
@@ -18,7 +18,7 @@ $ make
 
 Required packages:
 - autoconf
-- libool
+- libtool
 - make
 
 For more information, check the LibYAML homepage:
