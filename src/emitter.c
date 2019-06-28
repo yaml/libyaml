@@ -1,6 +1,9 @@
 
 #include "yaml_private.h"
 
+#include <unicode/utf8.h>
+#include <unicode/uchar.h>
+
 /*
  * Flush the buffer if needed.
  */
@@ -85,6 +88,9 @@ yaml_emitter_append_tag_directive(yaml_emitter_t *emitter,
 static int
 yaml_emitter_increase_indent(yaml_emitter_t *emitter,
         int flow, int indentless);
+
+static inline int
+yaml_emitter_is_printable(yaml_string_t string);
 
 /*
  * State functions.
@@ -414,6 +420,43 @@ yaml_emitter_increase_indent(yaml_emitter_t *emitter,
     }
 
     return 1;
+}
+
+/*
+ * Checks if given utf-8 encoded code point represent printable character.
+ */
+
+static inline int
+yaml_emitter_is_printable(yaml_string_t string)
+{
+    unsigned char octet;
+    unsigned int width;
+    unsigned int value;
+
+    octet = string.pointer[0];
+    width = (octet & 0x80) == 0x00 ? 1 :
+            (octet & 0xE0) == 0xC0 ? 2 :
+            (octet & 0xF0) == 0xE0 ? 3 :
+            (octet & 0xF8) == 0xF0 ? 4 : 0;
+    value = (octet & 0x80) == 0x00 ? octet & 0x7F :
+            (octet & 0xE0) == 0xC0 ? octet & 0x1F :
+            (octet & 0xF0) == 0xE0 ? octet & 0x0F :
+            (octet & 0xF8) == 0xF0 ? octet & 0x07 : 0;
+    for (int k = 1; k < (int)width; k ++) {
+        octet = string.pointer[k];
+        value = (value << 6) + (octet & 0x3F);
+    }
+    return (((string).pointer[0] == 0x0A)
+            || ((string).pointer[0] >= 0x20 && (string).pointer[0] <= 0x7E)
+            || ((string).pointer[0] == 0xC2 && (string).pointer[1] >= 0xA0)
+            || ((string).pointer[0] > 0xC2 && (string).pointer[0] < 0xED)
+            || ((string).pointer[0] == 0xED && (string).pointer[1] < 0xA0)
+            || ((string).pointer[0] == 0xEE)
+            || ((string).pointer[0] == 0xEF
+                && !((string).pointer[1] == 0xBB && (string).pointer[2] == 0xBF)
+                && !((string).pointer[1] == 0xBF
+                     && ((string).pointer[2] == 0xBE || (string).pointer[2] == 0xBF)))
+            || u_isprint(value));
 }
 
 /*
@@ -1569,7 +1612,7 @@ yaml_emitter_analyze_scalar(yaml_emitter_t *emitter,
             }
         }
 
-        if (!IS_PRINTABLE(string)
+        if (!yaml_emitter_is_printable(string)
                 || (!IS_ASCII(string) && !emitter->unicode)) {
             special_characters = 1;
         }
@@ -2027,7 +2070,7 @@ yaml_emitter_write_double_quoted_scalar(yaml_emitter_t *emitter,
 
     while (string.pointer != string.end)
     {
-        if (!IS_PRINTABLE(string) || (!emitter->unicode && !IS_ASCII(string))
+        if (!yaml_emitter_is_printable(string) || (!emitter->unicode && !IS_ASCII(string))
                 || IS_BOM(string) || IS_BREAK(string)
                 || CHECK(string, '"') || CHECK(string, '\\'))
         {

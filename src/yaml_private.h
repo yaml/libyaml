@@ -258,26 +258,6 @@ yaml_string_join(
  * Check if the character can be printed unescaped.
  */
 
-#define IS_PRINTABLE_AT(string,offset)                                          \
-    (((string).pointer[offset] == 0x0A)         /* . == #x0A */                 \
-     || ((string).pointer[offset] >= 0x20       /* #x20 <= . <= #x7E */         \
-         && (string).pointer[offset] <= 0x7E)                                   \
-     || ((string).pointer[offset] == 0xC2       /* #0xA0 <= . <= #xD7FF */      \
-         && (string).pointer[offset+1] >= 0xA0)                                 \
-     || ((string).pointer[offset] > 0xC2                                        \
-         && (string).pointer[offset] < 0xED)                                    \
-     || ((string).pointer[offset] == 0xED                                       \
-         && (string).pointer[offset+1] < 0xA0)                                  \
-     || ((string).pointer[offset] == 0xEE)                                      \
-     || ((string).pointer[offset] == 0xEF      /* #xE000 <= . <= #xFFFD */      \
-         && !((string).pointer[offset+1] == 0xBB        /* && . != #xFEFF */    \
-             && (string).pointer[offset+2] == 0xBF)                             \
-         && !((string).pointer[offset+1] == 0xBF                                \
-             && ((string).pointer[offset+2] == 0xBE                             \
-                 || (string).pointer[offset+2] == 0xBF))))
-
-#define IS_PRINTABLE(string)    IS_PRINTABLE_AT((string),0)
-
 /*
  * Check if the character at the specified position is NUL.
  */
