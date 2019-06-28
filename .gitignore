@@ -1,6 +1,5 @@
 *.BAK
 *.a
-*.cmake
 *.dll
 *.exe
 *.la
