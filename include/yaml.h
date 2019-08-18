@@ -1205,7 +1205,7 @@ typedef struct yaml_parser_s {
     /** The number of tokens fetched from the queue. */
     size_t tokens_parsed;
 
-    /* Does the tokens queue contain a token ready for dequeueing. */
+    /** Does the tokens queue contain a token ready for dequeueing. */
     int token_available;
 
     /** The indentation levels stack. */
