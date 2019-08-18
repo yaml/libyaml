@@ -1446,7 +1446,7 @@ yaml_parser_parse(yaml_parser_t *parser, yaml_event_t *event);
  * @param[in,out]   parser      A parser object.
  * @param[out]      document    An empty document object.
  *
- * @return @c 1 if the function succeeded, @c 0 on error.
+ * @returns @c 1 if the function succeeded, @c 0 on error.
  */
 
 YAML_DECLARE(int)
