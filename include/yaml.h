@@ -937,7 +937,7 @@ yaml_document_add_mapping(yaml_document_t *document,
  * @param[in,out]   document    A document object.
  * @param[in]       sequence    The sequence node id.
  * @param[in]       item        The item node id.
-*
+ *
  * @returns @c 1 if the function succeeded, @c 0 on error.
  */
 
@@ -952,7 +952,7 @@ yaml_document_append_sequence_item(yaml_document_t *document,
  * @param[in]       mapping     The mapping node id.
  * @param[in]       key         The key node id.
  * @param[in]       value       The value node id.
-*
+ *
  * @returns @c 1 if the function succeeded, @c 0 on error.
  */
 
