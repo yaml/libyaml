@@ -1560,7 +1560,7 @@ typedef struct yaml_emitter_s {
     /** Write handler. */
     yaml_write_handler_t *write_handler;
 
-    /** A pointer for passing to the white handler. */
+    /** A pointer for passing to the write handler. */
     void *write_handler_data;
 
     /** Standard (string or file) output data. */
