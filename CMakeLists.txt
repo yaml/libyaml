@@ -8,7 +8,7 @@ set (YAML_VERSION_PATCH 2)
 set (YAML_VERSION_STRING "${YAML_VERSION_MAJOR}.${YAML_VERSION_MINOR}.${YAML_VERSION_PATCH}")
 
 option(BUILD_SHARED_LIBS "Build libyaml as a shared library" OFF)
-option(YAML_STATIC_LIB_NAME "base name of static library output" yaml)
+set(YAML_STATIC_LIB_NAME "yaml" CACHE STRING "Base name of static library output")
 
 #
 # Output directories for a build tree
