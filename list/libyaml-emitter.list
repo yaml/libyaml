@@ -69,7 +69,6 @@ CC74: Spec Example 6.20. Tag Handles
 CN3R: Various location of anchors in flow sequence
 CT4Q: Spec Example 7.20. Single Pair Explicit Entry
 CUP7: Spec Example 5.6. Node Property Indicators
-CXX2: Mapping with anchor on document start line
 D83L: Block scalar indicator order
 D88J: Flow Sequence in Block Mapping
 D9TU: Single Pair Block Mapping
@@ -151,7 +150,6 @@ UDR7: Spec Example 5.4. Flow Collection Indicators
 UGM3: Spec Example 2.27. Invoice
 V55R: Aliases in Block Sequence
 V9D5: Spec Example 8.19. Compact Block Mappings
-X38W: Aliases in Flow Objects
 XV9V: Spec Example 6.5. Empty Lines [1.3]
 XW4D: Various Trailing Comments
 YD5X: Spec Example 2.5. Sequence of Sequences
