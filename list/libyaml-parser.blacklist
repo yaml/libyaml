@@ -1,0 +1,128 @@
+236B - Invalid value after mapping
+27NA - Spec Example 5.9. Directive Indicator
+2CMS - Invalid mapping in plain multiline
+2JQS - Block Mapping with Missing Keys
+2LFX - Spec Example 6.13. Reserved Directives [1.3]
+2SXE - Anchors With Colon in Name
+3HFZ - Invalid content after document end marker
+3R3P - Single block sequence with anchor
+4ABK - Spec Example 7.17. Flow Mapping Separate Values
+4EJS - Invalid tabs as indendation in a mapping
+4FJ6 - Nested implicit complex keys
+4H7K - Flow sequence with invalid extra closing bracket
+4HVU - Wrong indendation in Sequence
+4JVG - Scalar value with two anchors
+4MUZ - Flow mapping colon on line after key
+55WF - Invalid escape in double quoted string
+5LLU - Block scalar with wrong indented line after spaces only
+5MUD - Colon and adjacent value on next line
+5TRB - Invalid document-start marker in doublequoted tring
+5U3A - Sequence on same Line as Mapping Key
+62EZ - Invalid block mapping key on same line as previous key
+6BCT - Spec Example 6.3. Separation Spaces
+6JTT - Flow sequence without closing bracket
+6KGN - Anchor for empty node
+6LVF - Spec Example 6.13. Reserved Directives
+6M2F - Aliases in Explicit Block Mapping
+6PBE - Zero-indented sequences in explicit mapping keys
+6S55 - Invalid scalar at the end of sequence
+6XDY - Two document start markers
+6ZKB - Spec Example 9.6. Stream
+7LBH - Multiline double quoted implicit keys
+7MNF - Missing colon
+7Z25 - Bare document after document end marker
+7ZZ5 - Empty flow collections
+8KB6 - Multiline plain flow mapping key without value
+8XDJ - Comment in plain multiline value
+8XYN - Anchor with unicode character
+9BXH - Multiline doublequoted flow mapping key without value
+9C9N - Wrong indented flow sequence
+9CWY - Invalid scalar at the end of mapping
+9DXL - Spec Example 9.6. Stream [1.3]
+9JBA - Invalid comment after end of flow sequence
+9KBC - Mapping starting at --- line
+9MAG - Flow sequence with invalid comma at the beginning
+9MMW - Spec Example 7.21. Single Pair Implicit Entries [1.3
+9SA2 - Multiline double quoted flow mapping key
+A2M4 - Spec Example 6.2. Indentation Indicators
+B63P - Directive without document
+BD7L - Invalid mapping after sequence
+BEC7 - Spec Example 6.14. “YAML” directive
+BF9H - Trailing comment in multiline plain scalar
+BS4K - Comment between plain scalar lines
+C2SP - Flow Mapping Key on two lines
+CML9 - Missing comma in flow
+CPZ3 - Doublequoted scalar starting with a tab
+CQ3W - Double quoted string without closing quote
+CTN5 - Flow sequence with invalid extra comma
+CVW2 - Invalid comment after comma
+CXX2 - Mapping with anchor on document start line
+D49Q - Multiline single quoted implicit keys
+DBG4 - Spec Example 7.10. Plain Characters
+DK3J - Zero indented block scalar with line that looks like a comment
+DK4H - Implicit key followed by newline
+DMG6 - Wrong indendation in Map
+EB22 - Missing document-end marker before directive
+EW3V - Wrong indendation in mapping
+F6MC - More indented lines at the beginning of folded block scalars
+FP8R - Zero indented block scalar
+FRK4 - Spec Example 7.3. Completely Empty Flow Nodes
+FTA2 - Single block sequence with anchor and explicit document start
+G7JE - Multiline implicit keys
+G9HC - Invalid anchor in zero indented sequence
+GDY7 - Comment that looks like a mapping key
+GT5M - Node anchor in sequence
+H7J7 - Node anchor not indented
+HRE5 - Double quoted scalar with escaped single quote
+HU3P - Invalid Mapping in plain scalar
+HWV9 - Document-end marker
+JY7Z - Trailing content that looks like a mapping
+K3WX - Colon and adjacent value after comment on next line
+KK5P - Various combinations of explicit block mappings
+KS4U - Invalid item after end of flow sequence
+KZN9 - Spec Example 7.21. Single Pair Implicit Entries
+LHL4 - Invalid tag
+M7A3 - Spec Example 9.3. Bare Documents
+N4JP - Bad indentation in mapping
+N782 - Invalid document markers in flow style
+NAT4 - Various empty or newline only quoted strings
+NB6Z - Multiline plain value with tabs on empty lines
+NHX8 - Empty Lines at End of Document
+NJ66 - Multiline plain flow mapping key
+NTY5 - Missing space in YAML directive
+P2EQ - Invalid sequene item on same line as previous item
+Q4CL - Trailing content after quoted value
+Q5MG - Tab at beginning of line followed by a flow mapping
+QB6E - Wrong indented multiline quoted scalar
+QLJ7 - Tag shorthand used in documents but only defined in the first
+QT73 - Comment and document-end marker
+R4YG - Spec Example 8.2. Block Indentation Indicator
+R52L - Nested flow mapping sequence and mappings
+RHX7 - YAML directive without document end marker
+RTP8 - Spec Example 9.2. Document Markers
+RXY3 - Invalid document-end marker in single quoted string
+S3PD - Spec Example 8.18. Implicit Block Mapping Entries
+S4GJ - Invalid text after block scalar indicator
+S7BG - Colon followed by comma
+SF5V - Duplicate YAML directive
+SR86 - Anchor plus Alias
+SU5Z - Comment without whitespace after doublequoted scalar
+SU74 - Anchor and alias as mapping key
+SY6V - Anchor before sequence entry on same line
+T833 - Flow mapping missing a separating comma
+TD5N - Invalid scalar after sequence
+U44R - Bad indentation in mapping (2)
+UDM2 - Plain URL in flow mapping
+UT92 - Spec Example 9.4. Explicit Documents
+W4TN - Spec Example 9.5. Directives Documents
+W5VH - Allowed characters in alias
+W9L4 - Literal block scalar with more spaces in first line
+WZ62 - Spec Example 7.2. Empty Content
+X4QW - Comment without whitespace after block scalar indicator
+X8DW - Explicit key and value seperated by comment
+Y2GN - Anchor with colon in the middle
+ZCZ6 - Invalid mapping in plain single line value
+ZK9H - Nested top level flow mapping
+ZL4Z - Invalid nested mapping
+ZVH3 - Wrong indented sequence item
+ZXT5 - Implicit key followed by newline and adjacent value
