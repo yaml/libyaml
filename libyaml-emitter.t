@@ -20,4 +20,4 @@ run-test() {
   output="$(${DIFF:-diff} -u "$want" /tmp/test.out)" || ok=false
 }
 
-run-tests "$root/list/libyaml-emitter.list" "$@"
+run-tests "$root/blacklist/libyaml-emitter" "$@"

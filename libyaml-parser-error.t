@@ -13,4 +13,4 @@ run-test() {
   $ok || output=$(< /tmp/test.out)
 }
 
-run-tests "$root/list/libyaml-parser-error.list" "$@"
+run-tests "$root/blacklist/libyaml-parser-error" "$@"

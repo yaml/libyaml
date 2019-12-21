@@ -1,12 +1,19 @@
 # shellcheck disable=2001,2154,2207
 
 run-tests() {
-  whitelist_file=$1; shift
+  blacklist_file=$1; shift
 
   if [[ $# -gt 0 ]]; then
     ids=("$@")
   else
-    ids=($(cut -d: -f1 < "$whitelist_file"))
+    ids=()
+    for id in data/*; do
+      id=${id#*/}
+      [[ $id =~ [0-9] ]] || continue
+      if ! grep "^$id" "$blacklist_file"; then
+        ids+=("$id")
+      fi
+    done
   fi
 
   count=0

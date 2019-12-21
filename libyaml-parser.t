@@ -18,4 +18,4 @@ run-test() {
   output=$(${DIFF:-diff} -u "$dir/test.event" /tmp/test.out) || ok=false
 }
 
-run-tests "$root/list/libyaml-parser.list" "$@"
+run-tests "$root/blacklist/libyaml-parser" "$@"
