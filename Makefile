@@ -1,4 +1,4 @@
-.PHONY: test
+SHELL := bash
 
 PINNED_COMMITS := $(shell ./bin/pin)
 
@@ -13,6 +13,7 @@ help:
 	@echo 'clean - Remove generated files'
 	@echo 'help  - Show help'
 
+.PHONY: test
 test: data code
 	prove -lv test
 
