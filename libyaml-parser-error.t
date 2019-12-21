@@ -1,26 +1,16 @@
 #!/usr/bin/env bash
 
-set -e
+# shellcheck disable=1090,2034
 
-if [[ $# -gt 0 ]]; then
-  ids=("$@")
-else
-  ids=($(cut -d: -f1 < test/list/libyaml-parser-error.list))
-fi
+root=$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)
 
-count=0
-for id in "${ids[@]}"; do
-  dir="data/$id"
-  label="$id: $(< $dir/===)"
-  [[ -e "$dir/in.yaml" ]] || continue
-  ok=true
-  ../../tests/run-parser-test-suite "$dir/in.yaml" > /tmp/test.out 2>&1 || ok=false
-  if $ok; then
-    echo "not ok $((++count)) $label"
-    sed 's/^/# /' /tmp/test.out
-  else
-    echo "ok $((++count)) $label"
-  fi
-done
+source "$root"/test-runner.bash
 
-echo "1..$count"
+run-test() {
+  dir=$1
+  ok=false
+  ../../tests/run-parser-test-suite "$dir/in.yaml" > /tmp/test.out 2>&1 || ok=true
+  $ok || output=$(< /tmp/test.out)
+}
+
+run-tests "$root/list/libyaml-parser-error.list" "$@"

@@ -1,19 +1,15 @@
 #!/usr/bin/env bash
 
-set -e
+# shellcheck disable=1090,2034
 
-if [[ $# -gt 0 ]]; then
-  ids=("$@")
-else
-  ids=($(cut -d: -f1 < test/list/libyaml-emitter.list))
-fi
+root=$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)
 
-count=0
-for id in "${ids[@]}"; do
-  dir="data/$id"
-  label="$id: $(< $dir/===)"
-  [[ -e "$dir/in.yaml" ]] || continue
-  want="$dir/out.yaml"
+source "$root"/test-runner.bash
+
+run-test() {
+  dir=$1
+  ok=true
+  want=$dir/out.yaml
   [[ -e $want ]] || want="$dir/in.yaml"
   ../../tests/run-emitter-test-suite "$dir/test.event" > /tmp/test.out || {
     (
@@ -21,14 +17,7 @@ for id in "${ids[@]}"; do
       cat "$want"
     ) | sed 's/^/# /'
   }
-  ok=true
-  output="$(${DIFF:-diff} -u $want /tmp/test.out)" || ok=false
-  if $ok; then
-    echo "ok $((++count)) $label"
-  else
-    echo "not ok $((++count)) $label"
-    echo "$output" | sed 's/^/# /'
-  fi
-done
+  output="$(${DIFF:-diff} -u "$want" /tmp/test.out)" || ok=false
+}
 
-echo "1..$count"
+run-tests "$root/list/libyaml-emitter.list" "$@"
