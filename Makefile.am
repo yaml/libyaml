@@ -25,7 +25,7 @@ bootstrap: maintainer-clean
 test: all
 	make -C tests check-TESTS
 
-test-suite: tests/run-test-suite
+test-suite: tests/run-test-suite all
 	make -C $< test
 
 test-all: test test-suite
