@@ -1,23 +1,22 @@
 # shellcheck disable=2001,2154,2207
 
-run-tests() {
-  blacklist_file=$1; shift
+set -e -u -o pipefail
+
+run-tests() (
+  root=$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)
+
+  cd "$root/.."
 
   if [[ $# -gt 0 ]]; then
     ids=("$@")
   else
-    ids=()
-    for id in data/*; do
-      id=${id#*/}
-      [[ $id =~ [0-9] ]] || continue
-      if ! grep "^$id" "$blacklist_file"; then
-        ids+=("$id")
-      fi
-    done
+    ids=($(cd data; printf "%s\n" * | grep '[0-9]'))
   fi
 
   count=0
   for id in "${ids[@]}"; do
+    check-test "$id" || continue
+
     dir=data/$id
     label="$id: $(< "$dir/===")"
     [[ -e $dir/in.yaml ]] || continue
@@ -33,4 +32,4 @@ run-tests() {
   done
 
   echo "1..$count"
-}
+)
