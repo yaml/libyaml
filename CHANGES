@@ -69,22 +69,22 @@
 
 0.1.6 2014-03-26
 
-    - d1003a9 Fixed heap overflow in yaml_parser_scan_uri_escapes (Thanks
+    - https://github.com/yaml/libyaml/commit/d1003a9 Fixed heap overflow in yaml_parser_scan_uri_escapes (Thanks
       Ivan Fratric of the Google Security Team).
-    - 662f4be Added tag 0.1.5 for changeset a5142b24428b
+    - https://github.com/yaml/libyaml/commit/662f4be Added tag 0.1.5 for changeset a5142b24428b
 
 0.1.5 2014-02-03
 
-    - 303b455 Manually define PTRDIFF_MAX for VS C compiler.
-    - 1ef1171 Forgot to set the error state.
-    - c9479c7 Limit input size to SIZE_MAX/2.
-    - c201bf6 Guard against overflows in indent and flow_level.
-    - bb8ab82 Added .hgignore.
-    - 2d94fc5 Prevent node index overflow (Reported by Florian Weimer).
-    - df33f25 Bumped the version number.
-    - f56726b Fixed invalid size_t->int cast (Thank to Florian Weimer).
-    - 01e8dad Added a basic CMake project.
-    - f54fc40 Added tag 0.1.4 for changeset 3e6507fa0c26
+    - https://github.com/yaml/libyaml/commit/303b455 Manually define PTRDIFF_MAX for VS C compiler.
+    - https://github.com/yaml/libyaml/commit/1ef1171 Forgot to set the error state.
+    - https://github.com/yaml/libyaml/commit/c9479c7 Limit input size to SIZE_MAX/2.
+    - https://github.com/yaml/libyaml/commit/c201bf6 Guard against overflows in indent and flow_level.
+    - https://github.com/yaml/libyaml/commit/bb8ab82 Added .hgignore.
+    - https://github.com/yaml/libyaml/commit/2d94fc5 Prevent node index overflow (Reported by Florian Weimer).
+    - https://github.com/yaml/libyaml/commit/df33f25 Bumped the version number.
+    - https://github.com/yaml/libyaml/commit/f56726b Fixed invalid size_t->int cast (Thank to Florian Weimer).
+    - https://github.com/yaml/libyaml/commit/01e8dad Added a basic CMake project.
+    - https://github.com/yaml/libyaml/commit/f54fc40 Added tag 0.1.4 for changeset 3e6507fa0c26
 
 0.1.4 2012-12-24
 
@@ -107,22 +107,22 @@
 
 0.1.1 2006-08-01
 
-    - 5e52c31 Fixed a problem when the DOCUMENT-END event is not emitted until
+    - https://github.com/yaml/libyaml/commit/5e52c31 Fixed a problem when the DOCUMENT-END event is not emitted until
       the beginning of the next document is available.  Fixed #51.
       Thanks edward(at)sweetbytes.net for the bug report.
-    - dd71484 Add project files for Visual Studio 2003.
-    - ce8a93e Fix the example_deconstructor project.
-    - c9b74de Eliminate some warnings and add more doxygen definitions.
-    - 0122490 Undefine the NDEBUG directive for the test programs.
-    - 071329a Fix a bug in the emitter introduced while fixing warnings for VC6.
-    - 6f6bbb8 Add VC6 projects for the test executables.
-    - 0174ed6 Add win32 fixes and project files for VC6.
-    - e27a3c8 Add functions for constructing, parsing and emitting YAML documents.
-    - a907bf8 Add `const` qualifier for `yaml_parser_set_input_string` parameter `input`.
-    - c83b67a Force a new line at the end of the input stream even if there
+    - https://github.com/yaml/libyaml/commit/dd71484 Add project files for Visual Studio 2003.
+    - https://github.com/yaml/libyaml/commit/ce8a93e Fix the example_deconstructor project.
+    - https://github.com/yaml/libyaml/commit/c9b74de Eliminate some warnings and add more doxygen definitions.
+    - https://github.com/yaml/libyaml/commit/0122490 Undefine the NDEBUG directive for the test programs.
+    - https://github.com/yaml/libyaml/commit/071329a Fix a bug in the emitter introduced while fixing warnings for VC6.
+    - https://github.com/yaml/libyaml/commit/6f6bbb8 Add VC6 projects for the test executables.
+    - https://github.com/yaml/libyaml/commit/0174ed6 Add win32 fixes and project files for VC6.
+    - https://github.com/yaml/libyaml/commit/e27a3c8 Add functions for constructing, parsing and emitting YAML documents.
+    - https://github.com/yaml/libyaml/commit/a907bf8 Add `const` qualifier for `yaml_parser_set_input_string` parameter `input`.
+    - https://github.com/yaml/libyaml/commit/c83b67a Force a new line at the end of the input stream even if there
       are no a new line character. This fixes a nasty bug when libyaml hangs on
       documents like `[[[[`. Thanks ciaranm for reporting the bug.
-    - 609cce0 Older versions of gcc do not know about -Wno-pointer-sign.
+    - https://github.com/yaml/libyaml/commit/609cce0 Older versions of gcc do not know about -Wno-pointer-sign.
 
 0.0.1 2006-08-01
 
