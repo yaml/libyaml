@@ -348,6 +348,7 @@
  *          SCALAR("another value",plain)
  *          KEY
  *          SCALAR("a mapping",plain)
+ *          VALUE
  *          BLOCK-MAPPING-START
  *          KEY
  *          SCALAR("key 1",plain)
