@@ -937,7 +937,7 @@ yaml_document_add_mapping(yaml_document_t *document,
  * @param[in,out]   document    A document object.
  * @param[in]       sequence    The sequence node id.
  * @param[in]       item        The item node id.
-*
+ *
  * @returns @c 1 if the function succeeded, @c 0 on error.
  */
 
@@ -952,7 +952,7 @@ yaml_document_append_sequence_item(yaml_document_t *document,
  * @param[in]       mapping     The mapping node id.
  * @param[in]       key         The key node id.
  * @param[in]       value       The value node id.
-*
+ *
  * @returns @c 1 if the function succeeded, @c 0 on error.
  */
 
@@ -1205,7 +1205,7 @@ typedef struct yaml_parser_s {
     /** The number of tokens fetched from the queue. */
     size_t tokens_parsed;
 
-    /* Does the tokens queue contain a token ready for dequeueing. */
+    /** Does the tokens queue contain a token ready for dequeueing. */
     int token_available;
 
     /** The indentation levels stack. */
@@ -1446,7 +1446,7 @@ yaml_parser_parse(yaml_parser_t *parser, yaml_event_t *event);
  * @param[in,out]   parser      A parser object.
  * @param[out]      document    An empty document object.
  *
- * @return @c 1 if the function succeeded, @c 0 on error.
+ * @returns @c 1 if the function succeeded, @c 0 on error.
  */
 
 YAML_DECLARE(int)
@@ -1560,7 +1560,7 @@ typedef struct yaml_emitter_s {
     /** Write handler. */
     yaml_write_handler_t *write_handler;
 
-    /** A pointer for passing to the white handler. */
+    /** A pointer for passing to the write handler. */
     void *write_handler_data;
 
     /** Standard (string or file) output data. */
