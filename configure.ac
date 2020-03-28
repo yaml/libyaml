@@ -66,6 +66,16 @@ AC_CHECK_HEADERS([stdlib.h])
 AC_C_CONST
 AC_TYPE_SIZE_T
 
+# Check for windows specific needs
+AS_CASE([x$host],
+	[x*-*-cygwin*|x*-*-mingw*], [
+	AC_CHECK_PROGS([WINDRES], [windres $host-windres])
+	use_version_rc=true
+	]
+)
+
+AM_CONDITIONAL(USE_VERSION_RC, test x$use_version_rc = xtrue)
+
 # Define Makefiles.
 AC_CONFIG_FILES([yaml-0.1.pc include/Makefile src/Makefile Makefile tests/Makefile])
 
