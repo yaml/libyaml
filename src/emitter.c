@@ -1421,7 +1421,11 @@ yaml_emitter_analyze_anchor(yaml_emitter_t *emitter,
     }
 
     while (string.pointer != string.end) {
-        if (!IS_ALPHA(string)) {
+        if (
+            !IS_ALPHA(string)
+            && !CHECK(string, '.')
+            && !CHECK(string, '/')
+        ) {
             return yaml_emitter_set_emitter_error(emitter, alias ?
                     "alias value must contain alphanumerical characters only" :
                     "anchor value must contain alphanumerical characters only");
