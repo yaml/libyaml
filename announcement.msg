@@ -1,13 +1,13 @@
-From: Ingy döt Net <ingy@ingy.net>
+From: Tina Müller <post@tinita.de>
 To: yaml-core@lists.sourceforge.net
-Subject: [ANN] LibYAML-0.2.2: A new release
+Subject: [ANN] LibYAML-0.2.3: A new release
 
 =========================
- Announcing LibYAML-0.2.2
+ Announcing LibYAML-0.2.3
 =========================
 
 A new release of LibYAML is now available:
-https://github.com/yaml/libyaml/tree/0.2.2
+https://github.com/yaml/libyaml/tree/0.2.3
 
 The LibYAML project is now maintained by the YAML community. Planning happens
 on the #yaml-dev and #libyaml IRC channels on irc.freenode.net.
@@ -16,19 +16,21 @@ on the #yaml-dev and #libyaml IRC channels on irc.freenode.net.
 Changes
 =======
 
-* https://github.com/yaml/libyaml/pull/95 -- build: do not install config.h
-* https://github.com/yaml/libyaml/pull/97 -- appveyor.yml: fix Release build
-* https://github.com/yaml/libyaml/pull/103 -- Remove unused code in yaml_document_delete
-* https://github.com/yaml/libyaml/pull/104 -- Allow colons in plain scalars inside flow collections
-* https://github.com/yaml/libyaml/pull/109 -- Fix comparison in tests/run-emitter.c
-* https://github.com/yaml/libyaml/pull/117 -- Fix typo error
-* https://github.com/yaml/libyaml/pull/119 -- The closing single quote needs to be indented...
-* https://github.com/yaml/libyaml/pull/121 -- fix token name typos in comments
-* https://github.com/yaml/libyaml/pull/122 -- Revert removing of open_ended after top level plain scalar
-* https://github.com/yaml/libyaml/pull/125 -- Cherry-picks from PR 27
-* https://github.com/yaml/libyaml/pull/135 -- Windows/C89 compatibility
-* https://github.com/yaml/libyaml/pull/136 -- allow override of Windows static lib name
-
+- https://github.com/yaml/libyaml/pull/66  -- Change dllexport controlling macro to use _WIN32
+- https://github.com/yaml/libyaml/pull/127 -- Avoid recursion in the document loader.
+- https://github.com/yaml/libyaml/pull/128 -- Squash a couple of warnings in example-deconstructor-alt
+- https://github.com/yaml/libyaml/pull/130 -- Fixed typo.
+- https://github.com/yaml/libyaml/pull/140 -- Use pointer to const for strings that aren't/shouldn't be modified
+- https://github.com/yaml/libyaml/pull/144 -- Fix typo in comment
+- https://github.com/yaml/libyaml/pull/151 -- Fix spelling for error message
+- https://github.com/yaml/libyaml/pull/155 -- include/yaml.h: fix comments
+- https://github.com/yaml/libyaml/pull/157 -- change cmake target name from libOFF.a to libyaml.a
+- https://github.com/yaml/libyaml/pull/159 -- Add CHANGES file
+- https://github.com/yaml/libyaml/pull/160 -- Always output document end before directive (YAML 1.2 compatibility)
+- https://github.com/yaml/libyaml/pull/161 -- Make appveyor config be a hidden file
+- https://github.com/yaml/libyaml/pull/162 -- Output document end marker after open ended scalars
+- https://github.com/yaml/libyaml/pull/169 -- Fixed missing token in example
+- https://github.com/yaml/libyaml/pull/172 -- Support %YAML 1.2 directives
 
 
 Resources
@@ -36,7 +38,7 @@ Resources
 
 LibYAML IRC Channel:  #libyaml on irc.freenode.net
 LibYAML homepage:     https://github.com/yaml/libyaml
-Source download:      https://github.com/yaml/libyaml/archive/dist-0.2.2.zip
+Source download:      https://github.com/yaml/libyaml/archive/dist-0.2.3.zip
 GitHub repository:    https://github.com/yaml/libyaml
 Bug tracking:          https://github.com/yaml/libyaml/issues
 
@@ -69,7 +71,7 @@ See: https://github.com/yaml/libyaml/pulls
 Copyright
 =========
 
-Copyright (c) 2017-2019 Ingy döt Net <ingy@ingy.net>
+Copyright (c) 2017-2020 Ingy döt Net <ingy@ingy.net>
 Copyright (c) 2006-2016 Kirill Simonov <xi@resolvent.net>
 
 The LibYAML module was written by Kirill Simonov.
