@@ -635,10 +635,10 @@ main(int argc, char *argv[])
 
                 /* Display the style information. */
 
-                if (input_event.data.sequence_start.style)
+                if (input_event.data.mapping_start.style)
                 {
-                    yaml_sequence_style_t style
-                        = (yaml_sequence_style_t) input_event.data.mapping_start.style;
+                    yaml_mapping_style_t style
+                        = input_event.data.mapping_start.style;
 
                     /* Add 'style': <style>. */
 

@@ -28,7 +28,7 @@ extern "C" {
 
 #if defined(__MINGW32__)
 #   define  YAML_DECLARE(type)  type
-#elif defined(WIN32)
+#elif defined(_WIN32)
 #   if defined(YAML_DECLARE_STATIC)
 #       define  YAML_DECLARE(type)  type
 #   elif defined(YAML_DECLARE_EXPORT)
@@ -552,7 +552,7 @@ yaml_document_end_event_initialize(yaml_event_t *event, int implicit);
  */
 
 YAML_DECLARE(int)
-yaml_alias_event_initialize(yaml_event_t *event, yaml_char_t *anchor);
+yaml_alias_event_initialize(yaml_event_t *event, const yaml_char_t *anchor);
 
 /**
  * Create a SCALAR event.
@@ -578,8 +578,8 @@ yaml_alias_event_initialize(yaml_event_t *event, yaml_char_t *anchor);
 
 YAML_DECLARE(int)
 yaml_scalar_event_initialize(yaml_event_t *event,
-        yaml_char_t *anchor, yaml_char_t *tag,
-        yaml_char_t *value, int length,
+        const yaml_char_t *anchor, const yaml_char_t *tag,
+        const yaml_char_t *value, int length,
         int plain_implicit, int quoted_implicit,
         yaml_scalar_style_t style);
 
@@ -601,7 +601,7 @@ yaml_scalar_event_initialize(yaml_event_t *event,
 
 YAML_DECLARE(int)
 yaml_sequence_start_event_initialize(yaml_event_t *event,
-        yaml_char_t *anchor, yaml_char_t *tag, int implicit,
+        const yaml_char_t *anchor, const yaml_char_t *tag, int implicit,
         yaml_sequence_style_t style);
 
 /**
@@ -633,7 +633,7 @@ yaml_sequence_end_event_initialize(yaml_event_t *event);
 
 YAML_DECLARE(int)
 yaml_mapping_start_event_initialize(yaml_event_t *event,
-        yaml_char_t *anchor, yaml_char_t *tag, int implicit,
+        const yaml_char_t *anchor, const yaml_char_t *tag, int implicit,
         yaml_mapping_style_t style);
 
 /**
@@ -896,7 +896,7 @@ yaml_document_get_root_node(yaml_document_t *document);
 
 YAML_DECLARE(int)
 yaml_document_add_scalar(yaml_document_t *document,
-        yaml_char_t *tag, yaml_char_t *value, int length,
+        const yaml_char_t *tag, const yaml_char_t *value, int length,
         yaml_scalar_style_t style);
 
 /**
@@ -913,7 +913,7 @@ yaml_document_add_scalar(yaml_document_t *document,
 
 YAML_DECLARE(int)
 yaml_document_add_sequence(yaml_document_t *document,
-        yaml_char_t *tag, yaml_sequence_style_t style);
+        const yaml_char_t *tag, yaml_sequence_style_t style);
 
 /**
  * Create a MAPPING node and attach it to the document.
@@ -929,7 +929,7 @@ yaml_document_add_sequence(yaml_document_t *document,
 
 YAML_DECLARE(int)
 yaml_document_add_mapping(yaml_document_t *document,
-        yaml_char_t *tag, yaml_mapping_style_t style);
+        const yaml_char_t *tag, yaml_mapping_style_t style);
 
 /**
  * Add an item to a SEQUENCE node.
@@ -937,7 +937,7 @@ yaml_document_add_mapping(yaml_document_t *document,
  * @param[in,out]   document    A document object.
  * @param[in]       sequence    The sequence node id.
  * @param[in]       item        The item node id.
-*
+ *
  * @returns @c 1 if the function succeeded, @c 0 on error.
  */
 
@@ -952,7 +952,7 @@ yaml_document_append_sequence_item(yaml_document_t *document,
  * @param[in]       mapping     The mapping node id.
  * @param[in]       key         The key node id.
  * @param[in]       value       The value node id.
-*
+ *
  * @returns @c 1 if the function succeeded, @c 0 on error.
  */
 
@@ -1205,7 +1205,7 @@ typedef struct yaml_parser_s {
     /** The number of tokens fetched from the queue. */
     size_t tokens_parsed;
 
-    /* Does the tokens queue contain a token ready for dequeueing. */
+    /** Does the tokens queue contain a token ready for dequeueing. */
     int token_available;
 
     /** The indentation levels stack. */
@@ -1446,7 +1446,7 @@ yaml_parser_parse(yaml_parser_t *parser, yaml_event_t *event);
  * @param[in,out]   parser      A parser object.
  * @param[out]      document    An empty document object.
  *
- * @return @c 1 if the function succeeded, @c 0 on error.
+ * @returns @c 1 if the function succeeded, @c 0 on error.
  */
 
 YAML_DECLARE(int)
@@ -1560,7 +1560,7 @@ typedef struct yaml_emitter_s {
     /** Write handler. */
     yaml_write_handler_t *write_handler;
 
-    /** A pointer for passing to the white handler. */
+    /** A pointer for passing to the write handler. */
     void *write_handler_data;
 
     /** Standard (string or file) output data. */
@@ -1858,7 +1858,7 @@ YAML_DECLARE(void)
 yaml_emitter_set_canonical(yaml_emitter_t *emitter, int canonical);
 
 /**
- * Set the intendation increment.
+ * Set the indentation increment.
  *
  * @param[in,out]   emitter     An emitter object.
  * @param[in]       indent      The indentation increment (1 < . < 10).

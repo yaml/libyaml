@@ -594,6 +594,7 @@ yaml_emitter_emit_document_start(yaml_emitter_t *emitter,
         {
             if (!yaml_emitter_write_indicator(emitter, "...", 1, 0, 0))
                 return 0;
+            emitter->open_ended = 0;
             if (!yaml_emitter_write_indent(emitter))
                 return 0;
         }
@@ -644,12 +645,25 @@ yaml_emitter_emit_document_start(yaml_emitter_t *emitter,
 
         emitter->state = YAML_EMIT_DOCUMENT_CONTENT_STATE;
 
+        emitter->open_ended = 0;
         return 1;
     }
 
     else if (event->type == YAML_STREAM_END_EVENT)
     {
 
+        /**
+         * This can happen if a block scalar with trailing empty lines
+         * is at the end of the stream
+         */
+        if (emitter->open_ended)
+        {
+            if (!yaml_emitter_write_indicator(emitter, "...", 1, 0, 0))
+                return 0;
+            emitter->open_ended = 0;
+            if (!yaml_emitter_write_indent(emitter))
+                return 0;
+        }
         if (!yaml_emitter_flush(emitter))
             return 0;
 
@@ -691,6 +705,7 @@ yaml_emitter_emit_document_end(yaml_emitter_t *emitter,
         if (!event->data.document_end.implicit) {
             if (!yaml_emitter_write_indicator(emitter, "...", 1, 0, 0))
                 return 0;
+            emitter->open_ended = 0;
             if (!yaml_emitter_write_indent(emitter))
                 return 0;
         }
@@ -1227,7 +1242,7 @@ yaml_emitter_select_scalar_style(yaml_emitter_t *emitter, yaml_event_t *event)
 }
 
 /*
- * Write an achor.
+ * Write an anchor.
  */
 
 static int
@@ -1326,7 +1341,10 @@ static int
 yaml_emitter_analyze_version_directive(yaml_emitter_t *emitter,
         yaml_version_directive_t version_directive)
 {
-    if (version_directive.major != 1 || version_directive.minor != 1) {
+    if (version_directive.major != 1 || (
+        version_directive.minor != 1
+        && version_directive.minor != 2
+        )) {
         return yaml_emitter_set_emitter_error(emitter,
                 "incompatible %YAML directive");
     }
@@ -1796,7 +1814,6 @@ yaml_emitter_write_indicator(yaml_emitter_t *emitter,
 
     emitter->whitespace = is_whitespace;
     emitter->indention = (emitter->indention && is_indention);
-    emitter->open_ended = 0;
 
     return 1;
 }
@@ -1939,10 +1956,6 @@ yaml_emitter_write_plain_scalar(yaml_emitter_t *emitter,
 
     emitter->whitespace = 0;
     emitter->indention = 0;
-    if (emitter->root_context)
-    {
-        emitter->open_ended = 1;
-    }
 
     return 1;
 }

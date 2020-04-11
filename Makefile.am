@@ -3,7 +3,7 @@
 
 SUBDIRS = include src . tests
 
-EXTRA_DIST = README LICENSE CMakeLists.txt doc/doxygen.cfg
+EXTRA_DIST = Changes ReadMe.md License CMakeLists.txt doc/doxygen.cfg
 
 pkgconfigdir = $(libdir)/pkgconfig
 pkgconfig_DATA = yaml-0.1.pc
@@ -25,7 +25,7 @@ bootstrap: maintainer-clean
 test: all
 	make -C tests check-TESTS
 
-test-suite: tests/run-test-suite
+test-suite: tests/run-test-suite all
 	make -C $< test
 
 test-all: test test-suite

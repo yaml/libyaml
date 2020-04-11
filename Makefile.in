@@ -190,7 +190,7 @@ am__DIST_COMMON = $(srcdir)/Makefile.in $(srcdir)/yaml-0.1.pc.in \
 	$(top_srcdir)/config/compile $(top_srcdir)/config/config.guess \
 	$(top_srcdir)/config/config.sub \
 	$(top_srcdir)/config/install-sh $(top_srcdir)/config/ltmain.sh \
-	$(top_srcdir)/config/missing README config/compile \
+	$(top_srcdir)/config/missing config/compile \
 	config/config.guess config/config.sub config/install-sh \
 	config/ltmain.sh config/missing
 DISTFILES = $(DIST_COMMON) $(DIST_SOURCES) $(TEXINFOS) $(EXTRA_DIST)
@@ -357,7 +357,7 @@ top_build_prefix = @top_build_prefix@
 top_builddir = @top_builddir@
 top_srcdir = @top_srcdir@
 SUBDIRS = include src . tests
-EXTRA_DIST = README LICENSE CMakeLists.txt doc/doxygen.cfg
+EXTRA_DIST = Changes ReadMe.md License CMakeLists.txt doc/doxygen.cfg
 pkgconfigdir = $(libdir)/pkgconfig
 pkgconfig_DATA = yaml-0.1.pc
 all: all-recursive
@@ -872,7 +872,7 @@ bootstrap: maintainer-clean
 test: all
 	make -C tests check-TESTS
 
-test-suite: tests/run-test-suite
+test-suite: tests/run-test-suite all
 	make -C $< test
 
 test-all: test test-suite
