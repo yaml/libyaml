@@ -38,7 +38,6 @@ DFF7: Spec Example 7.16. Flow Mapping Entries
 E76Z: Aliases in Implicit Block Mapping
 EX5H: Multiline Scalar at Top Level [1.3]
 EXG3: Three dashes and content without space [1.3]
-F8F9: Spec Example 8.5. Chomping Trailing Lines
 FBC9: Allowed characters in plain scalars
 FH7J: Tags on Empty Scalars
 FRK4: Spec Example 7.3. Completely Empty Flow Nodes
@@ -46,7 +45,6 @@ J3BT: Spec Example 5.12. Tabs and Spaces
 JDH8: Plain Scalar looking like key, comment, anchor and tag [1.3]
 JTV5: Block Mapping with Multiline Scalars
 K54U: Tab after document header
-K858: Spec Example 8.6. Empty Scalar Chomping
 KK5P: Various combinations of explicit block mappings
 KSS4: Scalars on --- line
 KZN9: Spec Example 7.21. Single Pair Implicit Entries
