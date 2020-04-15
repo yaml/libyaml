@@ -495,6 +495,7 @@ static int
 yaml_emitter_emit_stream_start(yaml_emitter_t *emitter,
         yaml_event_t *event)
 {
+    emitter->open_ended = 0;
     if (event->type == YAML_STREAM_START_EVENT)
     {
         if (!emitter->encoding) {
@@ -594,10 +595,10 @@ yaml_emitter_emit_document_start(yaml_emitter_t *emitter,
         {
             if (!yaml_emitter_write_indicator(emitter, "...", 1, 0, 0))
                 return 0;
-            emitter->open_ended = 0;
             if (!yaml_emitter_write_indent(emitter))
                 return 0;
         }
+        emitter->open_ended = 0;
 
         if (event->data.document_start.version_directive) {
             implicit = 0;
@@ -662,7 +663,7 @@ yaml_emitter_emit_document_start(yaml_emitter_t *emitter,
          * This can happen if a block scalar with trailing empty lines
          * is at the end of the stream
          */
-        if (emitter->open_ended)
+        if (emitter->open_ended == 2)
         {
             if (!yaml_emitter_write_indicator(emitter, "...", 1, 0, 0))
                 return 0;
@@ -715,6 +716,8 @@ yaml_emitter_emit_document_end(yaml_emitter_t *emitter,
             if (!yaml_emitter_write_indent(emitter))
                 return 0;
         }
+        else if (!emitter->open_ended)
+            emitter->open_ended = 1;
         if (!yaml_emitter_flush(emitter))
             return 0;
 
@@ -2222,7 +2225,7 @@ yaml_emitter_write_block_scalar_hints(yaml_emitter_t *emitter,
         else if (string.start == string.pointer)
         {
             chomp_hint = "+";
-            emitter->open_ended = 1;
+            emitter->open_ended = 2;
         }
         else
         {
@@ -2232,7 +2235,7 @@ yaml_emitter_write_block_scalar_hints(yaml_emitter_t *emitter,
             if (IS_BREAK(string))
             {
                 chomp_hint = "+";
-                emitter->open_ended = 1;
+                emitter->open_ended = 2;
             }
         }
     }
