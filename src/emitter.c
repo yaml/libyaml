@@ -603,8 +603,14 @@ yaml_emitter_emit_document_start(yaml_emitter_t *emitter,
             implicit = 0;
             if (!yaml_emitter_write_indicator(emitter, "%YAML", 1, 0, 0))
                 return 0;
-            if (!yaml_emitter_write_indicator(emitter, "1.1", 1, 0, 0))
-                return 0;
+            if (event->data.document_start.version_directive->minor == 1) {
+                if (!yaml_emitter_write_indicator(emitter, "1.1", 1, 0, 0))
+                    return 0;
+            }
+            else {
+                if (!yaml_emitter_write_indicator(emitter, "1.2", 1, 0, 0))
+                    return 0;
+            }
             if (!yaml_emitter_write_indent(emitter))
                 return 0;
         }

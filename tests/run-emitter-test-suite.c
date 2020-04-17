@@ -3,30 +3,58 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <assert.h>
+#include "../src/yaml_private.h"
 
 int get_line(FILE * input, char *line);
 char *get_anchor(char sigil, char *line, char *anchor);
 char *get_tag(char *line, char *tag);
 void get_value(char *line, char *value, int *style);
+int usage(int ret);
 
 int main(int argc, char *argv[])
 {
     FILE *input;
     yaml_emitter_t emitter;
     yaml_event_t event;
+    yaml_version_directive_t *version_directive = NULL;
 
     int canonical = 0;
     int unicode = 0;
     char line[1024];
+    int foundfile = 0;
+    int i = 0;
+    int minor = 0;
 
-    if (argc == 1)
-        input = stdin;
-    else if (argc == 2)
-        input = fopen(argv[1], "rb");
-    else {
-        fprintf(stderr, "Usage: libyaml-emitter [<input-file>]\n");
-        return 1;
+    for (i = 1; i < argc; i++) {
+        if (strncmp(argv[i], "--help", 6) == 0)
+            return usage(0);
+        if (strncmp(argv[i], "-h", 2) == 0)
+            return usage(0);
+        if (strncmp(argv[i], "--directive", 11) == 0) {
+            if (i+1 == argc)
+                return usage(1);
+            i++;
+            if (strncmp(argv[i], "1.1", 3) == 0)
+                minor = 1;
+            else if (strncmp(argv[i], "1.2", 3) == 0)
+                minor = 2;
+            else
+                return usage(1);
+        }
+        else if (!foundfile) {
+            input = fopen(argv[i], "rb");
+            foundfile = 1;
+        }
+
     }
+    if (minor) {
+        version_directive = YAML_MALLOC_STATIC(yaml_version_directive_t);
+        version_directive->major = 1;
+        version_directive->minor = minor;
+    }
+    if (!foundfile)
+        input = stdin;
+
     assert(input);
 
     if (!yaml_emitter_initialize(&emitter)) {
@@ -36,6 +64,7 @@ int main(int argc, char *argv[])
     yaml_emitter_set_output_file(&emitter, stdout);
     yaml_emitter_set_canonical(&emitter, canonical);
     yaml_emitter_set_unicode(&emitter, unicode);
+
 
     while (get_line(input, line)) {
         int ok;
@@ -51,7 +80,7 @@ int main(int argc, char *argv[])
         }
         else if (strncmp(line, "+DOC", 4) == 0) {
             implicit = strncmp(line, "+DOC ---", 8) != 0;
-            ok = yaml_document_start_event_initialize(&event, NULL, NULL, NULL, implicit);
+            ok = yaml_document_start_event_initialize(&event, version_directive, NULL, NULL, implicit);
         }
         else if (strncmp(line, "-DOC", 4) == 0) {
             implicit = strncmp(line, "-DOC ...", 8) != 0;
@@ -228,4 +257,9 @@ void get_value(char *line, char *value, int *style)
             value[i++] = *c;
     }
     value[i] = '\0';
+}
+
+int usage(int ret) {
+    fprintf(stderr, "Usage: run-emitter-test-suite [--directive (1.1|1.2)] [<input-file>]\n");
+    return ret;
 }
