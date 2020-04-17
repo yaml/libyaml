@@ -12,10 +12,25 @@ Update libyaml version in:
 
 Commit and push everything to release/0.x.y
 
-## Create dist archives
+## Test and Create Release archives
+
+This will create a docker image (libyaml-dev), test libyaml & pyyaml,
+and creat archives.
 
 Make sure you have a clean git repository (no changed files). The following
 process will clone your current git directory.
+
+### Run pyyaml tests on release branch
+
+Run
+
+    cd packaging/docker
+    make test-pyyaml
+
+It will run all libyaml tests, and run pyyaml tests (with python 2 & 3) on
+the current branch.
+
+### Create dist archives
 
 Run
 
@@ -23,9 +38,8 @@ Run
 
 in the repository root or
 
+    cd packaging/docker
     make libyaml-dist
-
-in packaging/docker.
 
 It will create a docker image (libyaml-dev) and run `make dist` in the container
 to create a tarball written to packaging/docker/output.
