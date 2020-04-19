@@ -4,9 +4,10 @@
 
 Update libyaml version in:
 * announcement.msg
+* Changes
 * CMakeLists.txt
   * `YAML_VERSION_MAJOR`, `YAML_VERSION_MINOR`, `YAML_VERSION_PATCH`
-* appveyor.yml
+* .appveyor.yml
 * configure.ac
   * `YAML_MAJOR`, `YAML_MINOR`, `YAML_PATCH`, `YAML_RELEASE`, `YAML_CURRENT`, `YAML_REVISION`
 
@@ -24,8 +25,7 @@ process will clone your current git directory.
 
 Run
 
-    cd packaging/docker
-    make test-pyyaml
+    make docker-test-pyyaml
 
 It will run all libyaml tests, and run pyyaml tests (with python 2 & 3) on
 the current branch.
@@ -36,14 +36,15 @@ Run
 
     make docker-dist
 
-in the repository root or
-
-    cd packaging/docker
-    make libyaml-dist
 
 It will create a docker image (libyaml-dev) and run `make dist` in the container
 to create a tarball written to packaging/docker/output.
 It will also create a zipfile.
+
+Unpack data for copying to dist branch:
+
+    cd packaging/docker/output
+    tar xvf yaml-0.x.y.tar.gz
 
 ## Update dist branch
 
