@@ -13,7 +13,7 @@ maintainer-clean-local:
 	-find ${builddir} -name Makefile.in -exec rm -f '{}' ';'
 
 distclean-local:
-	rm -fr tests/run-test-suite
+	rm -fr tests/run-test-suite packaging
 	-git worktree prune
 
 .PHONY: bootstrap
@@ -34,3 +34,13 @@ tests/run-test-suite:
 	-git branch --track run-test-suite origin/run-test-suite
 	-git worktree prune
 	git worktree add $@ run-test-suite
+
+packaging:
+	-git branch --track $@ origin/$@
+	git worktree add --force $@ $@
+
+docker-dist: packaging
+	make -C $</docker libyaml-dist
+
+docker-test-pyyaml: packaging
+	make -C $</docker test-pyyaml

@@ -1,3 +1,12 @@
+0.2.4 2020-04-19
+
+  - https://github.com/yaml/libyaml/pull/143
+    Add packaging/docker-dist to Makefile.am
+
+  - https://github.com/yaml/libyaml/pull/174
+    Fix logic for document end before directive
+
+
 0.2.3 2020-04-11
 
   - https://github.com/yaml/libyaml/pull/130
