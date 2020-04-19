@@ -1,13 +1,15 @@
 From: Tina Müller <post@tinita.de>
 To: yaml-core@lists.sourceforge.net
-Subject: [ANN] LibYAML-0.2.3: A new release
+Subject: [ANN] LibYAML-0.2.4: A new release
 
 =========================
- Announcing LibYAML-0.2.3
+ Announcing LibYAML-0.2.4
 =========================
 
 A new release of LibYAML is now available:
-https://github.com/yaml/libyaml/tree/0.2.3
+https://github.com/yaml/libyaml/tree/0.2.4
+
+This fixes a bug introduced in the 0.2.3 release.
 
 The LibYAML project is now maintained by the YAML community. Planning happens
 on the #yaml-dev and #libyaml IRC channels on irc.freenode.net.
@@ -16,21 +18,8 @@ on the #yaml-dev and #libyaml IRC channels on irc.freenode.net.
 Changes
 =======
 
-- https://github.com/yaml/libyaml/pull/66  -- Change dllexport controlling macro to use _WIN32
-- https://github.com/yaml/libyaml/pull/127 -- Avoid recursion in the document loader.
-- https://github.com/yaml/libyaml/pull/128 -- Squash a couple of warnings in example-deconstructor-alt
-- https://github.com/yaml/libyaml/pull/130 -- Fixed typo.
-- https://github.com/yaml/libyaml/pull/140 -- Use pointer to const for strings that aren't/shouldn't be modified
-- https://github.com/yaml/libyaml/pull/144 -- Fix typo in comment
-- https://github.com/yaml/libyaml/pull/151 -- Fix spelling for error message
-- https://github.com/yaml/libyaml/pull/155 -- include/yaml.h: fix comments
-- https://github.com/yaml/libyaml/pull/157 -- change cmake target name from libOFF.a to libyaml.a
-- https://github.com/yaml/libyaml/pull/159 -- Add CHANGES file
-- https://github.com/yaml/libyaml/pull/160 -- Always output document end before directive (YAML 1.2 compatibility)
-- https://github.com/yaml/libyaml/pull/161 -- Make appveyor config be a hidden file
-- https://github.com/yaml/libyaml/pull/162 -- Output document end marker after open ended scalars
-- https://github.com/yaml/libyaml/pull/169 -- Fixed missing token in example
-- https://github.com/yaml/libyaml/pull/172 -- Support %YAML 1.2 directives
+https://github.com/yaml/libyaml/pull/143 -- Add packaging/docker-dist to Makefile.am
+https://github.com/yaml/libyaml/pull/174 -- Fix logic for document end before directive
 
 
 Resources

@@ -36,7 +36,7 @@ tests/run-test-suite:
 	git worktree add $@ run-test-suite
 
 packaging:
-	git branch --track $@ origin/$@
+	-git branch --track $@ origin/$@
 	git worktree add --force $@ $@
 
 docker-dist: packaging
