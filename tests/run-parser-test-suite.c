@@ -30,7 +30,15 @@ int main(int argc, char *argv[])
     while (1) {
         yaml_event_type_t type;
         if (!yaml_parser_parse(&parser, &event)) {
-            fprintf(stderr, "Parse error: %s\n", parser.problem);
+            if ( parser.problem_mark.line || parser.problem_mark.column ) {
+                fprintf(stderr, "Parse error: %s\nLine: %lu Column: %lu\n",
+                    parser.problem,
+                    (unsigned long)parser.problem_mark.line + 1,
+                    (unsigned long)parser.problem_mark.column + 1);
+            }
+            else {
+                fprintf(stderr, "Parse error: %s\n", parser.problem);
+            }
             return 1;
         }
         type = event.type;
