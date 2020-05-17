@@ -3,7 +3,6 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <assert.h>
-#include "../src/yaml_private.h"
 
 int get_line(FILE * input, char *line);
 char *get_anchor(char sigil, char *line, char *anchor);
@@ -48,7 +47,6 @@ int main(int argc, char *argv[])
 
     }
     if (minor) {
-        version_directive = YAML_MALLOC_STATIC(yaml_version_directive_t);
         version_directive->major = 1;
         version_directive->minor = minor;
     }
