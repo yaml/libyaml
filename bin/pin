@@ -1,7 +1,6 @@
 #!/bin/bash
 
 tac conf/pin.tsv |
-head -n+2 |
 (
   while read -r line; do
     commit_master=$(echo "$line" | cut -f1)
