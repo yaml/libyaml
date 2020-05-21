@@ -712,7 +712,7 @@ yaml_parser_scan_tag_handle(yaml_parser_t *parser, int directive,
         yaml_mark_t start_mark, yaml_char_t **handle);
 
 static int
-yaml_parser_scan_tag_uri(yaml_parser_t *parser, int directive,
+yaml_parser_scan_tag_uri(yaml_parser_t *parser, int uri_char, int directive,
         yaml_char_t *head, yaml_mark_t start_mark, yaml_char_t **uri);
 
 static int
@@ -2293,7 +2293,7 @@ yaml_parser_scan_tag_directive_value(yaml_parser_t *parser,
 
     /* Scan a prefix. */
 
-    if (!yaml_parser_scan_tag_uri(parser, 1, NULL, start_mark, &prefix_value))
+    if (!yaml_parser_scan_tag_uri(parser, 1, 1, NULL, start_mark, &prefix_value))
         goto error;
 
     /* Expect a whitespace or line break. */
@@ -2411,7 +2411,7 @@ yaml_parser_scan_tag(yaml_parser_t *parser, yaml_token_t *token)
 
         /* Consume the tag value. */
 
-        if (!yaml_parser_scan_tag_uri(parser, 0, NULL, start_mark, &suffix))
+        if (!yaml_parser_scan_tag_uri(parser, 1, 0, NULL, start_mark, &suffix))
             goto error;
 
         /* Check for '>' and eat it. */
@@ -2439,14 +2439,14 @@ yaml_parser_scan_tag(yaml_parser_t *parser, yaml_token_t *token)
         {
             /* Scan the suffix now. */
 
-            if (!yaml_parser_scan_tag_uri(parser, 0, NULL, start_mark, &suffix))
+            if (!yaml_parser_scan_tag_uri(parser, 0, 0, NULL, start_mark, &suffix))
                 goto error;
         }
         else
         {
             /* It wasn't a handle after all.  Scan the rest of the tag. */
 
-            if (!yaml_parser_scan_tag_uri(parser, 0, handle, start_mark, &suffix))
+            if (!yaml_parser_scan_tag_uri(parser, 0, 0, handle, start_mark, &suffix))
                 goto error;
 
             /* Set the handle to '!'. */
@@ -2475,9 +2475,11 @@ yaml_parser_scan_tag(yaml_parser_t *parser, yaml_token_t *token)
     if (!CACHE(parser, 1)) goto error;
 
     if (!IS_BLANKZ(parser->buffer)) {
-        yaml_parser_set_scanner_error(parser, "while scanning a tag",
-                start_mark, "did not find expected whitespace or line break");
-        goto error;
+        if (!parser->flow_level || !CHECK(parser->buffer, ',') ) {
+            yaml_parser_set_scanner_error(parser, "while scanning a tag",
+                    start_mark, "did not find expected whitespace or line break");
+            goto error;
+        }
     }
 
     end_mark = parser->mark;
@@ -2566,7 +2568,7 @@ error:
  */
 
 static int
-yaml_parser_scan_tag_uri(yaml_parser_t *parser, int directive,
+yaml_parser_scan_tag_uri(yaml_parser_t *parser, int uri_char, int directive,
         yaml_char_t *head, yaml_mark_t start_mark, yaml_char_t **uri)
 {
     size_t length = head ? strlen((char *)head) : 0;
@@ -2602,8 +2604,11 @@ yaml_parser_scan_tag_uri(yaml_parser_t *parser, int directive,
      * The set of characters that may appear in URI is as follows:
      *
      *      '0'-'9', 'A'-'Z', 'a'-'z', '_', '-', ';', '/', '?', ':', '@', '&',
-     *      '=', '+', '$', ',', '.', '!', '~', '*', '\'', '(', ')', '[', ']',
-     *      '%'.
+     *      '=', '+', '$', '.', '!', '~', '*', '\'', '(', ')', '%'.
+     *
+     * If we are inside a verbatim tag <...> (parameter uri_char is true)
+     * then also the following flow indicators are allowed:
+     *      ',', '[', ']'
      */
 
     while (IS_ALPHA(parser->buffer) || CHECK(parser->buffer, ';')
@@ -2611,12 +2616,15 @@ yaml_parser_scan_tag_uri(yaml_parser_t *parser, int directive,
             || CHECK(parser->buffer, ':') || CHECK(parser->buffer, '@')
             || CHECK(parser->buffer, '&') || CHECK(parser->buffer, '=')
             || CHECK(parser->buffer, '+') || CHECK(parser->buffer, '$')
-            || CHECK(parser->buffer, ',') || CHECK(parser->buffer, '.')
+            || CHECK(parser->buffer, '.') || CHECK(parser->buffer, '%')
             || CHECK(parser->buffer, '!') || CHECK(parser->buffer, '~')
             || CHECK(parser->buffer, '*') || CHECK(parser->buffer, '\'')
             || CHECK(parser->buffer, '(') || CHECK(parser->buffer, ')')
-            || CHECK(parser->buffer, '[') || CHECK(parser->buffer, ']')
-            || CHECK(parser->buffer, '%'))
+            || (uri_char && (
+                CHECK(parser->buffer, ',')
+                || CHECK(parser->buffer, '[') || CHECK(parser->buffer, ']')
+                )
+            ))
     {
         /* Check if it is a URI-escape sequence. */
 
