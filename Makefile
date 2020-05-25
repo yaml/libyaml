@@ -1,14 +1,13 @@
 SHELL := bash
 
-PINNED_COMMITS := $(shell ./bin/pin)
+PINNED_COMMITS := $(shell LIBYAML_DEBUG_PIN=$(LIBYAML_DEBUG_PIN) ./bin/pin)
 
 ifeq ($(PINNED_COMMITS),)
     $(error ./bin/pin failed)
 endif
 
-$(eval MASTER_COMMIT = $(word 1, $(PINNED_COMMITS)))
-$(eval CODE_COMMIT = $(word 2, $(PINNED_COMMITS)))
-$(eval DATA_COMMIT = $(word 3, $(PINNED_COMMITS)))
+LIBYAML_TEST_SUITE_CODE_COMMIT ?= $(word 2, $(PINNED_COMMITS))
+LIBYAML_TEST_SUITE_DATA_COMMIT ?= $(word 3, $(PINNED_COMMITS))
 
 default: help
 
@@ -23,14 +22,15 @@ test: data code
 
 clean:
 	rm -fr data test
-	-git worktree prune
+	git worktree prune
 
 data:
 	git clone https://github.com/yaml/yaml-test-suite $@ --branch=$@
-	(cd $@ && git reset --hard $(DATA_COMMIT))
+	(cd $@ && git reset --hard $(LIBYAML_TEST_SUITE_DATA_COMMIT))
 
 code:
 	-git branch --track run-test-suite-code origin/run-test-suite-code
-	-git worktree prune
-	-git worktree add test run-test-suite-code
-	(cd test && git reset --hard $(CODE_COMMIT))
+	git worktree prune
+	[[ -d test ]] || \
+	    git worktree add test run-test-suite-code
+	(cd test && git reset --hard $(LIBYAML_TEST_SUITE_CODE_COMMIT))
