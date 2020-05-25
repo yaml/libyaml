@@ -1,22 +1,37 @@
 #!/bin/bash
 
-tac conf/pin.tsv |
-(
-  while read -r line; do
-    commit_master=$(echo "$line" | cut -f1)
+set -e -u -o pipefail
 
-    echo "[debug] line $line" >&2
-    echo "[debug] Trying commit $commit_master" >&2
-    echo "[debug] cd ../..; git merge-base --is-ancestor $commit_master HEAD" >&2
-    (cd ../..; git merge-base --is-ancestor "$commit_master" HEAD || echo "no" >&2)
+debug() {
+  if [[ ${LIBYAML_DEBUG_PIN-} ]]; then
+    echo "[DEBUG] $*" >&2
+  fi
+}
+
+warn() {
+  echo "$*" >&2
+}
+
+tail -n+2 conf/pin.tsv |
+tac |
+(
+  while read -r commit_master commit_code commit_data; do
+    line="$commit_master $commit_code $commit_data"
+
+    debug "Line '$line'"
+    debug "Checking commit '$commit_master'"
+    debug "cd ../..; git merge-base --is-ancestor $commit_master HEAD"
+
     if (cd ../..; git merge-base --is-ancestor "$commit_master" HEAD 2>/dev/null); then
       echo "$line"
       exit
+    else
+      debug "Not found"
     fi
   done
 
-  echo 'WARNING: No repository pinning found for libyaml/yaml-test-suite testing.' >&2
-  echo 'WARNING: Defaulting to HEAD...' >&2
+  warn 'WARNING: No repository pinning found for libyaml/yaml-test-suite testing.'
+  warn 'WARNING: Defaulting to HEAD...'
 
   echo -e "HEAD\tHEAD\tHEAD"
 )
