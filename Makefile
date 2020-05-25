@@ -2,6 +2,10 @@ SHELL := bash
 
 PINNED_COMMITS := $(shell ./bin/pin)
 
+ifeq ($(PINNED_COMMITS),)
+    $(error ./bin/pin failed)
+endif
+
 $(eval MASTER_COMMIT = $(word 1, $(PINNED_COMMITS)))
 $(eval CODE_COMMIT = $(word 2, $(PINNED_COMMITS)))
 $(eval DATA_COMMIT = $(word 3, $(PINNED_COMMITS)))
