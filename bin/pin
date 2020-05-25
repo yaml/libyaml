@@ -5,6 +5,10 @@ tac conf/pin.tsv |
   while read -r line; do
     commit_master=$(echo "$line" | cut -f1)
 
+    echo "[debug] line $line" >&2
+    echo "[debug] Trying commit $commit_master" >&2
+    echo "[debug] cd ../..; git merge-base --is-ancestor $commit_master HEAD" >&2
+    (cd ../..; git merge-base --is-ancestor "$commit_master" HEAD || echo "no" >&2)
     if (cd ../..; git merge-base --is-ancestor "$commit_master" HEAD 2>/dev/null); then
       echo "$line"
       exit
