@@ -23,10 +23,11 @@ tac |
     debug "cd ../..; git merge-base --is-ancestor $commit_master HEAD"
 
     if (cd ../..; git merge-base --is-ancestor "$commit_master" HEAD 2>/dev/null); then
+      debug "Found pinning: '$line'"
       echo "$line"
       exit
     else
-      debug "Not found"
+      debug "No pinning found"
     fi
   done
 
