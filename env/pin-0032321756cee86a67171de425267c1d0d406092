@@ -1,0 +1,6 @@
+#!/bin/bash
+
+LIBYAML_TEST_SUITE_DATA_REPO=https://github.com/yaml/yaml-test-suite
+LIBYAML_TEST_SUITE_DATA_COMMIT=data-2019-09-17
+
+source "$ENV/blacklist-001"

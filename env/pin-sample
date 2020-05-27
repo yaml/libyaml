@@ -1,0 +1,25 @@
+#!/bin/bash
+
+# This pinning file can be used for development (before committing to master)
+# like this:
+#
+#    make test-suite LIBYAML_TEST_SUITE_ENV=pin
+
+# yaml-test-suite info:
+LIBYAML_TEST_SUITE_DATA_REPO=https://github.com/yaml/yaml-test-suite
+LIBYAML_TEST_SUITE_DATA_COMMIT=data-2019-09-17
+
+# Start with a base blacklist (optional):
+source "$ENV/blacklist-001"
+
+# Add to blacklists:
+blacklist parser XXX1 XXX2
+blacklist parser-error XXX3 XXX4
+blacklist emitter XXX5 XXX6
+
+# Whitelist (un-blacklist) certain tests:
+whitelist parser AAA1 AAA2
+whitelist parser-error AAA3 AAA4
+whitelist emitter AAA5 AAA6
+
+whitelist parser 2JQS
