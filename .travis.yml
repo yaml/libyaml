@@ -18,6 +18,7 @@ before_install:
 # Travis branch-specific clone problem workaround:
 - git config remote.origin.fetch +refs/heads/*:refs/remotes/origin/*
 - git fetch
+- env | sort
 
 - if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then
     pip install --user scikit-ci-addons==0.15.0;
