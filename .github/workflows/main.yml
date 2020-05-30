@@ -27,7 +27,9 @@ jobs:
     - name: Install software
       run: |
         if [[ '${{ matrix.os }}' == macOS-latest ]]; then
-          brew install automake coreutils
+          brew install automake bash coreutils make
+          echo ::add-path::/usr/local/opt/coreutils/libexec/gnubin
+          echo ::add-path::/usr/local/opt/make/libexec/gnubin
         fi
     - name: Fetch branches
       run: |
