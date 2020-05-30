@@ -31,9 +31,9 @@ test-suite: tests/run-test-suite all
 test-all: test test-suite
 
 tests/run-test-suite:
-	-git branch --track run-test-suite origin/run-test-suite
+	-git branch --track run-test-suite-2 origin/run-test-suite-2
 	-git worktree prune
-	git worktree add $@ run-test-suite
+	git worktree add $@ run-test-suite-2
 
 packaging:
 	-git branch --track $@ origin/$@
