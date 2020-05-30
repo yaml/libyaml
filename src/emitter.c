@@ -1023,6 +1023,8 @@ yaml_emitter_emit_alias(yaml_emitter_t *emitter, SHIM(yaml_event_t *event))
 {
     if (!yaml_emitter_process_anchor(emitter))
         return 0;
+    if (emitter->simple_key_context)
+        if (!PUT(emitter, ' ')) return 0;
     emitter->state = POP(emitter, emitter->states);
 
     return 1;
