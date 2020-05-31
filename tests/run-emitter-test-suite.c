@@ -3,6 +3,7 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <assert.h>
+#include "../src/yaml_private.h"
 
 int get_line(FILE * input, char *line);
 char *get_anchor(char sigil, char *line, char *anchor);
@@ -23,13 +24,27 @@ int main(int argc, char *argv[])
     int foundfile = 0;
     int i = 0;
     int minor = 0;
+    int flow = -1; /** default no flow style collections */
 
     for (i = 1; i < argc; i++) {
         if (strncmp(argv[i], "--help", 6) == 0)
             return usage(0);
         if (strncmp(argv[i], "-h", 2) == 0)
             return usage(0);
-        if (strncmp(argv[i], "--directive", 11) == 0) {
+        if (strncmp(argv[i], "--flow", 6) == 0) {
+            if (i+1 == argc)
+                return usage(1);
+            i++;
+            if (strncmp(argv[i], "keep", 4) == 0)
+                flow = 0;
+            else if (strncmp(argv[i], "on", 2) == 0)
+                flow = 1;
+            else if (strncmp(argv[i], "off", 3) == 0)
+                flow = -1;
+            else
+                return usage(1);
+        }
+        else if (strncmp(argv[i], "--directive", 11) == 0) {
             if (i+1 == argc)
                 return usage(1);
             i++;
@@ -47,6 +62,7 @@ int main(int argc, char *argv[])
 
     }
     if (minor) {
+        version_directive = YAML_MALLOC_STATIC(yaml_version_directive_t);
         version_directive->major = 1;
         version_directive->minor = minor;
     }
@@ -69,6 +85,7 @@ int main(int argc, char *argv[])
         char anchor[256];
         char tag[256];
         int implicit;
+        int style;
 
         if (strncmp(line, "+STR", 4) == 0) {
             ok = yaml_stream_start_event_initialize(&event, YAML_UTF8_ENCODING);
@@ -77,25 +94,35 @@ int main(int argc, char *argv[])
             ok = yaml_stream_end_event_initialize(&event);
         }
         else if (strncmp(line, "+DOC", 4) == 0) {
-            implicit = strncmp(line, "+DOC ---", 8) != 0;
+            implicit = strncmp(line+4, " ---", 4) != 0;
             ok = yaml_document_start_event_initialize(&event, version_directive, NULL, NULL, implicit);
         }
         else if (strncmp(line, "-DOC", 4) == 0) {
-            implicit = strncmp(line, "-DOC ...", 8) != 0;
+            implicit = strncmp(line+4, " ...", 4) != 0;
             ok = yaml_document_end_event_initialize(&event, implicit);
         }
         else if (strncmp(line, "+MAP", 4) == 0) {
+            style = YAML_BLOCK_MAPPING_STYLE;
+            if (flow == 1)
+                style = YAML_FLOW_MAPPING_STYLE;
+            else if (flow == 0 && strncmp(line+5, "{}", 2) == 0)
+                style = YAML_FLOW_MAPPING_STYLE;
             ok = yaml_mapping_start_event_initialize(&event, (yaml_char_t *)
                                                      get_anchor('&', line, anchor), (yaml_char_t *)
-                                                     get_tag(line, tag), 0, YAML_BLOCK_MAPPING_STYLE);
+                                                     get_tag(line, tag), 0, style);
         }
         else if (strncmp(line, "-MAP", 4) == 0) {
             ok = yaml_mapping_end_event_initialize(&event);
         }
         else if (strncmp(line, "+SEQ", 4) == 0) {
+            style = YAML_BLOCK_SEQUENCE_STYLE;
+            if (flow == 1)
+                style = YAML_FLOW_MAPPING_STYLE;
+            else if (flow == 0 && strncmp(line+5, "[]", 2) == 0)
+                style = YAML_FLOW_SEQUENCE_STYLE;
             ok = yaml_sequence_start_event_initialize(&event, (yaml_char_t *)
                                                       get_anchor('&', line, anchor), (yaml_char_t *)
-                                                      get_tag(line, tag), 0, YAML_BLOCK_SEQUENCE_STYLE);
+                                                      get_tag(line, tag), 0, style);
         }
         else if (strncmp(line, "-SEQ", 4) == 0) {
             ok = yaml_sequence_end_event_initialize(&event);
@@ -258,6 +285,6 @@ void get_value(char *line, char *value, int *style)
 }
 
 int usage(int ret) {
-    fprintf(stderr, "Usage: run-emitter-test-suite [--directive (1.1|1.2)] [<input-file>]\n");
+    fprintf(stderr, "Usage: run-emitter-test-suite [--directive (1.1|1.2)] [--flow (on|off|keep)] [<input-file>]\n");
     return ret;
 }

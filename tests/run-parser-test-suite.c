@@ -4,20 +4,44 @@
 #include <assert.h>
 
 void print_escaped(yaml_char_t * str, size_t length);
+int usage(int ret);
 
 int main(int argc, char *argv[])
 {
     FILE *input;
     yaml_parser_t parser;
     yaml_event_t event;
+    int flow = -1; /** default no flow style collections */
+    int i = 0;
+    int foundfile = 0;
 
-    if (argc == 1)
+    for (i = 1; i < argc; i++) {
+        if (strncmp(argv[i], "--flow", 6) == 0) {
+            if (i+1 == argc)
+                return usage(1);
+            i++;
+            if (strncmp(argv[i], "keep", 4) == 0)
+                flow = 0;
+            else if (strncmp(argv[i], "on", 2) == 0)
+                flow = 1;
+            else if (strncmp(argv[i], "off", 3) == 0)
+                flow = -1;
+            else
+                return usage(1);
+        }
+        else if (strncmp(argv[i], "--help", 6) == 0)
+            return usage(0);
+        else if (strncmp(argv[i], "-h", 2) == 0)
+            return usage(0);
+        else if (!foundfile) {
+            input = fopen(argv[i], "rb");
+            foundfile = 1;
+        }
+        else
+            return usage(1);
+    }
+    if (!foundfile) {
         input = stdin;
-    else if (argc == 2)
-        input = fopen(argv[1], "rb");
-    else {
-        fprintf(stderr, "Usage: libyaml-parser [<input-file>]\n");
-        return 1;
     }
     assert(input);
 
@@ -63,6 +87,10 @@ int main(int argc, char *argv[])
         }
         else if (type == YAML_MAPPING_START_EVENT) {
             printf("+MAP");
+            if (flow == 0 && event.data.mapping_start.style == YAML_FLOW_MAPPING_STYLE)
+                printf(" {}");
+            else if (flow == 1)
+                printf(" {}");
             if (event.data.mapping_start.anchor)
                 printf(" &%s", event.data.mapping_start.anchor);
             if (event.data.mapping_start.tag)
@@ -73,6 +101,10 @@ int main(int argc, char *argv[])
             printf("-MAP\n");
         else if (type == YAML_SEQUENCE_START_EVENT) {
             printf("+SEQ");
+            if (flow == 0 && event.data.sequence_start.style == YAML_FLOW_SEQUENCE_STYLE)
+                printf(" []");
+            else if (flow == 1)
+                printf(" []");
             if (event.data.sequence_start.anchor)
                 printf(" &%s", event.data.sequence_start.anchor);
             if (event.data.sequence_start.tag)
@@ -149,4 +181,9 @@ void print_escaped(yaml_char_t * str, size_t length)
         else
             printf("%c", c);
     }
+}
+
+int usage(int ret) {
+    fprintf(stderr, "Usage: libyaml-parser [--flow (on|off|keep)] [<input-file>]\n");
+    return ret;
 }
