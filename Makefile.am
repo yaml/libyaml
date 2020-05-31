@@ -5,6 +5,8 @@ SUBDIRS = include src . tests
 
 EXTRA_DIST = Changes ReadMe.md License CMakeLists.txt doc/doxygen.cfg
 
+LIBYAML_TEST_SUITE_RUN_BRANCH ?= run-test-suite
+
 pkgconfigdir = $(libdir)/pkgconfig
 pkgconfig_DATA = yaml-0.1.pc
 
@@ -31,9 +33,9 @@ test-suite: tests/run-test-suite all
 test-all: test test-suite
 
 tests/run-test-suite:
-	-git branch --track run-test-suite origin/run-test-suite
+	-git branch --track $(LIBYAML_TEST_SUITE_RUN_BRANCH) origin/$(LIBYAML_TEST_SUITE_RUN_BRANCH)
 	-git worktree prune
-	git worktree add $@ run-test-suite
+	git worktree add $@ $(LIBYAML_TEST_SUITE_RUN_BRANCH)
 
 packaging:
 	-git branch --track $@ origin/$@
