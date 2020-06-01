@@ -40,7 +40,6 @@ stamp-h1
 /tests/example-deconstructor-alt
 /tests/example-reformatter
 /tests/example-reformatter-alt
-/tests/run-test-suite
 /tests/test-reader
 /tests/test-version
 /dist/

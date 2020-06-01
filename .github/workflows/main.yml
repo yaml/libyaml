@@ -41,8 +41,6 @@ jobs:
 
     - run: |
         git clean -d -x -f
-        rm -fr tests/run-test-suite
-        git worktree prune
 
     - name: Compiler version
       run: ${{ matrix.compiler }} --version
