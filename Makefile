@@ -13,7 +13,11 @@ test: data
 	[[ "$(debug)" ]] && export LIBYAML_TEST_SUITE_DEBUG=1
 	export LIBYAML_TEST_SUITE_ENV=$$(./lookup env)
 	[[ $$LIBYAML_TEST_SUITE_ENV ]] || exit 1
-	prove -v test/
+	set +ex
+	(set -x; prove -v test/)
+	if [[ $$LIBYAML_TEST_SUITE_ENV == env/default ]]; then
+	  ./lookup default-warning
+	fi
 
 test-all:
 	prove -v test/test-all.sh

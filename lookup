@@ -22,11 +22,17 @@ main() {
   base=$(cd ../.. && pwd)
   head=$(get-head-commit)
 
+  if [[ $lookup == default-warning ]]; then
+    default-warning
+    exit
+  fi
+
   if [[ ${LIBYAML_TEST_SUITE_ENV-} ]]; then
     lookup-env
   else
     [[ $env ]] || lookup-log
     [[ $env ]] || lookup-local
+    [[ $env ]] || lookup-default
   fi
 
   if [[ $lookup == data ]]; then
@@ -103,13 +109,23 @@ lookup-log() {
 lookup-local() {
   debug "Looking for local env for '$head'"
 
-  local e=env/pin-$head
+  e=$(echo env/pin-*-$head)
 
   if [[ -e $e ]]; then
     env=$e
-    source "./env/pin-$head"
+    source "$env"
     found
   fi
+}
+
+lookup-default() {
+  debug "Using default environment 'env/default'"
+
+  [[ $lookup == env ]] && default-warning
+
+  env=env/default
+  source "$env"
+  found
 }
 
 found() {
@@ -119,14 +135,54 @@ found() {
   commit=$LIBYAML_TEST_SUITE_DATA_COMMIT
 }
 
+default-warning() (
+  main_branch=$(cd "$base" && git rev-parse --abbrev-ref HEAD)
+  test_branch=$(git rev-parse --abbrev-ref HEAD)
+
+  default=env/default
+  while [[ -h $default ]]; do
+    default=$(readlink "$default")
+  done
+
+  message-in-a-box "
+WARNING WARNING WARNING WARNING WARNING WARNING WARNING WARNING WARNING WARNING
+
+Using the default test-suite env:
+
+  env/$default
+
+No test-suite environment info was found for the HEAD of '$main_branch':
+
+  $head
+
+This info is kept in tests/run-test-suite/env/
+
+For more information, see:
+
+* https://github.com/yaml/libyaml/blob/$test_branch/ReadMe.md
+* https://github.com/yaml/libyaml/tree/$test_branch/env
+"
+)
+
 whitelist() (:)
 blacklist() (:)
 die() { echo "Died: $*" >&2; exit 1; }
 warn() ( echo "$*" >&2 )
 debug() (
-  if [[ ${LIBYAML_TEST_SUITE_DEBUG-} ]]; then
+  if [[ ${LIBYAML_TEST_SUITE_DEBUG-} && $lookup != default-warning ]]; then
     warn "[DEBUG] $*"
   fi
+)
+message-in-a-box() (
+  len=${COLUMNS:-$(tput cols)}
+  len=${len:-80}
+  line=$(eval "printf '*%.0s' {1..$len}")
+
+  (
+    echo "$line"
+    echo "* ${1//$'\n'/$'\n'* }"
+    echo "$line"
+  ) >&2
 )
 
 main "$@"
