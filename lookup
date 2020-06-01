@@ -1,0 +1,188 @@
+#!/usr/bin/env bash
+
+# shellcheck disable=1090
+
+set -e -u -o pipefail
+
+main() {
+  lookup=$1
+
+  # default_repo=https://github.com/yaml/yaml-test-suite
+  # default_commit=origin/data
+  repo=
+  commit=
+  env=
+
+  if [[ $lookup == data ]]; then
+    debug "Looking up test-suite data repo/commit"
+  elif [[ $lookup == env ]]; then
+    debug "Looking up test-suite env"
+  fi
+
+  base=$(cd ../.. && pwd)
+  head=$(get-head-commit)
+
+  if [[ $lookup == default-warning ]]; then
+    default-warning
+    exit
+  fi
+
+  if [[ ${LIBYAML_TEST_SUITE_ENV-} ]]; then
+    lookup-env
+  else
+    [[ $env ]] || lookup-log
+    [[ $env ]] || lookup-local
+    [[ $env ]] || lookup-default
+  fi
+
+  if [[ $lookup == data ]]; then
+    [[ $repo && $commit ]] ||
+      die "Can't find yaml-test-suite env to use"
+    echo "$repo $commit"
+  elif [[ $lookup == env ]]; then
+    [[ $env ]] ||
+      die "Can't find yaml-test-suite env to use"
+    echo "$env"
+  fi
+}
+
+get-head-commit() {
+  debug "Getting libyaml HEAD commit"
+
+  [[ -d $base/.git ]] ||
+    die "'$base' is not a git repository"
+
+  head=$(cd "$base" && git rev-parse HEAD)
+
+  [[ $head ]] ||
+    die "Can't find HEAD commit in '$base'"
+
+  debug "HEAD commit is '$head'"
+
+  echo "$head"
+}
+
+lookup-env() {
+  local lookup=$LIBYAML_TEST_SUITE_ENV
+
+  debug "Trying LIBYAML_TEST_SUITE_ENV=$lookup"
+
+  case $lookup in
+    /*)
+      env=$lookup
+      source "$env"
+      found
+      ;;
+    pin-*)
+      env=env/$lookup
+      [[ -e $env ]] ||
+        die "Specified LIBYAML_TEST_SUITE_ENV=$lookup but '$env' not found"
+      source "$env"
+      found
+      ;;
+    time)
+      die "LIBYAML_TEST_SUITE_ENV=time not yet implemented"
+      ;;
+    *)
+      die "Unsupported value 'LIBYAML_TEST_SUITE_ENV=$lookup'"
+      ;;
+  esac
+}
+
+lookup-log() {
+  debug "Looking for '*** yaml-test-suite' in most recent 'git log' message"
+
+  found=$(
+    cd "$base" || exit
+    git log --format=%B -n1 |
+      (grep -A999999 '^\*\*\*\ yaml-test-suite' || true) |
+      tail -n+2
+  )
+  if [[ $found ]]; then
+    env=env/tmp-$head
+    echo "$found" > "$env"
+    source "$env"
+    found
+  fi
+}
+
+lookup-local() {
+  debug "Looking for local env for '$head'"
+
+  e=$(echo env/pin-*-$head)
+
+  if [[ -e $e ]]; then
+    env=$e
+    source "$env"
+    found
+  fi
+}
+
+lookup-default() {
+  debug "Using default environment 'env/default'"
+
+  [[ $lookup == env ]] && default-warning
+
+  env=env/default
+  source "$env"
+  found
+}
+
+found() {
+  debug "Found '$env'"
+
+  repo=$LIBYAML_TEST_SUITE_DATA_REPO
+  commit=$LIBYAML_TEST_SUITE_DATA_COMMIT
+}
+
+default-warning() (
+  main_branch=$(cd "$base" && git rev-parse --abbrev-ref HEAD)
+  test_branch=$(git rev-parse --abbrev-ref HEAD)
+
+  default=env/default
+  while [[ -h $default ]]; do
+    default=$(readlink "$default")
+  done
+
+  message-in-a-box "
+WARNING WARNING WARNING WARNING WARNING WARNING WARNING WARNING WARNING WARNING
+
+Using the default test-suite env:
+
+  env/$default
+
+No test-suite environment info was found for the HEAD of '$main_branch':
+
+  $head
+
+This info is kept in tests/run-test-suite/env/
+
+For more information, see:
+
+* https://github.com/yaml/libyaml/blob/$test_branch/ReadMe.md
+* https://github.com/yaml/libyaml/tree/$test_branch/env
+"
+)
+
+whitelist() (:)
+blacklist() (:)
+die() { echo "Died: $*" >&2; exit 1; }
+warn() ( echo "$*" >&2 )
+debug() (
+  if [[ ${LIBYAML_TEST_SUITE_DEBUG-} && $lookup != default-warning ]]; then
+    warn "[DEBUG] $*"
+  fi
+)
+message-in-a-box() (
+  len=${COLUMNS:-$(tput cols)}
+  len=${len:-80}
+  line=$(eval "printf '*%.0s' {1..$len}")
+
+  (
+    echo "$line"
+    echo "* ${1//$'\n'/$'\n'* }"
+    echo "$line"
+  ) >&2
+)
+
+main "$@"
