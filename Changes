@@ -1,3 +1,29 @@
+0.2.5 2020-06-01
+
+https://github.com/yaml/libyaml/pull/105
+Allow question marks in plain scalars in flow collections
+
+https://github.com/yaml/libyaml/pull/186
+Emitter: Don't output trailing space for empty scalar nodes
+
+https://github.com/yaml/libyaml/pull/185
+Emitter: Output space after an alias mapping key
+
+https://github.com/yaml/libyaml/pull/187
+Add -h and --flow (on|off|keep) to run-*-test-suite
+
+https://github.com/yaml/libyaml/pull/182
+Remove unnecessary include and malloc
+
+https://github.com/yaml/libyaml/pull/177
+Add specific files back to .gitignore
+
+https://github.com/yaml/libyaml/pull/181
+Output error position in run-parser-test-suite.c
+
+https://github.com/yaml/libyaml/pull/191
+A couple patches to improve test suite support
+
 0.2.4 2020-04-19
 
   - https://github.com/yaml/libyaml/pull/143
