@@ -3465,7 +3465,7 @@ yaml_parser_scan_plain_scalar(yaml_parser_t *parser, yaml_token_t *token)
             if ((CHECK(parser->buffer, ':') && IS_BLANKZ_AT(parser->buffer, 1))
                     || (parser->flow_level &&
                         (CHECK(parser->buffer, ',')
-                         || CHECK(parser->buffer, '?') || CHECK(parser->buffer, '[')
+                         || CHECK(parser->buffer, '[')
                          || CHECK(parser->buffer, ']') || CHECK(parser->buffer, '{')
                          || CHECK(parser->buffer, '}'))))
                 break;
