@@ -13,7 +13,7 @@ maintainer-clean-local:
 	-find ${builddir} -name Makefile.in -exec rm -f '{}' ';'
 
 distclean-local:
-	rm -fr tests/run-test-suite packaging
+	rm -fr packaging
 	-git worktree prune
 
 .PHONY: bootstrap
@@ -25,15 +25,10 @@ bootstrap: maintainer-clean
 test: all
 	make -C tests check-TESTS
 
-test-suite: tests/run-test-suite all
-	make -C $< test
+test-suite: all
+	make -C tests/run-test-suite test
 
 test-all: test test-suite
-
-tests/run-test-suite:
-	-git branch --track run-test-suite origin/run-test-suite
-	-git worktree prune
-	git worktree add $@ run-test-suite
 
 packaging:
 	-git branch --track $@ origin/$@
