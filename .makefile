@@ -30,8 +30,7 @@ MAKE_TARGETS := \
 	test-all \
 	test-suite \
 
-# SOURCE_FILES := $(shell find . | grep '\.c$$')
-SOURCE_FILES := $(shell find tests/run-test-suite | grep '\.c$$')
+SOURCE_FILES := $(shell find . | grep '\.c$$')
 ifneq ($(shell which gindent),)
 INDENT := gindent
 else
@@ -61,5 +60,4 @@ indent:
 
 distclean purge:
 	git clean -dxf -e GNUmakefile
-	rm -fr tests/run-test-suite
-	git worktree prune
+	rm -fr libyaml-test

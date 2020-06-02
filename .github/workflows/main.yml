@@ -44,7 +44,7 @@ jobs:
 
     - run: |
         git clean -d -x -f
-        rm -fr tests/run-test-suite
+        rm -fr libyaml-test
         git worktree prune
 
     - name: Compiler version
