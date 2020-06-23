@@ -90,8 +90,7 @@ int compare_events(yaml_event_t *event1, yaml_event_t *event2)
                     event2->data.stream_start.encoding); */
 
         case YAML_DOCUMENT_START_EVENT:
-            if ((event1->data.document_start.version_directive && !event2->data.document_start.version_directive)
-                    || (!event1->data.document_start.version_directive && event2->data.document_start.version_directive)
+            if ((event1->data.document_start.version_directive != event2->data.document_start.version_directive)
                     || (event1->data.document_start.version_directive && event2->data.document_start.version_directive
                         && (event1->data.document_start.version_directive->major != event2->data.document_start.version_directive->major
                             || event1->data.document_start.version_directive->minor != event2->data.document_start.version_directive->minor)))
@@ -120,8 +119,7 @@ int compare_events(yaml_event_t *event1, yaml_event_t *event2)
                         (char *)event2->data.alias.anchor) == 0);
 
         case YAML_SCALAR_EVENT:
-            if ((event1->data.scalar.anchor && !event2->data.scalar.anchor)
-                    || (!event1->data.scalar.anchor && event2->data.scalar.anchor)
+            if ((event1->data.scalar.anchor != event2->data.scalar.anchor)
                     || (event1->data.scalar.anchor && event2->data.scalar.anchor
                         && strcmp((char *)event1->data.scalar.anchor,
                             (char *)event2->data.scalar.anchor) != 0))
@@ -145,14 +143,12 @@ int compare_events(yaml_event_t *event1, yaml_event_t *event2)
             return 1;
 
         case YAML_SEQUENCE_START_EVENT:
-            if ((event1->data.sequence_start.anchor && !event2->data.sequence_start.anchor)
-                    || (!event1->data.sequence_start.anchor && event2->data.sequence_start.anchor)
+            if ((event1->data.sequence_start.anchor != event2->data.sequence_start.anchor)
                     || (event1->data.sequence_start.anchor && event2->data.sequence_start.anchor
                         && strcmp((char *)event1->data.sequence_start.anchor,
                             (char *)event2->data.sequence_start.anchor) != 0))
                 return 0;
-            if ((event1->data.sequence_start.tag && !event2->data.sequence_start.tag)
-                    || (!event1->data.sequence_start.tag && event2->data.sequence_start.tag)
+            if ((event1->data.sequence_start.tag != event2->data.sequence_start.tag)
                     || (event1->data.sequence_start.tag && event2->data.sequence_start.tag
                         && strcmp((char *)event1->data.sequence_start.tag,
                             (char *)event2->data.sequence_start.tag) != 0))
@@ -163,14 +159,12 @@ int compare_events(yaml_event_t *event1, yaml_event_t *event2)
             return 1;
 
         case YAML_MAPPING_START_EVENT:
-            if ((event1->data.mapping_start.anchor && !event2->data.mapping_start.anchor)
-                    || (!event1->data.mapping_start.anchor && event2->data.mapping_start.anchor)
+            if ((event1->data.mapping_start.anchor != event2->data.mapping_start.anchor)
                     || (event1->data.mapping_start.anchor && event2->data.mapping_start.anchor
                         && strcmp((char *)event1->data.mapping_start.anchor,
                             (char *)event2->data.mapping_start.anchor) != 0))
                 return 0;
-            if ((event1->data.mapping_start.tag && !event2->data.mapping_start.tag)
-                    || (!event1->data.mapping_start.tag && event2->data.mapping_start.tag)
+            if ((event1->data.mapping_start.tag != event2->data.mapping_start.tag)
                     || (event1->data.mapping_start.tag && event2->data.mapping_start.tag
                         && strcmp((char *)event1->data.mapping_start.tag,
                             (char *)event2->data.mapping_start.tag) != 0))

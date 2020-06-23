@@ -132,8 +132,7 @@ int compare_documents(yaml_document_t *document1, yaml_document_t *document2)
 {
     int k;
 
-    if ((document1->version_directive && !document2->version_directive)
-            || (!document1->version_directive && document2->version_directive)
+    if ((document1->version_directive != document2->version_directive)
             || (document1->version_directive && document2->version_directive
                 && (document1->version_directive->major != document2->version_directive->major
                     || document1->version_directive->minor != document2->version_directive->minor)))
