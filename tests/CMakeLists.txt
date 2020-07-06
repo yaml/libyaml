@@ -18,10 +18,11 @@ foreach(name IN ITEMS
   run-scanner
   test-reader
   test-version
+  read-examples
   )
   add_yaml_executable(${name})
 endforeach()
 
 add_test(NAME version COMMAND test-version)
 add_test(NAME reader COMMAND test-reader)
-
+add_test(NAME examples COMMAND read-examples)
