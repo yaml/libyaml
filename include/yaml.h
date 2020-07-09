@@ -272,28 +272,28 @@ typedef struct yaml_token_s {
     yaml_token_type_t type;
 
     /** The token data. */
-    union {
+    union yaml_token_data_u {
 
         /** The stream start (for @c YAML_STREAM_START_TOKEN). */
-        struct {
+        struct yaml_token_data_stream_start_s {
             /** The stream encoding. */
             yaml_encoding_t encoding;
         } stream_start;
 
         /** The alias (for @c YAML_ALIAS_TOKEN). */
-        struct {
+        struct yaml_token_data_alias_s {
             /** The alias value. */
             yaml_char_t *value;
         } alias;
 
         /** The anchor (for @c YAML_ANCHOR_TOKEN). */
-        struct {
+        struct yaml_token_data_anchor_s {
             /** The anchor value. */
             yaml_char_t *value;
         } anchor;
 
         /** The tag (for @c YAML_TAG_TOKEN). */
-        struct {
+        struct yaml_token_data_tag_s {
             /** The tag handle. */
             yaml_char_t *handle;
             /** The tag suffix. */
@@ -301,7 +301,7 @@ typedef struct yaml_token_s {
         } tag;
 
         /** The scalar value (for @c YAML_SCALAR_TOKEN). */
-        struct {
+        struct yaml_token_data_scalar_s {
             /** The scalar value. */
             yaml_char_t *value;
             /** The length of the scalar value. */
@@ -311,7 +311,7 @@ typedef struct yaml_token_s {
         } scalar;
 
         /** The version directive (for @c YAML_VERSION_DIRECTIVE_TOKEN). */
-        struct {
+        struct yaml_token_data_version_directive_s {
             /** The major version number. */
             int major;
             /** The minor version number. */
@@ -389,21 +389,21 @@ typedef struct yaml_event_s {
     yaml_event_type_t type;
 
     /** The event data. */
-    union {
+    union yaml_event_data_u {
         
         /** The stream parameters (for @c YAML_STREAM_START_EVENT). */
-        struct {
+        struct yaml_event_data_stream_start_s {
             /** The document encoding. */
             yaml_encoding_t encoding;
         } stream_start;
 
         /** The document parameters (for @c YAML_DOCUMENT_START_EVENT). */
-        struct {
+        struct yaml_event_data_document_start_s {
             /** The version directive. */
             yaml_version_directive_t *version_directive;
 
             /** The list of tag directives. */
-            struct {
+            struct yaml_event_data_tag_directives_s {
                 /** The beginning of the tag directives list. */
                 yaml_tag_directive_t *start;
                 /** The end of the tag directives list. */
@@ -415,19 +415,19 @@ typedef struct yaml_event_s {
         } document_start;
 
         /** The document end parameters (for @c YAML_DOCUMENT_END_EVENT). */
-        struct {
+        struct yaml_event_data_document_end_s {
             /** Is the document end indicator implicit? */
             int implicit;
         } document_end;
 
         /** The alias parameters (for @c YAML_ALIAS_EVENT). */
-        struct {
+        struct yaml_event_data_alias_s {
             /** The anchor. */
             yaml_char_t *anchor;
         } alias;
 
         /** The scalar parameters (for @c YAML_SCALAR_EVENT). */
-        struct {
+        struct yaml_event_data_scalar_s {
             /** The anchor. */
             yaml_char_t *anchor;
             /** The tag. */
@@ -445,7 +445,7 @@ typedef struct yaml_event_s {
         } scalar;
 
         /** The sequence parameters (for @c YAML_SEQUENCE_START_EVENT). */
-        struct {
+        struct yaml_event_data_sequence_start_s {
             /** The anchor. */
             yaml_char_t *anchor;
             /** The tag. */
@@ -457,7 +457,7 @@ typedef struct yaml_event_s {
         } sequence_start;
 
         /** The mapping parameters (for @c YAML_MAPPING_START_EVENT). */
-        struct {
+        struct yaml_event_data_mapping_start_s {
             /** The anchor. */
             yaml_char_t *anchor;
             /** The tag. */
