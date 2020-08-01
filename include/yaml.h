@@ -21,6 +21,11 @@ extern "C" {
 
 /**
  * @defgroup export Export Definitions
+ * 
+ * This is the export definitions description
+ *
+ * This has *markdown* as well [something](https://www.google.com/)
+ * 
  * @{
  */
 
