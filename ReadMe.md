@@ -28,7 +28,7 @@ Required packages:
 For more information, check the [LibYAML
 homepage](https://github.com/yaml/libyaml).
 
-Discuss LibYAML with the maintainers in IRC #libyaml irc.freenode.net.
+Discuss LibYAML with the maintainers in IRC #libyaml irc.freenode.net. 
 
 You may also use the [YAML-Core mailing
 list](http://lists.sourceforge.net/lists/listinfo/yaml-core).
