@@ -11,7 +11,7 @@ matrix:
   - os: osx
     compiler: gcc
   - os: osx
-    compiler: clang
+    compiler: clang 
 
 before_install:
 
