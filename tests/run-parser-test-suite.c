@@ -3,8 +3,20 @@
 #include <stdio.h>
 #include <assert.h>
 
+int col=0;
+int inc=2;
+
 void print_escaped(yaml_char_t * str, size_t length);
 int usage(int ret);
+
+/* hdt 2021-08-12 Use this function and the global "col" to indent and pair event +/- blocks */
+void inprnt(char *str) {
+  if (str[0]=='-') col = col<=0 ? 0 : col-inc;
+  printf("%*c%s", col,' ', str);
+  if (str[0]=='+') col+=inc;
+  return;
+};
+				
 
 int main(int argc, char *argv[])
 {
@@ -14,7 +26,7 @@ int main(int argc, char *argv[])
     int flow = -1; /** default no flow style collections */
     int i = 0;
     int foundfile = 0;
-
+    
     for (i = 1; i < argc; i++) {
         if (strncmp(argv[i], "--flow", 6) == 0) {
             if (i+1 == argc)
@@ -70,23 +82,23 @@ int main(int argc, char *argv[])
         if (type == YAML_NO_EVENT)
             printf("???\n");
         else if (type == YAML_STREAM_START_EVENT)
-            printf("+STR\n");
+	  inprnt("+STR\n");
         else if (type == YAML_STREAM_END_EVENT)
-            printf("-STR\n");
+	  inprnt("-STR\n");
         else if (type == YAML_DOCUMENT_START_EVENT) {
-            printf("+DOC");
+	  inprnt("+DOC");
             if (!event.data.document_start.implicit)
                 printf(" ---");
             printf("\n");
         }
         else if (type == YAML_DOCUMENT_END_EVENT) {
-            printf("-DOC");
+	  inprnt("-DOC");
             if (!event.data.document_end.implicit)
                 printf(" ...");
             printf("\n");
         }
         else if (type == YAML_MAPPING_START_EVENT) {
-            printf("+MAP");
+            inprnt("+MAP");
             if (flow == 0 && event.data.mapping_start.style == YAML_FLOW_MAPPING_STYLE)
                 printf(" {}");
             else if (flow == 1)
@@ -98,9 +110,9 @@ int main(int argc, char *argv[])
             printf("\n");
         }
         else if (type == YAML_MAPPING_END_EVENT)
-            printf("-MAP\n");
+            inprnt("-MAP\n");
         else if (type == YAML_SEQUENCE_START_EVENT) {
-            printf("+SEQ");
+            inprnt("+SEQ");
             if (flow == 0 && event.data.sequence_start.style == YAML_FLOW_SEQUENCE_STYLE)
                 printf(" []");
             else if (flow == 1)
@@ -112,9 +124,9 @@ int main(int argc, char *argv[])
             printf("\n");
         }
         else if (type == YAML_SEQUENCE_END_EVENT)
-            printf("-SEQ\n");
+            inprnt("-SEQ\n");
         else if (type == YAML_SCALAR_EVENT) {
-            printf("=VAL");
+	  printf("%*c=VAL", col, ' ');
             if (event.data.scalar.anchor)
                 printf(" &%s", event.data.scalar.anchor);
             if (event.data.scalar.tag)
@@ -142,7 +154,7 @@ int main(int argc, char *argv[])
             printf("\n");
         }
         else if (type == YAML_ALIAS_EVENT)
-            printf("=ALI *%s\n", event.data.alias.anchor);
+	  printf("%*c=ALI *%s\n", col, ' ',  event.data.alias.anchor);
         else
             abort();
 
