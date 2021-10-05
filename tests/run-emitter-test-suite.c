@@ -129,7 +129,6 @@ int main(int argc, char *argv[])
         }
         else if (strncmp(line, "=VAL", 4) == 0) {
             char value[1024];
-            int style;
 
             get_value(line, value, &style);
             implicit = (get_tag(line, tag) == NULL);

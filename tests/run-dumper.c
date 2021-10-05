@@ -12,6 +12,12 @@
 #define BUFFER_SIZE 65536
 #define MAX_DOCUMENTS  16
 
+int copy_document(yaml_document_t *document_to, yaml_document_t *document_from);
+int compare_nodes(yaml_document_t *document1, int index1,
+        yaml_document_t *document2, int index2, int level);
+int compare_documents(yaml_document_t *document1, yaml_document_t *document2);
+int print_output(char *name, unsigned char *buffer, size_t size, int count);
+
 int copy_document(yaml_document_t *document_to, yaml_document_t *document_from)
 {
     yaml_node_t *node;
@@ -302,7 +308,7 @@ main(int argc, char *argv[])
             yaml_parser_delete(&parser);
         }
 
-        for (k = 0; k < document_number; k ++) {
+        for (k = 0; k < (int)document_number; k ++) {
             yaml_document_delete(documents+k);
         }
 

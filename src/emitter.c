@@ -1895,15 +1895,14 @@ yaml_emitter_write_tag_content(yaml_emitter_t *emitter,
         }
         else {
             int width = WIDTH(string);
-            unsigned int value;
             while (width --) {
                 value = *(string.pointer++);
                 if (!PUT(emitter, '%')) return 0;
-                if (!PUT(emitter, (value >> 4)
-                            + ((value >> 4) < 10 ? '0' : 'A' - 10)))
+                if (!PUT(emitter, ((unsigned int)value >> 4)
+                            + (((unsigned int)value >> 4) < 10 ? '0' : 'A' - 10)))
                     return 0;
-                if (!PUT(emitter, (value & 0x0F)
-                            + ((value & 0x0F) < 10 ? '0' : 'A' - 10)))
+                if (!PUT(emitter, ((unsigned int)value & 0x0F)
+                            + (((unsigned int)value & 0x0F) < 10 ? '0' : 'A' - 10)))
                     return 0;
             }
         }
@@ -2067,7 +2066,6 @@ yaml_emitter_write_double_quoted_scalar(yaml_emitter_t *emitter,
         {
             unsigned char octet;
             unsigned int width;
-            unsigned int value;
             int k;
 
             octet = string.pointer[0];
@@ -2081,13 +2079,13 @@ yaml_emitter_write_double_quoted_scalar(yaml_emitter_t *emitter,
                     (octet & 0xF8) == 0xF0 ? octet & 0x07 : 0;
             for (k = 1; k < (int)width; k ++) {
                 octet = string.pointer[k];
-                value = (value << 6) + (octet & 0x3F);
+                value = ((unsigned int)value << 6) + (octet & 0x3F);
             }
             string.pointer += width;
 
             if (!PUT(emitter, '\\')) return 0;
 
-            switch (value)
+            switch ((unsigned int)value)
             {
                 case 0x00:
                     if (!PUT(emitter, '0')) return 0;
@@ -2163,7 +2161,7 @@ yaml_emitter_write_double_quoted_scalar(yaml_emitter_t *emitter,
                         width = 8;
                     }
                     for (k = (width-1)*4; k >= 0; k -= 4) {
-                        int digit = (value >> k) & 0x0F;
+                        int digit = ((unsigned int)value >> k) & 0x0F;
                         if (!PUT(emitter, digit + (digit < 10 ? '0' : 'A'-10)))
                             return 0;
                     }

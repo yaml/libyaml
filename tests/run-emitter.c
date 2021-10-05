@@ -12,6 +12,10 @@
 #define BUFFER_SIZE 65536
 #define MAX_EVENTS  1024
 
+int copy_event(yaml_event_t *event_to, yaml_event_t *event_from);
+int compare_events(yaml_event_t *event1, yaml_event_t *event2);
+int print_output(char *name, unsigned char *buffer, size_t size, int count);
+
 int copy_event(yaml_event_t *event_to, yaml_event_t *event_from)
 {
     switch (event_from->type)
@@ -315,7 +319,7 @@ main(int argc, char *argv[])
             yaml_parser_delete(&parser);
         }
 
-        for (k = 0; k < event_number; k ++) {
+        for (k = 0; k < (int)event_number; k ++) {
             yaml_event_delete(events+k);
         }
 

@@ -762,7 +762,7 @@ yaml_document_start_event_initialize(yaml_event_t *event,
 error:
     yaml_free(version_directive_copy);
     while (!STACK_EMPTY(context, tag_directives_copy)) {
-        yaml_tag_directive_t value = POP(context, tag_directives_copy);
+        value = POP(context, tag_directives_copy);
         yaml_free(value.handle);
         yaml_free(value.prefix);
     }
@@ -1104,7 +1104,7 @@ error:
     STACK_DEL(&context, nodes);
     yaml_free(version_directive_copy);
     while (!STACK_EMPTY(&context, tag_directives_copy)) {
-        yaml_tag_directive_t value = POP(&context, tag_directives_copy);
+        value = POP(&context, tag_directives_copy);
         yaml_free(value.handle);
         yaml_free(value.prefix);
     }
