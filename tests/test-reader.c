@@ -189,7 +189,7 @@ int check_boms(void)
             failed++;
         }
         else {
-            if ((int)parser.unread != check) {
+            if (check >= 0 && (size_t)check != parser.unread) {
                 printf("- (length=%ld while expected length=%d)\n", (long)parser.unread, check);
                 failed++;
             }

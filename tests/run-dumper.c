@@ -242,7 +242,7 @@ main(int argc, char *argv[])
         int done = 0;
         int count = 0;
         int error = 0;
-        int k;
+        size_t k;
         memset(buffer, 0, BUFFER_SIZE+1);
         memset(documents, 0, MAX_DOCUMENTS*sizeof(yaml_document_t));
 
@@ -308,7 +308,7 @@ main(int argc, char *argv[])
             yaml_parser_delete(&parser);
         }
 
-        for (k = 0; k < (int)document_number; k ++) {
+        for (k = 0; k < document_number; k ++) {
             yaml_document_delete(documents+k);
         }
 
