@@ -161,10 +161,10 @@ int main(int argc, char *argv[])
 
 void print_escaped(yaml_char_t * str, size_t length)
 {
-    int i;
+    size_t i;
     char c;
 
-    for (i = 0; i < (int)length; i++) {
+    for (i = 0; i < length; i++) {
         c = *(str + i);
         if (c == '\\')
             printf("\\\\");
