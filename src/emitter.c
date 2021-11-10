@@ -1895,7 +1895,7 @@ yaml_emitter_write_tag_content(yaml_emitter_t *emitter,
         }
         else {
             int width = WIDTH(string);
-            unsigned int value_inner;
+            unsigned int value_inner = 0;
             while (width --) {
                 value = *(string.pointer++);
                 if (!PUT(emitter, '%')) return 0;

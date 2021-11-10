@@ -8,7 +8,7 @@ int usage(int ret);
 
 int main(int argc, char *argv[])
 {
-    FILE *input;
+    FILE *input = stdin;
     yaml_parser_t parser;
     yaml_event_t event;
     int flow = -1; /** default no flow style collections */
@@ -39,9 +39,6 @@ int main(int argc, char *argv[])
         }
         else
             return usage(1);
-    }
-    if (!foundfile) {
-        input = stdin;
     }
     assert(input);
 

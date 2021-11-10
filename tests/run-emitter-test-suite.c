@@ -13,7 +13,7 @@ int usage(int ret);
 
 int main(int argc, char *argv[])
 {
-    FILE *input;
+    FILE *input = stdin;
     yaml_emitter_t emitter;
     yaml_event_t event;
     yaml_version_directive_t *version_directive = NULL;
@@ -66,9 +66,6 @@ int main(int argc, char *argv[])
         version_directive->major = 1;
         version_directive->minor = minor;
     }
-    if (!foundfile)
-        input = stdin;
-
     assert(input);
 
     if (!yaml_emitter_initialize(&emitter)) {
@@ -129,12 +126,13 @@ int main(int argc, char *argv[])
         }
         else if (strncmp(line, "=VAL", 4) == 0) {
             char value[1024];
+            int style_inner;
 
-            get_value(line, value, &style);
+            get_value(line, value, &style_inner);
             implicit = (get_tag(line, tag) == NULL);
 
             ok = yaml_scalar_event_initialize(&event, (yaml_char_t *)
-                                              get_anchor('&', line, anchor), (yaml_char_t *) get_tag(line, tag), (yaml_char_t *) value, -1, implicit, implicit, style);
+                                              get_anchor('&', line, anchor), (yaml_char_t *) get_tag(line, tag), (yaml_char_t *) value, -1, implicit, implicit, style_inner);
         }
         else if (strncmp(line, "=ALI", 4) == 0) {
             ok = yaml_alias_event_initialize(&event, (yaml_char_t *)
