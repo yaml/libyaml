@@ -30,8 +30,8 @@ jobs:
       if: ${{ matrix.os == 'macOS-latest' }}
       run: |
         brew install automake bash coreutils make
-        echo ::add-path::/usr/local/opt/coreutils/libexec/gnubin
-        echo ::add-path::/usr/local/opt/make/libexec/gnubin
+        echo "/usr/local/opt/coreutils/libexec/gnubin" >> $GITHUB_PATH
+        echo "/usr/local/opt/make/libexec/gnubin" >> $GITHUB_PATH
     - name: Fetch branches
       run: |
         git config remote.origin.fetch +refs/heads/*:refs/remotes/origin/*
