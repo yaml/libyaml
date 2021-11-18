@@ -806,6 +806,8 @@ yaml_emitter_emit_flow_mapping_key(yaml_emitter_t *emitter,
 
     if (event->type == YAML_MAPPING_END_EVENT)
     {
+        if (STACK_EMPTY(emitter, emitter->indents))
+            return 0;
         emitter->flow_level --;
         emitter->indent = POP(emitter, emitter->indents);
         if (emitter->canonical && !first) {

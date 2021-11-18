@@ -24,6 +24,8 @@ yaml_emitter_delete_document_and_anchors(yaml_emitter_t *emitter);
 /*
  * Anchor functions.
  */
+static void
+yaml_emitter_anchor_node_sub(yaml_emitter_t *emitter, int index)
 
 static void
 yaml_emitter_anchor_node(yaml_emitter_t *emitter, int index);
@@ -199,6 +201,16 @@ yaml_emitter_delete_document_and_anchors(yaml_emitter_t *emitter)
     emitter->document = NULL;
 }
 
+static void
+yaml_emitter_anchor_node_sub(yaml_emitter_t *emitter, int index)
+{
+    emitter->anchors[index-1].references ++;
+
+    if (emitter->anchors[index-1].references == 2) {
+        emitter->anchors[index-1].anchor = (++ emitter->last_anchor_id);
+    }
+}
+
 /*
  * Check the references of a node and assign the anchor id if needed.
  */
@@ -217,14 +229,14 @@ yaml_emitter_anchor_node(yaml_emitter_t *emitter, int index)
             case YAML_SEQUENCE_NODE:
                 for (item = node->data.sequence.items.start;
                         item < node->data.sequence.items.top; item ++) {
-                    yaml_emitter_anchor_node(emitter, *item);
+                    yaml_emitter_anchor_node_sub(emitter, *item);
                 }
                 break;
             case YAML_MAPPING_NODE:
                 for (pair = node->data.mapping.pairs.start;
                         pair < node->data.mapping.pairs.top; pair ++) {
-                    yaml_emitter_anchor_node(emitter, pair->key);
-                    yaml_emitter_anchor_node(emitter, pair->value);
+                    yaml_emitter_anchor_node_sub(emitter, pair->key);
+                    yaml_emitter_anchor_node_sub(emitter, pair->value);
                 }
                 break;
             default:
