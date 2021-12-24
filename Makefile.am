@@ -35,13 +35,13 @@ test-suite: tests/run-test-suite all
 test-all: test test-suite
 
 tests/run-test-suite:
-ifeq ($(LIBYAML_TEST_SUITE_RUN_REPO),$(LIBYAML_TEST_SUITE_RUN_REPO_DEFAULT))
-	  -git branch --track $(LIBYAML_TEST_SUITE_RUN_BRANCH) origin/$(LIBYAML_TEST_SUITE_RUN_BRANCH)
-	  -git worktree prune
-	  git worktree add $@ $(LIBYAML_TEST_SUITE_RUN_BRANCH)
-    else
-	  git clone --branch $(LIBYAML_TEST_SUITE_RUN_BRANCH) $(LIBYAML_TEST_SUITE_RUN_REPO) $@
-    endif
+	ifeq ($(LIBYAML_TEST_SUITE_RUN_REPO),$(LIBYAML_TEST_SUITE_RUN_REPO_DEFAULT))
+		-git branch --track $(LIBYAML_TEST_SUITE_RUN_BRANCH) origin/$(LIBYAML_TEST_SUITE_RUN_BRANCH)
+		-git worktree prune
+		git worktree add $@ $(LIBYAML_TEST_SUITE_RUN_BRANCH)
+	else
+		git clone --branch $(LIBYAML_TEST_SUITE_RUN_BRANCH) $(LIBYAML_TEST_SUITE_RUN_REPO) $@
+	endif
 
 docker-build:
 	make -C pkg/docker build
