@@ -541,6 +541,18 @@ yaml_emitter_set_indent(yaml_emitter_t *emitter, int indent)
 }
 
 /*
+ * Set whether or not to indent block sequences in mapping context.
+ */
+
+YAML_DECLARE(void)
+yaml_emitter_set_indent_mapping_sequence(yaml_emitter_t *emitter, int indent_mapping_sequence)
+{
+    assert(emitter);    /* Non-NULL emitter object expected. */
+
+    emitter->indent_mapping_sequence = indent_mapping_sequence;
+}
+
+/*
  * Set the preferred line width.
  */
 

@@ -886,7 +886,9 @@ yaml_emitter_emit_block_sequence_item(yaml_emitter_t *emitter,
     if (first)
     {
         if (!yaml_emitter_increase_indent(emitter, 0,
-                    (emitter->mapping_context && !emitter->indention)))
+                    (emitter->mapping_context
+                             && !emitter->indent_mapping_sequence
+                             && !emitter->indention)))
             return 0;
     }
 
@@ -1825,6 +1827,7 @@ yaml_emitter_write_indicator(yaml_emitter_t *emitter,
 
     emitter->whitespace = is_whitespace;
     emitter->indention = (emitter->indention && is_indention);
+/*    emitter->open_ended = 0; */
 
     return 1;
 }
@@ -1977,6 +1980,10 @@ yaml_emitter_write_plain_scalar(yaml_emitter_t *emitter,
 
     emitter->whitespace = 0;
     emitter->indention = 0;
+    if (emitter->root_context)
+    {
+        emitter->open_ended = 1;
+    }
 
     return 1;
 }
