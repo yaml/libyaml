@@ -1827,7 +1827,6 @@ yaml_emitter_write_indicator(yaml_emitter_t *emitter,
 
     emitter->whitespace = is_whitespace;
     emitter->indention = (emitter->indention && is_indention);
-/*    emitter->open_ended = 0; */
 
     return 1;
 }
