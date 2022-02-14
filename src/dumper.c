@@ -64,8 +64,8 @@ yaml_emitter_open(yaml_emitter_t *emitter)
     yaml_event_t event;
     yaml_mark_t mark = { 0, 0, 0 };
 
-    assert(emitter);            /* Non-NULL emitter object is required. */
-    assert(!emitter->opened);   /* Emitter should not be opened yet. */
+    assert(emitter && "Non-NULL emitter object is required.");
+    assert(!emitter->opened && "Emitter should not be opened yet.");
 
     STREAM_START_EVENT_INIT(event, YAML_ANY_ENCODING, mark, mark);
 
@@ -88,8 +88,8 @@ yaml_emitter_close(yaml_emitter_t *emitter)
     yaml_event_t event;
     yaml_mark_t mark = { 0, 0, 0 };
 
-    assert(emitter);            /* Non-NULL emitter object is required. */
-    assert(emitter->opened);    /* Emitter should be opened. */
+    assert(emitter && "Non-NULL emitter object is required.");
+    assert(emitter->opened && "Emitter should be opened.");
 
     if (emitter->closed) return 1;
 
@@ -114,8 +114,8 @@ yaml_emitter_dump(yaml_emitter_t *emitter, yaml_document_t *document)
     yaml_event_t event;
     yaml_mark_t mark = { 0, 0, 0 };
 
-    assert(emitter);            /* Non-NULL emitter object is required. */
-    assert(document);           /* Non-NULL emitter object is expected. */
+    assert(emitter && "Non-NULL emitter object is required.");
+    assert(document && "Non-NULL emitter object is expected.");
 
     emitter->document = document;
 
@@ -129,7 +129,7 @@ yaml_emitter_dump(yaml_emitter_t *emitter, yaml_document_t *document)
         return 1;
     }
 
-    assert(emitter->opened);    /* Emitter should be opened. */
+    assert(emitter->opened && "Emitter should be opened.");
 
     emitter->anchors = (yaml_anchors_t*)yaml_malloc(sizeof(*(emitter->anchors))
             * (document->nodes.top - document->nodes.start));
@@ -286,7 +286,7 @@ yaml_emitter_dump_node(yaml_emitter_t *emitter, int index)
         case YAML_MAPPING_NODE:
             return yaml_emitter_dump_mapping(emitter, node, anchor);
         default:
-            assert(0);      /* Could not happen. */
+            assert(0 && "Could not happen.");
             break;
     }
 
