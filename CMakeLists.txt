@@ -84,7 +84,7 @@ target_include_directories(yaml PUBLIC
 install(
   FILES
     include/yaml.h
-  DESTINATION include COMPONENT Development
+  DESTINATION ${INSTALL_INCLUDE_DIR} COMPONENT Development
   )
 
 install(
