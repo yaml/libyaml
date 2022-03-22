@@ -109,7 +109,7 @@ int main(int argc, char *argv[])
                 style = YAML_FLOW_MAPPING_STYLE;
             ok = yaml_mapping_start_event_initialize(&event, (yaml_char_t *)
                                                      get_anchor('&', line, anchor), (yaml_char_t *)
-                                                     get_tag(line, tag), 0, style);
+                                                     get_tag(line, tag), 0, (yaml_mapping_style_t) style);
         }
         else if (strncmp(line, "-MAP", 4) == 0) {
             ok = yaml_mapping_end_event_initialize(&event);
@@ -122,7 +122,7 @@ int main(int argc, char *argv[])
                 style = YAML_FLOW_SEQUENCE_STYLE;
             ok = yaml_sequence_start_event_initialize(&event, (yaml_char_t *)
                                                       get_anchor('&', line, anchor), (yaml_char_t *)
-                                                      get_tag(line, tag), 0, style);
+                                                      get_tag(line, tag), 0, (yaml_sequence_style_t) style);
         }
         else if (strncmp(line, "-SEQ", 4) == 0) {
             ok = yaml_sequence_end_event_initialize(&event);
@@ -135,7 +135,7 @@ int main(int argc, char *argv[])
             implicit = (get_tag(line, tag) == NULL);
 
             ok = yaml_scalar_event_initialize(&event, (yaml_char_t *)
-                                              get_anchor('&', line, anchor), (yaml_char_t *) get_tag(line, tag), (yaml_char_t *) value, -1, implicit, implicit, style);
+                                              get_anchor('&', line, anchor), (yaml_char_t *) get_tag(line, tag), (yaml_char_t *) value, -1, implicit, implicit, (yaml_scalar_style_t) style);
         }
         else if (strncmp(line, "=ALI", 4) == 0) {
             ok = yaml_alias_event_initialize(&event, (yaml_char_t *)
