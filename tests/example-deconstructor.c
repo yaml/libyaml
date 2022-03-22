@@ -588,7 +588,7 @@ main(int argc, char *argv[])
                 if (!yaml_scalar_event_initialize(&output_event,
                             NULL, (yaml_char_t *)"tag:yaml.org,2002:str",
                             input_event.data.scalar.value,
-                            input_event.data.scalar.length,
+                            (int) input_event.data.scalar.length,
                             0, 1, YAML_DOUBLE_QUOTED_SCALAR_STYLE))
                     goto event_error;
                 if (!yaml_emitter_emit(&emitter, &output_event))
