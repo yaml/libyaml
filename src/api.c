@@ -1,3 +1,5 @@
+#define _GNU_SOURCE
+#include <string.h>
 
 #include "yaml_private.h"
 
