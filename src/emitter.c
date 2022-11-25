@@ -758,8 +758,14 @@ yaml_emitter_emit_flow_sequence_item(yaml_emitter_t *emitter,
     if (event->type == YAML_SEQUENCE_END_EVENT)
     {
         emitter->flow_level --;
-        emitter->indent = POP(emitter, emitter->indents);
-        if (emitter->canonical && !first) {
+        if (!STACK_EMPTY(emitter, emitter->indents)) {
+	    emitter->indent = POP(emitter, emitter->indents);
+	}
+	else {
+	    emitter->indent = 0; // set to default
+        }
+        
+	if (emitter->canonical && !first) {
             if (!yaml_emitter_write_indicator(emitter, ",", 0, 0, 0))
                 return 0;
             if (!yaml_emitter_write_indent(emitter))
