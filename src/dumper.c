@@ -251,7 +251,7 @@ yaml_emitter_generate_anchor(SHIM(yaml_emitter_t *emitter), int anchor_id)
 
     if (!anchor) return NULL;
 
-    sprintf((char *)anchor, ANCHOR_TEMPLATE, anchor_id);
+    snprintf((char *)anchor, ANCHOR_TEMPLATE_LENGTH-1, ANCHOR_TEMPLATE, anchor_id);
 
     return anchor;
 }
