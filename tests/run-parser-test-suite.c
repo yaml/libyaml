@@ -8,7 +8,7 @@ int usage(int ret);
 
 int main(int argc, char *argv[])
 {
-    FILE *input;
+    FILE *input = stdin;
     yaml_parser_t parser;
     yaml_event_t event;
     int flow = -1; /** default no flow style collections */
@@ -39,9 +39,6 @@ int main(int argc, char *argv[])
         }
         else
             return usage(1);
-    }
-    if (!foundfile) {
-        input = stdin;
     }
     assert(input);
 
@@ -161,7 +158,7 @@ int main(int argc, char *argv[])
 
 void print_escaped(yaml_char_t * str, size_t length)
 {
-    int i;
+    size_t i;
     char c;
 
     for (i = 0; i < length; i++) {
