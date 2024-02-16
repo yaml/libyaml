@@ -74,7 +74,7 @@ main(int argc, char *argv[])
 
     if (!yaml_emitter_initialize(&emitter)) {
         yaml_parser_delete(&parser);
-        fprintf(stderr, "Could not inialize the emitter object\n");
+        fprintf(stderr, "Could not initialize the emitter object\n");
         return 1;
     }
 
