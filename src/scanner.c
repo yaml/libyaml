@@ -3234,7 +3234,7 @@ yaml_parser_scan_flow_scalar(yaml_parser_t *parser, yaml_token_t *token,
                     for (k = 0; k < code_length; k ++) {
                         if (!IS_HEX_AT(parser->buffer, k)) {
                             yaml_parser_set_scanner_error(parser, "while parsing a quoted scalar",
-                                    start_mark, "did not find expected hexdecimal number");
+                                    start_mark, "did not find expected hexadecimal number");
                             goto error;
                         }
                         value = (value << 4) + AS_HEX_AT(parser->buffer, k);
