@@ -827,7 +827,7 @@ yaml_parser_fetch_more_tokens(yaml_parser_t *parser)
             if (!yaml_parser_stale_simple_keys(parser))
                 return 0;
 
-            for (simple_key = parser->simple_keys.start;
+            for (simple_key = parser->simple_keys.start + parser->not_simple_keys;
                     simple_key != parser->simple_keys.top; simple_key++) {
                 if (simple_key->possible
                         && simple_key->token_number == parser->tokens_parsed) {
@@ -1060,7 +1060,7 @@ yaml_parser_stale_simple_keys(yaml_parser_t *parser)
 
     /* Check for a potential simple key for each flow level. */
 
-    for (simple_key = parser->simple_keys.start;
+    for (simple_key = parser->simple_keys.start + parser->not_simple_keys;
             simple_key != parser->simple_keys.top; simple_key ++)
     {
         /*
@@ -1083,6 +1083,11 @@ yaml_parser_stale_simple_keys(yaml_parser_t *parser)
             }
 
             simple_key->possible = 0;
+
+            if (parser->simple_keys.start + parser->not_simple_keys
+                    == simple_key) {
+                parser->not_simple_keys ++;
+            }
         }
     }
 
@@ -1122,6 +1127,11 @@ yaml_parser_save_simple_key(yaml_parser_t *parser)
         if (!yaml_parser_remove_simple_key(parser)) return 0;
 
         *(parser->simple_keys.top-1) = simple_key;
+
+        if (parser->simple_keys.start + parser->not_simple_keys
+                == parser->simple_keys.top) {
+            parser->not_simple_keys --;
+        }
     }
 
     return 1;
@@ -1189,6 +1199,12 @@ yaml_parser_decrease_flow_level(yaml_parser_t *parser)
 {
     if (parser->flow_level) {
         parser->flow_level --;
+
+        if (parser->simple_keys.start + parser->not_simple_keys
+                == parser->simple_keys.top) {
+            parser->not_simple_keys --;
+        }
+
         (void)POP(parser, parser->simple_keys);
     }
 
@@ -1302,6 +1318,8 @@ yaml_parser_fetch_stream_start(yaml_parser_t *parser)
 
     if (!PUSH(parser, parser->simple_keys, simple_key))
         return 0;
+
+    parser->not_simple_keys = 1;
 
     /* A simple key is allowed at the beginning of the stream. */
 
