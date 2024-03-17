@@ -1238,6 +1238,9 @@ typedef struct yaml_parser_s {
         yaml_simple_key_t *top;
     } simple_keys;
 
+    /** At least this many leading elements of simple_keys have possible=0. */
+    int not_simple_keys;
+
     /**
      * @}
      */
