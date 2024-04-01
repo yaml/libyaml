@@ -1456,6 +1456,20 @@ yaml_parser_parse(yaml_parser_t *parser, yaml_event_t *event);
 YAML_DECLARE(int)
 yaml_parser_load(yaml_parser_t *parser, yaml_document_t *document);
 
+/**
+ * Set the maximum depth of nesting.
+ *
+ * Default: 1000
+ *
+ * Each nesting level increases the stack and the number of previous
+ * starting events that the parser has to check.
+ *
+ * @param[in]       max         The maximum number of allowed nested events
+ */
+
+YAML_DECLARE(void)
+yaml_set_max_nest_level(int max);
+
 /** @} */
 
 /**
