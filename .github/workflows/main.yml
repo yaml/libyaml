@@ -23,7 +23,7 @@ jobs:
         - macOS-latest
 
     steps:
-    - uses: actions/checkout@v2
+    - uses: actions/checkout@v4
 
     - run: env | sort
     - name: Install software
