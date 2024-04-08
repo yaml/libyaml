@@ -12,7 +12,7 @@ Required packages:
 - libtool
 - make
 
-If you checked the source code from the Git repository, run
+If you checked the source code from the Git repository, run:
 
     $ ./bootstrap
     $ ./configure
