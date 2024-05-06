@@ -1058,6 +1058,13 @@ yaml_parser_parse_flow_sequence_entry_mapping_key(yaml_parser_t *parser,
             return 0;
         return yaml_parser_parse_node(parser, event, 0, 0);
     }
+    else if (token->type == YAML_FLOW_SEQUENCE_END_TOKEN) {
+        parser->state = POP(parser, parser->states);
+        (void)POP(parser, parser->marks);
+        SEQUENCE_END_EVENT_INIT(*event, token->start_mark, token->end_mark);
+        SKIP_TOKEN(parser);
+        return 1;
+    }
     else {
         yaml_mark_t mark = token->end_mark;
         SKIP_TOKEN(parser);
