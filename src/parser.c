@@ -1059,11 +1059,9 @@ yaml_parser_parse_flow_sequence_entry_mapping_key(yaml_parser_t *parser,
         return yaml_parser_parse_node(parser, event, 0, 0);
     }
     else if (token->type == YAML_FLOW_SEQUENCE_END_TOKEN) {
-        parser->state = POP(parser, parser->states);
-        (void)POP(parser, parser->marks);
-        SEQUENCE_END_EVENT_INIT(*event, token->start_mark, token->end_mark);
-        SKIP_TOKEN(parser);
-        return 1;
+        yaml_mark_t mark = token->start_mark;
+        parser->state = YAML_PARSE_FLOW_SEQUENCE_ENTRY_MAPPING_VALUE_STATE;
+        return yaml_parser_process_empty_scalar(parser, event, mark);
     }
     else {
         yaml_mark_t mark = token->end_mark;
