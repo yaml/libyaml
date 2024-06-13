@@ -420,6 +420,11 @@ yaml_stack_extend(void **start, void **top, void **end);
 YAML_DECLARE(int)
 yaml_queue_extend(void **start, void **head, void **tail, void **end);
 
+#define STACK_NULL(context,stack)                                               \
+  (((stack).start != NULL) ? 0 :                                                \
+        ((context)->error = YAML_MEMORY_ERROR,                                  \
+         1))
+
 #define STACK_INIT(context,stack,type)                                     \
   (((stack).start = (type)yaml_malloc(INITIAL_STACK_SIZE*sizeof(*(stack).start))) ? \
         ((stack).top = (stack).start,                                           \

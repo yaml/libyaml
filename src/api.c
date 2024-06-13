@@ -1206,6 +1206,7 @@ yaml_document_add_scalar(yaml_document_t *document,
 
     assert(document);   /* Non-NULL document object is expected. */
     assert(value);      /* Non-NULL value is expected. */
+    if (STACK_NULL(&context, document->nodes)) goto error;
 
     if (!tag) {
         tag = (yaml_char_t *)YAML_DEFAULT_SCALAR_TAG;
@@ -1258,6 +1259,7 @@ yaml_document_add_sequence(yaml_document_t *document,
     yaml_node_t node;
 
     assert(document);   /* Non-NULL document object is expected. */
+    if (STACK_NULL(&context, document->nodes)) goto error;
 
     if (!tag) {
         tag = (yaml_char_t *)YAML_DEFAULT_SEQUENCE_TAG;
@@ -1303,6 +1305,7 @@ yaml_document_add_mapping(yaml_document_t *document,
     yaml_node_t node;
 
     assert(document);   /* Non-NULL document object is expected. */
+    if (STACK_NULL(&context, document->nodes)) goto error;
 
     if (!tag) {
         tag = (yaml_char_t *)YAML_DEFAULT_MAPPING_TAG;
