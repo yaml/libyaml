@@ -78,6 +78,12 @@ target_include_directories(yaml PUBLIC
   $<INSTALL_INTERFACE:${INSTALL_INCLUDE_DIR}>
   )
 
+
+include(cmake/FindICU.cmake)
+find_package(ICU)
+target_include_directories(yaml PRIVATE ${ICU_INCLUDE_DIRS})
+target_link_libraries(yaml  ${ICU_LIBRARIES})
+
 #
 # Install rules
 #
