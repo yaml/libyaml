@@ -29,7 +29,7 @@ int copy_document(yaml_document_t *document_to, yaml_document_t *document_from)
         switch (node->type) {
             case YAML_SCALAR_NODE:
                 if (!yaml_document_add_scalar(document_to, node->tag,
-                            node->data.scalar.value, node->data.scalar.length,
+                            node->data.scalar.value, (int) node->data.scalar.length,
                             node->data.scalar.style)) goto error;
                 break;
             case YAML_SEQUENCE_NODE:

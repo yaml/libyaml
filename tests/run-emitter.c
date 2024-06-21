@@ -43,7 +43,7 @@ int copy_event(yaml_event_t *event_to, yaml_event_t *event_from)
                     event_from->data.scalar.anchor,
                     event_from->data.scalar.tag,
                     event_from->data.scalar.value,
-                    event_from->data.scalar.length,
+                    (int) event_from->data.scalar.length,
                     event_from->data.scalar.plain_implicit,
                     event_from->data.scalar.quoted_implicit,
                     event_from->data.scalar.style);

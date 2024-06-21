@@ -292,7 +292,7 @@ yaml_parser_update_buffer(yaml_parser_t *parser, size_t length)
                     if ((value >= 0xD800 && value <= 0xDFFF) || value > 0x10FFFF)
                         return yaml_parser_set_reader_error(parser,
                                 "invalid Unicode character",
-                                parser->offset, value);
+                                parser->offset, (int) value);
 
                     break;
 
@@ -350,7 +350,7 @@ yaml_parser_update_buffer(yaml_parser_t *parser, size_t length)
                     if ((value & 0xFC00) == 0xDC00)
                         return yaml_parser_set_reader_error(parser,
                                 "unexpected low surrogate area",
-                                parser->offset, value);
+                                parser->offset, (int) value);
 
                     /* Check for a high surrogate area. */
 
@@ -380,7 +380,7 @@ yaml_parser_update_buffer(yaml_parser_t *parser, size_t length)
                         if ((value2 & 0xFC00) != 0xDC00)
                             return yaml_parser_set_reader_error(parser,
                                     "expected low surrogate area",
-                                    parser->offset+2, value2);
+                                    parser->offset+2, (int) value2);
 
                         /* Generate the value of the surrogate pair. */
 
@@ -415,7 +415,7 @@ yaml_parser_update_buffer(yaml_parser_t *parser, size_t length)
                         || (value >= 0x10000 && value <= 0x10FFFF)))
                 return yaml_parser_set_reader_error(parser,
                         "control characters are not allowed",
-                        parser->offset, value);
+                        parser->offset, (int) value);
 
             /* Move the raw pointers. */
 
@@ -426,25 +426,25 @@ yaml_parser_update_buffer(yaml_parser_t *parser, size_t length)
 
             /* 0000 0000-0000 007F -> 0xxxxxxx */
             if (value <= 0x7F) {
-                *(parser->buffer.last++) = value;
+                *(parser->buffer.last++) = (unsigned char) value;
             }
             /* 0000 0080-0000 07FF -> 110xxxxx 10xxxxxx */
             else if (value <= 0x7FF) {
-                *(parser->buffer.last++) = 0xC0 + (value >> 6);
-                *(parser->buffer.last++) = 0x80 + (value & 0x3F);
+                *(parser->buffer.last++) = (unsigned char)(0xC0 + (value >> 6));
+                *(parser->buffer.last++) = (unsigned char)(0x80 + (value & 0x3F));
             }
             /* 0000 0800-0000 FFFF -> 1110xxxx 10xxxxxx 10xxxxxx */
             else if (value <= 0xFFFF) {
-                *(parser->buffer.last++) = 0xE0 + (value >> 12);
-                *(parser->buffer.last++) = 0x80 + ((value >> 6) & 0x3F);
-                *(parser->buffer.last++) = 0x80 + (value & 0x3F);
+                *(parser->buffer.last++) = (unsigned char)(0xE0 + (value >> 12));
+                *(parser->buffer.last++) = (unsigned char)(0x80 + ((value >> 6) & 0x3F));
+                *(parser->buffer.last++) = (unsigned char)(0x80 + (value & 0x3F));
             }
             /* 0001 0000-0010 FFFF -> 11110xxx 10xxxxxx 10xxxxxx 10xxxxxx */
             else {
-                *(parser->buffer.last++) = 0xF0 + (value >> 18);
-                *(parser->buffer.last++) = 0x80 + ((value >> 12) & 0x3F);
-                *(parser->buffer.last++) = 0x80 + ((value >> 6) & 0x3F);
-                *(parser->buffer.last++) = 0x80 + (value & 0x3F);
+                *(parser->buffer.last++) = (unsigned char)(0xF0 + (value >> 18));
+                *(parser->buffer.last++) = (unsigned char)(0x80 + ((value >> 12) & 0x3F));
+                *(parser->buffer.last++) = (unsigned char)(0x80 + ((value >> 6) & 0x3F));
+                *(parser->buffer.last++) = (unsigned char)(0x80 + (value & 0x3F));
             }
 
             parser->unread ++;
