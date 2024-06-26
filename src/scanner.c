@@ -742,8 +742,8 @@ yaml_parser_scan_plain_scalar(yaml_parser_t *parser, yaml_token_t *token);
 YAML_DECLARE(int)
 yaml_parser_scan(yaml_parser_t *parser, yaml_token_t *token)
 {
-    assert(parser); /* Non-NULL parser object is expected. */
-    assert(token);  /* Non-NULL token object is expected. */
+    assert(parser && "Non-NULL parser object is expected.");
+    assert(token && "Non-NULL token object is expected.");
 
     /* Erase the token object. */
 

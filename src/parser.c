@@ -181,8 +181,8 @@ yaml_set_max_nest_level(int max)
 YAML_DECLARE(int)
 yaml_parser_parse(yaml_parser_t *parser, yaml_event_t *event)
 {
-    assert(parser);     /* Non-NULL parser object is expected. */
-    assert(event);      /* Non-NULL event object is expected. */
+    assert(parser && "Non-NULL parser object is expected.");
+    assert(event && "Non-NULL event object is expected.");
 
     /* Erase the event object. */
 
@@ -317,7 +317,7 @@ yaml_parser_state_machine(yaml_parser_t *parser, yaml_event_t *event)
             return yaml_parser_parse_flow_mapping_value(parser, event, 1);
 
         default:
-            assert(1);      /* Invalid state. */
+            assert(0 && "Invalid state.");
     }
 
     return 0;

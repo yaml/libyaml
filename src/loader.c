@@ -88,8 +88,8 @@ yaml_parser_load(yaml_parser_t *parser, yaml_document_t *document)
 {
     yaml_event_t event;
 
-    assert(parser);     /* Non-NULL parser object is expected. */
-    assert(document);   /* Non-NULL document object is expected. */
+    assert(parser && "Non-NULL parser object is expected.");
+    assert(document && "Non-NULL document object is expected.");
 
     memset(document, 0, sizeof(yaml_document_t));
     if (!STACK_INIT(parser, document->nodes, yaml_node_t*))
@@ -97,8 +97,8 @@ yaml_parser_load(yaml_parser_t *parser, yaml_document_t *document)
 
     if (!parser->stream_start_produced) {
         if (!yaml_parser_parse(parser, &event)) goto error;
-        assert(event.type == YAML_STREAM_START_EVENT);
-                        /* STREAM-START is expected. */
+        assert(event.type == YAML_STREAM_START_EVENT 
+               && "STREAM-START is expected.");
     }
 
     if (parser->stream_end_produced) {
@@ -186,8 +186,8 @@ yaml_parser_load_document(yaml_parser_t *parser, yaml_event_t *event)
 {
     struct loader_ctx ctx = { NULL, NULL, NULL };
 
-    assert(event->type == YAML_DOCUMENT_START_EVENT);
-                        /* DOCUMENT-START is expected. */
+    assert(event->type == YAML_DOCUMENT_START_EVENT
+           && "DOCUMENT-START is expected.");
 
     parser->document->version_directive
         = event->data.document_start.version_directive;
@@ -243,7 +243,7 @@ yaml_parser_load_nodes(yaml_parser_t *parser, struct loader_ctx *ctx)
                     return 0;
                 break;
             default:
-                assert(0);  /* Could not happen. */
+                assert(0 && "yaml_parse Case Failure");  /* Could not happen. */
                 return 0;
             case YAML_DOCUMENT_END_EVENT:
                 break;
@@ -337,7 +337,7 @@ yaml_parser_load_node_add(yaml_parser_t *parser, struct loader_ctx *ctx,
             break;
         }
         default:
-            assert(0); /* Could not happen. */
+            assert(0 && "YAML SEQ/MAP case failure."); /* Could not happen. */
             return 0;
     }
     return 1;

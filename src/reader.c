@@ -143,7 +143,7 @@ yaml_parser_update_buffer(yaml_parser_t *parser, size_t length)
 {
     int first = 1;
 
-    assert(parser->read_handler);   /* Read handler must be set. */
+    assert(parser->read_handler && "Read handler must be set.");
 
     /* If the EOF flag is set and the raw buffer is empty, do nothing. */
 
@@ -394,7 +394,7 @@ yaml_parser_update_buffer(yaml_parser_t *parser, size_t length)
                     break;
 
                 default:
-                    assert(1);      /* Impossible. */
+                    assert(0 && "Impossible.");
             }
 
             /* Check if the raw buffer contains enough bytes to form a character. */

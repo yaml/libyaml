@@ -481,7 +481,7 @@ yaml_emitter_state_machine(yaml_emitter_t *emitter, yaml_event_t *event)
                     "expected nothing after STREAM-END");
 
         default:
-            assert(1);      /* Invalid state. */
+            assert(0 && "Invalid state.");
     }
 
     return 0;
@@ -1338,7 +1338,7 @@ yaml_emitter_process_scalar(yaml_emitter_t *emitter)
                     emitter->scalar_data.value, emitter->scalar_data.length);
 
         default:
-            assert(1);      /* Impossible. */
+            assert(0 && "Impossible.");
     }
 
     return 0;
