@@ -1814,7 +1814,7 @@ yaml_emitter_write_indicator(yaml_emitter_t *emitter,
 
 	indicator_length = strlen(indicator);
 	if (indent_indicator) {
-		STRING_ASSIGN(string, (yaml_char_t *)indicator, indicator_length + emitter->indentation);
+		STRING_ASSIGN(string, (yaml_char_t *)indicator, indicator_length + emitter->indention);
 	}
 	else {
 		STRING_ASSIGN(string, (yaml_char_t *)indicator, indicator_length);
