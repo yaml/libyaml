@@ -21,7 +21,7 @@ jobs:
         make -C pkg/docker libyaml-dist-ci
         ls -l pkg/docker/output
 
-    - uses: actions/upload-artifact@v2
+    - uses: actions/upload-artifact@v4
       with:
         name: release
         path: pkg/docker/output/yaml-0*
