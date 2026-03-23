@@ -13,7 +13,7 @@ int usage(int ret);
 
 int main(int argc, char *argv[])
 {
-    FILE *input;
+    FILE *input = NULL;
     yaml_emitter_t emitter;
     yaml_event_t event;
     yaml_version_directive_t *version_directive = NULL;
