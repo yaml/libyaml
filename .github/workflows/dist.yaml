@@ -9,7 +9,7 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-    - uses: actions/checkout@v4
+    - uses: actions/checkout@v6
     - run: env | sort
 
     - name: Get image
@@ -21,7 +21,7 @@ jobs:
         make -C pkg/docker libyaml-dist-ci
         ls -l pkg/docker/output
 
-    - uses: actions/upload-artifact@v2
+    - uses: actions/upload-artifact@v7
       with:
         name: release
         path: pkg/docker/output/yaml-0*
