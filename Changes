@@ -1,3 +1,19 @@
+0.2.6-rc.1 2026-04-24 14:05:27+02:00
+
+  - Fix Denial of Service vulnerability:
+    https://github.com/yaml/libyaml/pull/287
+    Limit depth of nesting by default
+    Breaking change (if you have more than 1000 levels
+    of nesting in your YAML documents)
+  - https://github.com/yaml/libyaml/pull/214
+    Fix some typos (in examples and docs)
+  - https://github.com/yaml/libyaml/pull/295
+    Handle closing flow sequence after explicit key
+    https://github.com/yaml/libyaml/pull/296
+    Fix closing flow sequence after explicit key
+    (Fixed edge case of errorig on valid input `[ ? ]`)
+
+
 0.2.5 2020-06-01
 
 https://github.com/yaml/libyaml/pull/105
