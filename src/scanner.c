@@ -479,6 +479,12 @@
 #include "yaml_private.h"
 
 /*
+ * Maximum nesting level (defined in parser.c).
+ */
+
+extern int MAX_NESTING_LEVEL;
+
+/*
  * Ensure that the buffer contains the required number of characters.
  * Return 1 on success, 0 on failure (reader error or memory error).
  */
@@ -1173,6 +1179,12 @@ yaml_parser_increase_flow_level(yaml_parser_t *parser)
     if (parser->flow_level == INT_MAX) {
         parser->error = YAML_MEMORY_ERROR;
         return 0;
+    }
+
+    if (parser->flow_level >= MAX_NESTING_LEVEL) {
+        return yaml_parser_set_scanner_error(parser,
+                "while increasing flow level", parser->mark,
+                "exceeded maximum nesting depth");
     }
 
     parser->flow_level++;
