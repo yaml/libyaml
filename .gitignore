@@ -17,6 +17,7 @@
 /libtool
 CMakeCache.txt
 CMakeFiles/
+DartConfiguration.tcl
 GNUmakefile
 Makefile
 Makefile.in
@@ -40,6 +41,7 @@ stamp-h1
 /tests/example-reformatter
 /tests/example-reformatter-alt
 /tests/run-test-suite
+/tests/test-nesting
 /tests/test-reader
 /tests/test-version
 /dist/
