@@ -1235,6 +1235,12 @@ yaml_parser_roll_indent(yaml_parser_t *parser, ptrdiff_t column,
         if (!PUSH(parser, parser->indents, parser->indent))
             return 0;
 
+        if (!STACK_LIMIT(parser, parser->indents, MAX_NESTING_LEVEL)) {
+            return yaml_parser_set_scanner_error(parser,
+                    "while increasing block level", parser->mark,
+                    "exceeded maximum nesting depth");
+        }
+
         if (column > INT_MAX) {
             parser->error = YAML_MEMORY_ERROR;
             return 0;

@@ -59,7 +59,40 @@ main(void)
         free(input);
     }
 
-    /* Test 2: nesting within the limit must succeed. */
+    /* Test 2: block nesting beyond the limit must fail. */
+    {
+        /*
+         * Build a YAML string with 2000 levels of block mapping nesting:
+         * "a:\n b:\n  c:\n   d:\n..." — each level indented one more space.
+         */
+        int depth = 2000;
+        int len = 0;
+        int pos = 0;
+
+        /* Each level: indent spaces + "X:\n" */
+        for (i = 0; i < depth; i++)
+            len += i + 2 + 1;  /* i spaces + "X:" + newline */
+        input = (char *)malloc(len + 1);
+        assert(input);
+
+        for (i = 0; i < depth; i++) {
+            int j;
+            for (j = 0; j < i; j++)
+                input[pos++] = ' ';
+            input[pos++] = 'a' + (i % 26);
+            input[pos++] = ':';
+            input[pos++] = '\n';
+        }
+        input[pos] = '\0';
+
+        printf("Test 2: %d levels block nesting (exceeds limit) ... ", depth);
+        fflush(stdout);
+        assert(scan_string(input, pos) == 1);
+        printf("OK (rejected)\n");
+        free(input);
+    }
+
+    /* Test 3: flow nesting within the limit must succeed. */
     {
         int depth = 500;
         int len = depth * 2;
