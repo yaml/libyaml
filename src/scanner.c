@@ -1181,7 +1181,7 @@ yaml_parser_increase_flow_level(yaml_parser_t *parser)
         return 0;
     }
 
-    if (parser->flow_level + (int)(parser->indents.top - parser->indents.start) >= MAX_NESTING_LEVEL) {
+    if (!STACK_LIMIT(parser, parser->indents, MAX_NESTING_LEVEL - parser->flow_level)) {
         return yaml_parser_set_scanner_error(parser,
                 "while increasing flow level", parser->mark,
                 "exceeded maximum nesting depth");
