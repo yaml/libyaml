@@ -92,6 +92,7 @@ yaml_emitter_close(yaml_emitter_t *emitter)
     assert(emitter->opened);    /* Emitter should be opened. */
 
     if (emitter->closed) return 1;
+    if (emitter->error) return 0; /* Emitter might have leftover events */
 
     STREAM_END_EVENT_INIT(event, mark, mark);
 
