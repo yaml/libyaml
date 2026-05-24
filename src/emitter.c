@@ -2162,8 +2162,8 @@ yaml_emitter_write_double_quoted_scalar(yaml_emitter_t *emitter,
                         if (!PUT(emitter, 'U')) return 0;
                         width = 8;
                     }
-                    for (k = (width-1)*4; k >= 0; k -= 4) {
-                        int digit = (value >> k) & 0x0F;
+                    for (k = (int) ((width-1)*4); k >= 0; k -= 4) {
+                        int digit = (int) ((value >> k) & 0x0F);
                         if (!PUT(emitter, digit + (digit < 10 ? '0' : 'A'-10)))
                             return 0;
                     }
