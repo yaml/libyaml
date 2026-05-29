@@ -11,6 +11,16 @@ option(BUILD_SHARED_LIBS "Build libyaml as a shared library" OFF)
 set(YAML_STATIC_LIB_NAME "yaml" CACHE STRING "Base name of static library output")
 
 #
+# Update CMake module path
+#
+list(INSERT CMAKE_MODULE_PATH 0 ${yaml_SOURCE_DIR}/cmake)
+
+#
+# Initialize Build Type
+#
+include(yamlInitializeBuildType)
+
+#
 # Output directories for a build tree
 #
 if(NOT DEFINED CMAKE_RUNTIME_OUTPUT_DIRECTORY)
