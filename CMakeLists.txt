@@ -47,6 +47,10 @@ set(SRCS
   src/writer.c
   )
 
+if(WIN32)
+  list(APPEND SRCS src/version.rc)
+endif()
+
 set(config_h ${CMAKE_CURRENT_BINARY_DIR}/include/config.h)
 configure_file(
   cmake/config.h.in
