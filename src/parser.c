@@ -491,12 +491,6 @@ yaml_parser_parse_document_end(yaml_parser_t *parser, yaml_event_t *event)
         implicit = 0;
     }
 
-    while (!STACK_EMPTY(parser, parser->tag_directives)) {
-        yaml_tag_directive_t tag_directive = POP(parser, parser->tag_directives);
-        yaml_free(tag_directive.handle);
-        yaml_free(tag_directive.prefix);
-    }
-
     parser->state = YAML_PARSE_DOCUMENT_START_STATE;
     DOCUMENT_END_EVENT_INIT(*event, implicit, start_mark, end_mark);
 
@@ -1250,6 +1244,7 @@ yaml_parser_process_directives(yaml_parser_t *parser,
     };
     yaml_tag_directive_t *default_tag_directive;
     yaml_version_directive_t *version_directive = NULL;
+    int first_directive = 1;
     struct {
         yaml_tag_directive_t *start;
         yaml_tag_directive_t *end;
@@ -1266,6 +1261,17 @@ yaml_parser_process_directives(yaml_parser_t *parser,
     while (token->type == YAML_VERSION_DIRECTIVE_TOKEN ||
             token->type == YAML_TAG_DIRECTIVE_TOKEN)
     {
+        if (first_directive) {
+            /* First directive seen: this document has its own directives,
+             * so discard any inherited from the previous document. */
+            while (!STACK_EMPTY(parser, parser->tag_directives)) {
+                yaml_tag_directive_t tag_directive = POP(parser, parser->tag_directives);
+                yaml_free(tag_directive.handle);
+                yaml_free(tag_directive.prefix);
+            }
+            first_directive = 0;
+        }
+
         if (token->type == YAML_VERSION_DIRECTIVE_TOKEN) {
             if (version_directive) {
                 yaml_parser_set_parser_error(parser,
