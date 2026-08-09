@@ -74,6 +74,9 @@ YAML_DECLARE(int)
 yaml_string_extend(yaml_char_t **start,
         yaml_char_t **pointer, yaml_char_t **end)
 {
+    if (*end - *start >= INT_MAX / 2)
+        return 0;
+
     yaml_char_t *new_start = (yaml_char_t *)yaml_realloc((void*)*start, (*end - *start)*2);
 
     if (!new_start) return 0;
