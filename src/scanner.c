@@ -1945,8 +1945,12 @@ yaml_parser_scan_to_next_token(yaml_parser_t *parser)
 
         if (!CACHE(parser, 1)) return 0;
 
-        if (parser->mark.column == 0 && IS_BOM(parser->buffer))
+        if (parser->mark.column == 0 && IS_BOM(parser->buffer)) {
             SKIP(parser);
+            /* A BOM is not content, so it must not advance the column: SKIP()
+               increments mark.column, so reset it here (#334). */
+            parser->mark.column = 0;
+        }
 
         /*
          * Eat whitespaces.
