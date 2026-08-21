@@ -20,22 +20,25 @@ jobs:
         - clang
         os:
         - ubuntu-latest
-        - macOS-latest
+        - macos-latest
 
     steps:
-    - uses: actions/checkout@v4
+    - uses: actions/checkout@v7
+      with:
+        fetch-depth: 0  # yaml-test-suite pin detection requires full history
 
     - run: env | sort
-    - name: Install software
-      if: ${{ matrix.os == 'macOS-latest' }}
+    - name: Install MacOS GNU build deps
+      if: ${{ startsWith(matrix.os, 'macos-') }}
       run: |
         brew install automake bash coreutils make libtool
-        echo "/usr/local/opt/coreutils/libexec/gnubin" >> $GITHUB_PATH
-        echo "/usr/local/opt/make/libexec/gnubin" >> $GITHUB_PATH
-    - name: Fetch branches
-      run: |
-        git config remote.origin.fetch +refs/heads/*:refs/remotes/origin/*
-        git fetch --unshallow
+        echo "/opt/homebrew/opt/coreutils/libexec/gnubin" >> $GITHUB_PATH
+        echo "/opt/homebrew/opt/make/libexec/gnubin" >> $GITHUB_PATH
+        echo "/opt/homebrew/opt/libtool/libexec/gnubin" >> $GITHUB_PATH
+#    - name: Fetch branches
+#      run: |
+#        git config remote.origin.fetch +refs/heads/*:refs/remotes/origin/*
+#        git fetch --unshallow
 
     - run: ./bootstrap
     - run: ./configure

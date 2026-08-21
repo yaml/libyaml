@@ -1,28 +1,46 @@
 name: dist
 
 on:
-  push:
-    branches: [ release/* ]
+  workflow_dispatch:
+#  push:
+#    branches: [ release/* ]
 
 jobs:
   dist:
     runs-on: ubuntu-latest
+    container:
+      image: ghcr.io/${{ github.repository_owner }}/libyaml-dist:latest
+      credentials:
+        username: ${{ github.actor }}
+        password: ${{ github.token }}
 
     steps:
-    - uses: actions/checkout@v6
-    - run: env | sort
+    - uses: actions/checkout@v7
 
-    - name: Get image
-      run: |
-        time docker pull yamlio/libyaml-dev
-        docker images | grep libyaml
+    - name: Build dist artifacts
+      id: dist_build
+      run: |        
+        ./bootstrap
+        ./configure
+        make dist
+        
+        echo "ARTIFACT_NAME_TGZ=$(ls yaml-*.tar.gz)" >> "$GITHUB_OUTPUT"
+        echo "ARTIFACT_PATH_TGZ=$(realpath yaml-*.tar.gz)" >> "$GITHUB_OUTPUT"
+        echo "ARTIFACT_NAME_ZIP=$(ls yaml-*.zip)" >> "$GITHUB_OUTPUT"
+        echo "ARTIFACT_PATH_ZIP=$(realpath yaml-*.zip)" >> "$GITHUB_OUTPUT"
 
-    - run: |
-        make -C pkg/docker libyaml-dist-ci
-        ls -l pkg/docker/output
-
-    - uses: actions/upload-artifact@v7
+    - name: Upload tgz artifact
+      uses: actions/upload-artifact@v7
       with:
-        name: release
-        path: pkg/docker/output/yaml-0*
+        name: ${{ steps.dist_build.outputs.ARTIFACT_NAME_TGZ }}
+        path: ${{ steps.dist_build.outputs.ARTIFACT_PATH_TGZ }}
+        if-no-files-found: error
+        archive: false
 
+    - name: Upload zip artifact
+      uses: actions/upload-artifact@v7
+      with:
+        name: ${{ steps.dist_build.outputs.ARTIFACT_NAME_ZIP }}
+        path: ${{ steps.dist_build.outputs.ARTIFACT_PATH_ZIP }}
+        if-no-files-found: error
+        archive: false
