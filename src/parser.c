@@ -164,6 +164,17 @@ static int
 yaml_parser_append_tag_directive(yaml_parser_t *parser,
         yaml_tag_directive_t value, int allow_duplicates, yaml_mark_t mark);
 
+/*
+ * Recursion limit controls.
+ */
+
+YAML_DECLARE(int)
+yaml_get_max_nest_level()
+{
+    return MAX_NESTING_LEVEL;
+}
+
+
 YAML_DECLARE(void)
 yaml_set_max_nest_level(int max)
 {
