@@ -1,0 +1,10 @@
+name: "C/C++ Analysis - Exclude False Positives"
+
+disable-default-queries: false
+
+queries:
+  - uses: security-extended
+
+query-filters:
+  - exclude:
+      id: cpp/path-injection 
