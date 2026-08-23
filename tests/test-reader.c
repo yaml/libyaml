@@ -152,9 +152,9 @@ int check_utf8_sequences(void)
                             parser.problem, (long)parser.problem_offset);
                 }
             }
+            yaml_parser_delete(&parser);
             if (*end == '!') break;
             start = ++end;
-            yaml_parser_delete(&parser);
         };
         printf("\n");
     }
