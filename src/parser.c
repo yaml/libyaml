@@ -748,6 +748,7 @@ yaml_parser_parse_block_sequence_entry(yaml_parser_t *parser,
 
     if (first) {
         token = PEEK_TOKEN(parser);
+        if (!token) return 0;
         if (!PUSH(parser, parser->marks, token->start_mark))
             return 0;
         SKIP_TOKEN(parser);
@@ -856,6 +857,7 @@ yaml_parser_parse_block_mapping_key(yaml_parser_t *parser,
 
     if (first) {
         token = PEEK_TOKEN(parser);
+        if (!token) return 0;
         if (!PUSH(parser, parser->marks, token->start_mark))
             return 0;
         SKIP_TOKEN(parser);
@@ -971,6 +973,7 @@ yaml_parser_parse_flow_sequence_entry(yaml_parser_t *parser,
 
     if (first) {
         token = PEEK_TOKEN(parser);
+        if (!token) return 0;
         if (!PUSH(parser, parser->marks, token->start_mark))
             return 0;
         SKIP_TOKEN(parser);
@@ -1127,6 +1130,7 @@ yaml_parser_parse_flow_mapping_key(yaml_parser_t *parser,
 
     if (first) {
         token = PEEK_TOKEN(parser);
+        if (!token) return 0;
         if (!PUSH(parser, parser->marks, token->start_mark))
             return 0;
         SKIP_TOKEN(parser);
