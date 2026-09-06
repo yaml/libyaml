@@ -1945,8 +1945,18 @@ yaml_parser_scan_to_next_token(yaml_parser_t *parser)
 
         if (!CACHE(parser, 1)) return 0;
 
-        if (parser->mark.column == 0 && IS_BOM(parser->buffer))
-            SKIP(parser);
+        /*
+         * The BOM is not a character in the document (YAML 1.2 spec,
+         * section 5.2), so it must not advance mark.column the way a
+         * regular SKIP() would - otherwise the rest of the first line
+         * is off by one column.
+         */
+
+        if (parser->mark.column == 0 && IS_BOM(parser->buffer)) {
+            parser->mark.index ++;
+            parser->unread --;
+            parser->buffer.pointer += WIDTH(parser->buffer);
+        }
 
         /*
          * Eat whitespaces.
