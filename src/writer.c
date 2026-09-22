@@ -116,7 +116,7 @@ yaml_emitter_flush(yaml_emitter_t *emitter)
             value -= 0x10000;
             emitter->raw_buffer.last[high] = 0xD8 + (value >> 18);
             emitter->raw_buffer.last[low] = (value >> 10) & 0xFF;
-            emitter->raw_buffer.last[high+2] = 0xDC + ((value >> 8) & 0xFF);
+            emitter->raw_buffer.last[high+2] = 0xDC + ((value >> 8) & 0x03);
             emitter->raw_buffer.last[low+2] = value & 0xFF;
 
             emitter->raw_buffer.last += 4;
