@@ -12,6 +12,12 @@
 #define BUFFER_SIZE 65536
 #define MAX_DOCUMENTS  16
 
+int copy_document(yaml_document_t *document_to, yaml_document_t *document_from);
+int compare_nodes(yaml_document_t *document1, int index1,
+        yaml_document_t *document2, int index2, int level);
+int compare_documents(yaml_document_t *document1, yaml_document_t *document2);
+int print_output(char *name, unsigned char *buffer, size_t size, int count);
+
 int copy_document(yaml_document_t *document_to, yaml_document_t *document_from)
 {
     yaml_node_t *node;
@@ -236,7 +242,7 @@ main(int argc, char *argv[])
         int done = 0;
         int count = 0;
         int error = 0;
-        int k;
+        size_t k;
         memset(buffer, 0, BUFFER_SIZE+1);
         memset(documents, 0, MAX_DOCUMENTS*sizeof(yaml_document_t));
 
