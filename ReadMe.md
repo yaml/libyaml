@@ -31,7 +31,7 @@ homepage](https://github.com/yaml/libyaml).
 Discuss LibYAML with the maintainers in IRC #libyaml irc.freenode.net.
 
 You may also use the [YAML-Core mailing
-list](http://lists.sourceforge.net/lists/listinfo/yaml-core).
+list](https://lists.sourceforge.net/lists/listinfo/yaml-core).
 
 Submit bug reports and feature requests to the [LibYAML bug
 tracker](https://github.com/yaml/libyaml/issues/new).
