@@ -1061,6 +1061,8 @@ yaml_document_initialize(yaml_document_t *document,
             (tag_directives_start == tag_directives_end));
                             /* Valid tag directives are expected. */
 
+    memset(document, 0, sizeof(yaml_document_t));
+
     if (!STACK_INIT(&context, nodes, yaml_node_t*)) goto error;
 
     if (version_directive) {

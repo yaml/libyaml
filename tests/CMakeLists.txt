@@ -19,6 +19,7 @@ foreach(name IN ITEMS
   test-nesting
   test-reader
   test-version
+  test-document-initialize
   )
   add_yaml_executable(${name})
 endforeach()
@@ -26,4 +27,5 @@ endforeach()
 add_test(NAME version COMMAND test-version)
 add_test(NAME reader COMMAND test-reader)
 add_test(NAME nesting COMMAND test-nesting)
+add_test(NAME document-initialize COMMAND test-document-initialize)
 
