@@ -24,13 +24,21 @@ yaml_get_version(int *major, int *minor, int *patch)
 }
 
 /*
+ * User allocation functions
+ */
+
+void *(*yaml_user_malloc)(size_t size) = malloc;
+void *(*yaml_user_realloc)(void *ptr, size_t size) = realloc;
+void (*yaml_user_free)(void *ptr) = free;
+
+/*
  * Allocate a dynamic memory block.
  */
 
 YAML_DECLARE(void *)
 yaml_malloc(size_t size)
 {
-    return malloc(size ? size : 1);
+    return (*yaml_user_malloc)(size ? size : 1);
 }
 
 /*
@@ -40,7 +48,7 @@ yaml_malloc(size_t size)
 YAML_DECLARE(void *)
 yaml_realloc(void *ptr, size_t size)
 {
-    return ptr ? realloc(ptr, size ? size : 1) : malloc(size ? size : 1);
+    return (*yaml_user_realloc)(ptr, size ? size : 1);
 }
 
 /*
@@ -50,7 +58,7 @@ yaml_realloc(void *ptr, size_t size)
 YAML_DECLARE(void)
 yaml_free(void *ptr)
 {
-    if (ptr) free(ptr);
+    if (ptr) (*yaml_user_free)(ptr);
 }
 
 /*
@@ -60,10 +68,11 @@ yaml_free(void *ptr)
 YAML_DECLARE(yaml_char_t *)
 yaml_strdup(const yaml_char_t *str)
 {
-    if (!str)
+    yaml_char_t *cpy = str ? (yaml_char_t *)yaml_malloc(strlen((const char *)str) + 1) : NULL;
+    if (!cpy)
         return NULL;
 
-    return (yaml_char_t *)strdup((char *)str);
+    return (yaml_char_t *)strcpy((char *)cpy, (const char *)str);
 }
 
 /*
