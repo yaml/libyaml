@@ -74,14 +74,17 @@ YAML_DECLARE(int)
 yaml_string_extend(yaml_char_t **start,
         yaml_char_t **pointer, yaml_char_t **end)
 {
-    yaml_char_t *new_start = (yaml_char_t *)yaml_realloc((void*)*start, (*end - *start)*2);
+    size_t pointer_offset = *pointer - *start;
+    size_t old_size = *end - *start;
+    yaml_char_t *new_start = (yaml_char_t *)yaml_realloc((void*)*start,
+            old_size*2);
 
     if (!new_start) return 0;
 
-    memset(new_start + (*end - *start), 0, *end - *start);
+    memset(new_start + old_size, 0, old_size);
 
-    *pointer = new_start + (*pointer - *start);
-    *end = new_start + (*end - *start)*2;
+    *pointer = new_start + pointer_offset;
+    *end = new_start + old_size*2;
     *start = new_start;
 
     return 1;
@@ -118,17 +121,21 @@ yaml_string_join(
 YAML_DECLARE(int)
 yaml_stack_extend(void **start, void **top, void **end)
 {
+    size_t top_offset;
+    size_t old_size;
     void *new_start;
 
     if ((char *)*end - (char *)*start >= INT_MAX / 2)
 	return 0;
 
-    new_start = yaml_realloc(*start, ((char *)*end - (char *)*start)*2);
+    top_offset = (char *)*top - (char *)*start;
+    old_size = (char *)*end - (char *)*start;
+    new_start = yaml_realloc(*start, old_size*2);
 
     if (!new_start) return 0;
 
-    *top = (char *)new_start + ((char *)*top - (char *)*start);
-    *end = (char *)new_start + ((char *)*end - (char *)*start)*2;
+    *top = (char *)new_start + top_offset;
+    *end = (char *)new_start + old_size*2;
     *start = new_start;
 
     return 1;
@@ -144,14 +151,16 @@ yaml_queue_extend(void **start, void **head, void **tail, void **end)
     /* Check if we need to resize the queue. */
 
     if (*start == *head && *tail == *end) {
-        void *new_start = yaml_realloc(*start,
-                ((char *)*end - (char *)*start)*2);
+        size_t head_offset = (char *)*head - (char *)*start;
+        size_t tail_offset = (char *)*tail - (char *)*start;
+        size_t old_size = (char *)*end - (char *)*start;
+        void *new_start = yaml_realloc(*start, old_size*2);
 
         if (!new_start) return 0;
 
-        *head = (char *)new_start + ((char *)*head - (char *)*start);
-        *tail = (char *)new_start + ((char *)*tail - (char *)*start);
-        *end = (char *)new_start + ((char *)*end - (char *)*start)*2;
+        *head = (char *)new_start + head_offset;
+        *tail = (char *)new_start + tail_offset;
+        *end = (char *)new_start + old_size*2;
         *start = new_start;
     }
 
@@ -1389,5 +1398,4 @@ yaml_document_append_mapping_pair(yaml_document_t *document,
 
     return 1;
 }
-
 
