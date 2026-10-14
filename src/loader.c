@@ -455,6 +455,9 @@ yaml_parser_load_sequence(yaml_parser_t *parser, yaml_event_t *event,
 error:
     yaml_free(tag);
     yaml_free(event->data.sequence_start.anchor);
+    /* The items array has not been attached to the document yet, so the
+     * document cleanup will not free it. */
+    yaml_free(items.start);
     return 0;
 }
 
@@ -523,6 +526,9 @@ yaml_parser_load_mapping(yaml_parser_t *parser, yaml_event_t *event,
 error:
     yaml_free(tag);
     yaml_free(event->data.mapping_start.anchor);
+    /* The pairs array has not been attached to the document yet, so the
+     * document cleanup will not free it. */
+    yaml_free(pairs.start);
     return 0;
 }
 
