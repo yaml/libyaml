@@ -1470,7 +1470,7 @@ yaml_parser_load(yaml_parser_t *parser, yaml_document_t *document);
  */
 
 YAML_DECLARE(int)
-yaml_get_max_nest_level();
+yaml_get_max_nest_level(void);
 
 /** @} */
 
