@@ -82,6 +82,10 @@ yaml_parser_set_parser_error_context(yaml_parser_t *parser,
         const char *context, yaml_mark_t context_mark,
         const char *problem, yaml_mark_t problem_mark);
 
+static int
+yaml_parser_check_nesting_level(yaml_parser_t *parser,
+        yaml_mark_t context_mark, yaml_mark_t problem_mark);
+
 /*
  * State functions.
  */
@@ -234,6 +238,29 @@ yaml_parser_set_parser_error_context(yaml_parser_t *parser,
     parser->problem_mark = problem_mark;
 
     return 0;
+}
+
+/*
+ * Check the nesting depth before a collection is started.
+ *
+ * The scanner limits block indentation plus flow levels, but an indentless
+ * sequence and a single-pair mapping inside a flow sequence add a nesting
+ * level without either.  The states stack holds one entry per enclosing
+ * collection plus the document end state, so its size is the nesting depth
+ * of the collection being started.
+ */
+
+static int
+yaml_parser_check_nesting_level(yaml_parser_t *parser,
+        yaml_mark_t context_mark, yaml_mark_t problem_mark)
+{
+    if (parser->states.top - parser->states.start > MAX_NESTING_LEVEL) {
+        return yaml_parser_set_parser_error_context(parser,
+                "while parsing a node", context_mark,
+                "exceeded maximum nesting depth", problem_mark);
+    }
+
+    return 1;
 }
 
 /*
@@ -648,6 +675,9 @@ yaml_parser_parse_node(yaml_parser_t *parser, yaml_event_t *event,
 
         implicit = (!tag || !*tag);
         if (indentless_sequence && token->type == YAML_BLOCK_ENTRY_TOKEN) {
+            if (!yaml_parser_check_nesting_level(parser,
+                        start_mark, token->start_mark))
+                goto error;
             end_mark = token->end_mark;
             parser->state = YAML_PARSE_INDENTLESS_SEQUENCE_ENTRY_STATE;
             SEQUENCE_START_EVENT_INIT(*event, anchor, tag, implicit,
@@ -675,6 +705,9 @@ yaml_parser_parse_node(yaml_parser_t *parser, yaml_event_t *event,
                 return 1;
             }
             else if (token->type == YAML_FLOW_SEQUENCE_START_TOKEN) {
+                if (!yaml_parser_check_nesting_level(parser,
+                            start_mark, token->start_mark))
+                    goto error;
                 end_mark = token->end_mark;
                 parser->state = YAML_PARSE_FLOW_SEQUENCE_FIRST_ENTRY_STATE;
                 SEQUENCE_START_EVENT_INIT(*event, anchor, tag, implicit,
@@ -682,6 +715,9 @@ yaml_parser_parse_node(yaml_parser_t *parser, yaml_event_t *event,
                 return 1;
             }
             else if (token->type == YAML_FLOW_MAPPING_START_TOKEN) {
+                if (!yaml_parser_check_nesting_level(parser,
+                            start_mark, token->start_mark))
+                    goto error;
                 end_mark = token->end_mark;
                 parser->state = YAML_PARSE_FLOW_MAPPING_FIRST_KEY_STATE;
                 MAPPING_START_EVENT_INIT(*event, anchor, tag, implicit,
@@ -689,6 +725,9 @@ yaml_parser_parse_node(yaml_parser_t *parser, yaml_event_t *event,
                 return 1;
             }
             else if (block && token->type == YAML_BLOCK_SEQUENCE_START_TOKEN) {
+                if (!yaml_parser_check_nesting_level(parser,
+                            start_mark, token->start_mark))
+                    goto error;
                 end_mark = token->end_mark;
                 parser->state = YAML_PARSE_BLOCK_SEQUENCE_FIRST_ENTRY_STATE;
                 SEQUENCE_START_EVENT_INIT(*event, anchor, tag, implicit,
@@ -696,6 +735,9 @@ yaml_parser_parse_node(yaml_parser_t *parser, yaml_event_t *event,
                 return 1;
             }
             else if (block && token->type == YAML_BLOCK_MAPPING_START_TOKEN) {
+                if (!yaml_parser_check_nesting_level(parser,
+                            start_mark, token->start_mark))
+                    goto error;
                 end_mark = token->end_mark;
                 parser->state = YAML_PARSE_BLOCK_MAPPING_FIRST_KEY_STATE;
                 MAPPING_START_EVENT_INIT(*event, anchor, tag, implicit,
@@ -995,6 +1037,12 @@ yaml_parser_parse_flow_sequence_entry(yaml_parser_t *parser,
         }
 
         if (token->type == YAML_KEY_TOKEN) {
+            if (!PUSH(parser, parser->states,
+                        YAML_PARSE_FLOW_SEQUENCE_ENTRY_STATE))
+                return 0;
+            if (!yaml_parser_check_nesting_level(parser,
+                        token->start_mark, token->start_mark))
+                return 0;
             parser->state = YAML_PARSE_FLOW_SEQUENCE_ENTRY_MAPPING_KEY_STATE;
             MAPPING_START_EVENT_INIT(*event, NULL, NULL,
                     1, YAML_FLOW_MAPPING_STYLE,
@@ -1099,7 +1147,7 @@ yaml_parser_parse_flow_sequence_entry_mapping_end(yaml_parser_t *parser,
     token = PEEK_TOKEN(parser);
     if (!token) return 0;
 
-    parser->state = YAML_PARSE_FLOW_SEQUENCE_ENTRY_STATE;
+    parser->state = POP(parser, parser->states);
 
     MAPPING_END_EVENT_INIT(*event, token->start_mark, token->start_mark);
     return 1;
