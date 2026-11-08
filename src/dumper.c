@@ -25,8 +25,8 @@ yaml_emitter_delete_document_and_anchors(yaml_emitter_t *emitter);
  * Anchor functions.
  */
 
-static void
-yaml_emitter_anchor_node(yaml_emitter_t *emitter, int index);
+static int
+yaml_emitter_anchor_node(yaml_emitter_t *emitter, int index, int depth);
 
 static yaml_char_t *
 yaml_emitter_generate_anchor(yaml_emitter_t *emitter, int anchor_id);
@@ -37,7 +37,7 @@ yaml_emitter_generate_anchor(yaml_emitter_t *emitter, int anchor_id);
  */
 
 static int
-yaml_emitter_dump_node(yaml_emitter_t *emitter, int index);
+yaml_emitter_dump_node(yaml_emitter_t *emitter, int index, int depth);
 
 static int
 yaml_emitter_dump_alias(yaml_emitter_t *emitter, yaml_char_t *anchor);
@@ -48,11 +48,20 @@ yaml_emitter_dump_scalar(yaml_emitter_t *emitter, yaml_node_t *node,
 
 static int
 yaml_emitter_dump_sequence(yaml_emitter_t *emitter, yaml_node_t *node,
-        yaml_char_t *anchor);
+        yaml_char_t *anchor, int depth);
 
 static int
 yaml_emitter_dump_mapping(yaml_emitter_t *emitter, yaml_node_t *node,
-        yaml_char_t *anchor);
+        yaml_char_t *anchor, int depth);
+
+/*
+ * Maximum nesting depth of the document graph the emitter will serialize.
+ * Shared with the parser (settable via yaml_set_max_nest_level()).  Bounding
+ * the recursion below prevents C stack exhaustion on pathologically deep
+ * documents constructed through the document API.
+ */
+
+extern int MAX_NESTING_LEVEL;
 
 /*
  * Issue a STREAM-START event.
@@ -142,8 +151,8 @@ yaml_emitter_dump(yaml_emitter_t *emitter, yaml_document_t *document)
             document->start_implicit, mark, mark);
     if (!yaml_emitter_emit(emitter, &event)) goto error;
 
-    yaml_emitter_anchor_node(emitter, 1);
-    if (!yaml_emitter_dump_node(emitter, 1)) goto error;
+    if (!yaml_emitter_anchor_node(emitter, 1, 1)) goto error;
+    if (!yaml_emitter_dump_node(emitter, 1, 1)) goto error;
 
     DOCUMENT_END_EVENT_INIT(event, document->end_implicit, mark, mark);
     if (!yaml_emitter_emit(emitter, &event)) goto error;
@@ -203,12 +212,18 @@ yaml_emitter_delete_document_and_anchors(yaml_emitter_t *emitter)
  * Check the references of a node and assign the anchor id if needed.
  */
 
-static void
-yaml_emitter_anchor_node(yaml_emitter_t *emitter, int index)
+static int
+yaml_emitter_anchor_node(yaml_emitter_t *emitter, int index, int depth)
 {
     yaml_node_t *node = emitter->document->nodes.start + index - 1;
     yaml_node_item_t *item;
     yaml_node_pair_t *pair;
+
+    if (depth > MAX_NESTING_LEVEL) {
+        emitter->error = YAML_EMITTER_ERROR;
+        emitter->problem = "document nesting depth exceeds the maximum";
+        return 0;
+    }
 
     emitter->anchors[index-1].references ++;
 
@@ -217,14 +232,17 @@ yaml_emitter_anchor_node(yaml_emitter_t *emitter, int index)
             case YAML_SEQUENCE_NODE:
                 for (item = node->data.sequence.items.start;
                         item < node->data.sequence.items.top; item ++) {
-                    yaml_emitter_anchor_node(emitter, *item);
+                    if (!yaml_emitter_anchor_node(emitter, *item, depth + 1))
+                        return 0;
                 }
                 break;
             case YAML_MAPPING_NODE:
                 for (pair = node->data.mapping.pairs.start;
                         pair < node->data.mapping.pairs.top; pair ++) {
-                    yaml_emitter_anchor_node(emitter, pair->key);
-                    yaml_emitter_anchor_node(emitter, pair->value);
+                    if (!yaml_emitter_anchor_node(emitter, pair->key, depth + 1))
+                        return 0;
+                    if (!yaml_emitter_anchor_node(emitter, pair->value, depth + 1))
+                        return 0;
                 }
                 break;
             default:
@@ -235,6 +253,8 @@ yaml_emitter_anchor_node(yaml_emitter_t *emitter, int index)
     else if (emitter->anchors[index-1].references == 2) {
         emitter->anchors[index-1].anchor = (++ emitter->last_anchor_id);
     }
+
+    return 1;
 }
 
 /*
@@ -261,11 +281,17 @@ yaml_emitter_generate_anchor(SHIM(yaml_emitter_t *emitter), int anchor_id)
  */
 
 static int
-yaml_emitter_dump_node(yaml_emitter_t *emitter, int index)
+yaml_emitter_dump_node(yaml_emitter_t *emitter, int index, int depth)
 {
     yaml_node_t *node = emitter->document->nodes.start + index - 1;
     int anchor_id = emitter->anchors[index-1].anchor;
     yaml_char_t *anchor = NULL;
+
+    if (depth > MAX_NESTING_LEVEL) {
+        emitter->error = YAML_EMITTER_ERROR;
+        emitter->problem = "document nesting depth exceeds the maximum";
+        return 0;
+    }
 
     if (anchor_id) {
         anchor = yaml_emitter_generate_anchor(emitter, anchor_id);
@@ -282,9 +308,9 @@ yaml_emitter_dump_node(yaml_emitter_t *emitter, int index)
         case YAML_SCALAR_NODE:
             return yaml_emitter_dump_scalar(emitter, node, anchor);
         case YAML_SEQUENCE_NODE:
-            return yaml_emitter_dump_sequence(emitter, node, anchor);
+            return yaml_emitter_dump_sequence(emitter, node, anchor, depth);
         case YAML_MAPPING_NODE:
-            return yaml_emitter_dump_mapping(emitter, node, anchor);
+            return yaml_emitter_dump_mapping(emitter, node, anchor, depth);
         default:
             assert(0);      /* Could not happen. */
             break;
@@ -337,7 +363,7 @@ yaml_emitter_dump_scalar(yaml_emitter_t *emitter, yaml_node_t *node,
 
 static int
 yaml_emitter_dump_sequence(yaml_emitter_t *emitter, yaml_node_t *node,
-        yaml_char_t *anchor)
+        yaml_char_t *anchor, int depth)
 {
     yaml_event_t event;
     yaml_mark_t mark  = { 0, 0, 0 };
@@ -352,7 +378,7 @@ yaml_emitter_dump_sequence(yaml_emitter_t *emitter, yaml_node_t *node,
 
     for (item = node->data.sequence.items.start;
             item < node->data.sequence.items.top; item ++) {
-        if (!yaml_emitter_dump_node(emitter, *item)) return 0;
+        if (!yaml_emitter_dump_node(emitter, *item, depth + 1)) return 0;
     }
 
     SEQUENCE_END_EVENT_INIT(event, mark, mark);
@@ -367,7 +393,7 @@ yaml_emitter_dump_sequence(yaml_emitter_t *emitter, yaml_node_t *node,
 
 static int
 yaml_emitter_dump_mapping(yaml_emitter_t *emitter, yaml_node_t *node,
-        yaml_char_t *anchor)
+        yaml_char_t *anchor, int depth)
 {
     yaml_event_t event;
     yaml_mark_t mark  = { 0, 0, 0 };
@@ -382,8 +408,8 @@ yaml_emitter_dump_mapping(yaml_emitter_t *emitter, yaml_node_t *node,
 
     for (pair = node->data.mapping.pairs.start;
             pair < node->data.mapping.pairs.top; pair ++) {
-        if (!yaml_emitter_dump_node(emitter, pair->key)) return 0;
-        if (!yaml_emitter_dump_node(emitter, pair->value)) return 0;
+        if (!yaml_emitter_dump_node(emitter, pair->key, depth + 1)) return 0;
+        if (!yaml_emitter_dump_node(emitter, pair->value, depth + 1)) return 0;
     }
 
     MAPPING_END_EVENT_INIT(event, mark, mark);
