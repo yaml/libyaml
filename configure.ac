@@ -3,7 +3,7 @@
 # Define the package version numbers and the bug reporting link.
 m4_define([YAML_MAJOR], 0)
 m4_define([YAML_MINOR], 2)
-m4_define([YAML_PATCH], 5)
+m4_define([YAML_PATCH], 6)
 m4_define([YAML_BUGS], [https://github.com/yaml/libyaml/issues/new])
 
 # Define the libtool version numbers; check the Autobook, Section 11.4.
@@ -19,15 +19,15 @@ m4_define([YAML_BUGS], [https://github.com/yaml/libyaml/issues/new])
 #           YAML_AGE = 0
 m4_define([YAML_RELEASE], 0)
 m4_define([YAML_CURRENT], 2)
-m4_define([YAML_REVISION], 9)
-m4_define([YAML_AGE], 0)
+m4_define([YAML_REVISION], 10)
+m4_define([YAML_AGE], 1)
 
 # Initialize autoconf & automake.
 AC_PREREQ(2.59)
 AC_INIT([yaml], [YAML_MAJOR.YAML_MINOR.YAML_PATCH], [YAML_BUGS])
 AC_CONFIG_AUX_DIR([config])
 AC_CONFIG_HEADERS([include/config.h])
-AM_INIT_AUTOMAKE([1.9 foreign])
+AM_INIT_AUTOMAKE([1.9 foreign dist-zip])
 
 # Define macro variables for the package version numbers.
 AC_DEFINE(YAML_VERSION_MAJOR, YAML_MAJOR, [Define the major version number.])
@@ -53,13 +53,12 @@ AC_PROG_CPP
 AC_PROG_INSTALL
 AC_PROG_LN_S
 AC_PROG_MAKE_SET
-AC_PROG_LIBTOOL
+LT_INIT
 
 AC_CHECK_PROG(DOXYGEN, [doxygen], [true], [false])
 AM_CONDITIONAL(DOXYGEN, [test "$DOXYGEN" = true])
 
 # Checks for header files.
-AC_HEADER_STDC
 AC_CHECK_HEADERS([stdlib.h])
 
 # Checks for typedefs, structures, and compiler characteristics.

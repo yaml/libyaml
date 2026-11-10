@@ -1,0 +1,33 @@
+name: Update dist container image
+
+on:
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    env:
+      CONTAINER_RUN_TAG: ghcr.io/${{ github.repository_owner }}/libyaml-dist:${{ github.run_number }}
+      CONTAINER_LATEST_TAG: ghcr.io/${{ github.repository_owner }}/libyaml-dist:latest
+
+    steps:
+      - name: GHCR token login
+        uses: docker/login-action@v4
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.github_token }}
+
+      - name: Checkout
+        uses: actions/checkout@v7
+
+      - name: Build image
+        run: docker build ./pkg/docker --tag '${{ env.CONTAINER_RUN_TAG }}'
+
+      - name: Push image
+        run: |
+          docker push '${{ env.CONTAINER_RUN_TAG }}'
+          # only update latest if the run layer/tag pushed correctly 
+          docker tag '${{ env.CONTAINER_RUN_TAG }}' '${{ env.CONTAINER_LATEST_TAG }}'
+          docker push '${{ env.CONTAINER_LATEST_TAG }}'

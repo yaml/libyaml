@@ -1456,6 +1456,10 @@ yaml_parser_parse(yaml_parser_t *parser, yaml_event_t *event);
 YAML_DECLARE(int)
 yaml_parser_load(yaml_parser_t *parser, yaml_document_t *document);
 
+/**
+ * Macro declaring availability of the get/set_max_nest_level API.
+ */
+
 #define LIBYAML_FEATURE_NEST_DEPTH_CONTROL
 
 /**
