@@ -59,6 +59,10 @@ yaml_emitter_dump_mapping(yaml_emitter_t *emitter, yaml_node_t *node,
  * Shared with the parser (settable via yaml_set_max_nest_level()).  Bounding
  * the recursion below prevents C stack exhaustion on pathologically deep
  * documents constructed through the document API.
+ *
+ * Depth counts nested collections, as the parser does: scalar leaves and
+ * nodes already visited (which are emitted as aliases and do not recurse)
+ * are not counted.
  */
 
 extern int MAX_NESTING_LEVEL;
@@ -219,15 +223,14 @@ yaml_emitter_anchor_node(yaml_emitter_t *emitter, int index, int depth)
     yaml_node_item_t *item;
     yaml_node_pair_t *pair;
 
-    if (depth > MAX_NESTING_LEVEL) {
-        emitter->error = YAML_EMITTER_ERROR;
-        emitter->problem = "document nesting depth exceeds the maximum";
-        return 0;
-    }
-
     emitter->anchors[index-1].references ++;
 
     if (emitter->anchors[index-1].references == 1) {
+        if (node->type != YAML_SCALAR_NODE && depth > MAX_NESTING_LEVEL) {
+            emitter->error = YAML_EMITTER_ERROR;
+            emitter->problem = "document nesting depth exceeds the maximum";
+            return 0;
+        }
         switch (node->type) {
             case YAML_SEQUENCE_NODE:
                 for (item = node->data.sequence.items.start;
@@ -287,7 +290,9 @@ yaml_emitter_dump_node(yaml_emitter_t *emitter, int index, int depth)
     int anchor_id = emitter->anchors[index-1].anchor;
     yaml_char_t *anchor = NULL;
 
-    if (depth > MAX_NESTING_LEVEL) {
+    if (!emitter->anchors[index-1].serialized
+            && node->type != YAML_SCALAR_NODE
+            && depth > MAX_NESTING_LEVEL) {
         emitter->error = YAML_EMITTER_ERROR;
         emitter->problem = "document nesting depth exceeds the maximum";
         return 0;
