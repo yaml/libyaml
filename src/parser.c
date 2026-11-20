@@ -169,7 +169,7 @@ yaml_parser_append_tag_directive(yaml_parser_t *parser,
  */
 
 YAML_DECLARE(int)
-yaml_get_max_nest_level()
+yaml_get_max_nest_level(void)
 {
     return MAX_NESTING_LEVEL;
 }
