@@ -1,3 +1,9 @@
+0.2.6 2026-11-10
+
+- Add configurable collection recursion depth limit, default ~ 1000 - fixes CVE-2026-44842.
+- Fix parsing of flow sequence closure after explicit key.
+
+
 0.2.5 2020-06-01
 
 https://github.com/yaml/libyaml/pull/105

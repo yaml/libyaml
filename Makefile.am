@@ -9,6 +9,9 @@ LIBYAML_TEST_SUITE_RUN_REPO_DEFAULT := https://github.com/yaml/libyaml
 LIBYAML_TEST_SUITE_RUN_REPO ?= $(LIBYAML_TEST_SUITE_RUN_REPO_DEFAULT)
 LIBYAML_TEST_SUITE_RUN_BRANCH ?= run-test-suite
 
+# don't leak build env UID/GID in dist tarballs; force to root
+export TAR_OPTIONS := --owner=0 --group=0 --numeric-owner
+
 pkgconfigdir = $(libdir)/pkgconfig
 pkgconfig_DATA = yaml-0.1.pc
 
@@ -46,6 +49,5 @@ ifeq ($(LIBYAML_TEST_SUITE_RUN_REPO),$(LIBYAML_TEST_SUITE_RUN_REPO_DEFAULT))
 docker-build:
 	make -C pkg/docker build
 
-docker-dist:
-	make -C pkg/docker libyaml-dist
-
+dist-docker:
+	make -C pkg/docker dist-docker-local

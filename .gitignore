@@ -27,8 +27,10 @@ Makefile.in
 config.h*
 /config.status
 /configure
+/doc/html
 stamp-h1
 !config/config.h.in
+/pkg/docker/output/yaml-*
 /tests/run-dumper
 /tests/run-emitter
 /tests/run-emitter-test-suite
