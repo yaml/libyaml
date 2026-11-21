@@ -1166,7 +1166,9 @@ yaml_document_get_node(yaml_document_t *document, int index)
 {
     assert(document);   /* Non-NULL document object is expected. */
 
-    if (index > 0 && document->nodes.start + index <= document->nodes.top) {
+    if (index > 0 && document->nodes.start
+            && (size_t)index <= (size_t)(document->nodes.top
+                - document->nodes.start)) {
         return document->nodes.start + index - 1;
     }
     return NULL;
@@ -1339,17 +1341,16 @@ yaml_document_append_sequence_item(yaml_document_t *document,
         yaml_error_type_t error;
     } context;
 
-    assert(document);       /* Non-NULL document is required. */
-    assert(sequence > 0
-            && document->nodes.start + sequence <= document->nodes.top);
-                            /* Valid sequence id is required. */
-    assert(document->nodes.start[sequence-1].type == YAML_SEQUENCE_NODE);
-                            /* A sequence node is required. */
-    assert(item > 0 && document->nodes.start + item <= document->nodes.top);
-                            /* Valid item id is required. */
+    yaml_node_t *sequence_node;
 
-    if (!PUSH(&context,
-                document->nodes.start[sequence-1].data.sequence.items, item))
+    assert(document);       /* Non-NULL document is required. */
+
+    sequence_node = yaml_document_get_node(document, sequence);
+    if (!sequence_node || sequence_node->type != YAML_SEQUENCE_NODE
+            || !yaml_document_get_node(document, item))
+        return 0;
+
+    if (!PUSH(&context, sequence_node->data.sequence.items, item))
         return 0;
 
     return 1;
@@ -1367,24 +1368,21 @@ yaml_document_append_mapping_pair(yaml_document_t *document,
         yaml_error_type_t error;
     } context;
 
+    yaml_node_t *mapping_node;
     yaml_node_pair_t pair;
 
     assert(document);       /* Non-NULL document is required. */
-    assert(mapping > 0
-            && document->nodes.start + mapping <= document->nodes.top);
-                            /* Valid mapping id is required. */
-    assert(document->nodes.start[mapping-1].type == YAML_MAPPING_NODE);
-                            /* A mapping node is required. */
-    assert(key > 0 && document->nodes.start + key <= document->nodes.top);
-                            /* Valid key id is required. */
-    assert(value > 0 && document->nodes.start + value <= document->nodes.top);
-                            /* Valid value id is required. */
+
+    mapping_node = yaml_document_get_node(document, mapping);
+    if (!mapping_node || mapping_node->type != YAML_MAPPING_NODE
+            || !yaml_document_get_node(document, key)
+            || !yaml_document_get_node(document, value))
+        return 0;
 
     pair.key = key;
     pair.value = value;
 
-    if (!PUSH(&context,
-                document->nodes.start[mapping-1].data.mapping.pairs, pair))
+    if (!PUSH(&context, mapping_node->data.mapping.pairs, pair))
         return 0;
 
     return 1;
