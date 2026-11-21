@@ -58,6 +58,7 @@ yaml_emitter_flush(yaml_emitter_t *emitter)
             return 1;
         }
         else {
+            emitter->buffer.pointer = emitter->buffer.last;
             return yaml_emitter_set_writer_error(emitter, "write error");
         }
     }
@@ -135,6 +136,9 @@ yaml_emitter_flush(yaml_emitter_t *emitter)
         return 1;
     }
     else {
+        emitter->buffer.pointer = emitter->buffer.last;
+        emitter->raw_buffer.last = emitter->raw_buffer.start;
+        emitter->raw_buffer.pointer = emitter->raw_buffer.start;
         return yaml_emitter_set_writer_error(emitter, "write error");
     }
 }
