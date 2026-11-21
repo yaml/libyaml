@@ -92,6 +92,11 @@ yaml_parser_load(yaml_parser_t *parser, yaml_document_t *document)
     assert(document);   /* Non-NULL document object is expected. */
 
     memset(document, 0, sizeof(yaml_document_t));
+
+    if (parser->error) {
+        return 0;
+    }
+
     if (!STACK_INIT(parser, document->nodes, yaml_node_t*))
         goto error;
 
