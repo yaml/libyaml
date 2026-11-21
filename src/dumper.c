@@ -142,6 +142,9 @@ yaml_emitter_dump(yaml_emitter_t *emitter, yaml_document_t *document)
             document->start_implicit, mark, mark);
     if (!yaml_emitter_emit(emitter, &event)) goto error;
 
+    document->version_directive = NULL;
+    document->tag_directives.start = document->tag_directives.end = NULL;
+
     yaml_emitter_anchor_node(emitter, 1);
     if (!yaml_emitter_dump_node(emitter, 1)) goto error;
 
