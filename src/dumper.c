@@ -140,10 +140,12 @@ yaml_emitter_dump(yaml_emitter_t *emitter, yaml_document_t *document)
     DOCUMENT_START_EVENT_INIT(event, document->version_directive,
             document->tag_directives.start, document->tag_directives.end,
             document->start_implicit, mark, mark);
-    if (!yaml_emitter_emit(emitter, &event)) goto error;
 
+    /* The event owns the directives from here on, even if emitting fails. */
     document->version_directive = NULL;
     document->tag_directives.start = document->tag_directives.end = NULL;
+
+    if (!yaml_emitter_emit(emitter, &event)) goto error;
 
     yaml_emitter_anchor_node(emitter, 1);
     if (!yaml_emitter_dump_node(emitter, 1)) goto error;
