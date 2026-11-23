@@ -18,8 +18,8 @@ m4_define([YAML_BUGS], [https://github.com/yaml/libyaml/issues/new])
 #       else:
 #           YAML_AGE = 0
 m4_define([YAML_RELEASE], 0)
-m4_define([YAML_CURRENT], 2)
-m4_define([YAML_REVISION], 10)
+m4_define([YAML_CURRENT], 3)
+m4_define([YAML_REVISION], 0)
 m4_define([YAML_AGE], 1)
 
 # Initialize autoconf & automake.
