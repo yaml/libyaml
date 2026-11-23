@@ -7,7 +7,6 @@ Update libyaml version in:
 * Changes
 * CMakeLists.txt
   * `YAML_VERSION_MAJOR`, `YAML_VERSION_MINOR`, `YAML_VERSION_PATCH`
-* .appveyor.yml
 * configure.ac
   * `YAML_MAJOR`, `YAML_MINOR`, `YAML_PATCH`, `YAML_RELEASE`, `YAML_CURRENT`, `YAML_REVISION`
 
