@@ -1411,6 +1411,17 @@ yaml_emitter_analyze_tag_directive(yaml_emitter_t *emitter,
                 "tag prefix must not be empty");
     }
 
+    {
+        size_t k;
+        for (k = 0; k < prefix_length; k += WIDTH_AT(prefix, k)) {
+            if (!WIDTH_AT(prefix, k)
+                    || k + WIDTH_AT(prefix, k) > prefix_length) {
+                return yaml_emitter_set_emitter_error(emitter,
+                        "tag prefix must be valid UTF-8");
+            }
+        }
+    }
+
     return 1;
 }
 
@@ -1435,6 +1446,11 @@ yaml_emitter_analyze_anchor(yaml_emitter_t *emitter,
     }
 
     while (string.pointer != string.end) {
+        if (!WIDTH(string) || string.pointer + WIDTH(string) > string.end) {
+            return yaml_emitter_set_emitter_error(emitter, alias ?
+                    "alias value must be valid UTF-8" :
+                    "anchor value must be valid UTF-8");
+        }
         if (!IS_ALPHA(string)) {
             return yaml_emitter_set_emitter_error(emitter, alias ?
                     "alias value must contain alphanumerical characters only" :
@@ -1464,6 +1480,17 @@ yaml_emitter_analyze_tag(yaml_emitter_t *emitter,
 
     tag_length = strlen((char *)tag);
     STRING_ASSIGN(string, tag, tag_length);
+
+    {
+        size_t k;
+        for (k = 0; k < tag_length; ) {
+            if (!WIDTH_AT(string, k) || k + WIDTH_AT(string, k) > tag_length) {
+                return yaml_emitter_set_emitter_error(emitter,
+                        "tag value must be valid UTF-8");
+            }
+            k += WIDTH_AT(string, k);
+        }
+    }
 
     if (string.start == string.end) {
         return yaml_emitter_set_emitter_error(emitter,
@@ -1522,6 +1549,16 @@ yaml_emitter_analyze_scalar(yaml_emitter_t *emitter,
 
     STRING_ASSIGN(string, value, length);
 
+    {
+        size_t k;
+        for (k = 0; k < length; k += WIDTH_AT(string, k)) {
+            if (!WIDTH_AT(string, k) || k + WIDTH_AT(string, k) > length) {
+                return yaml_emitter_set_emitter_error(emitter,
+                        "scalar value must be valid UTF-8");
+            }
+        }
+    }
+
     emitter->scalar_data.value = value;
     emitter->scalar_data.length = length;
 
@@ -1551,6 +1588,10 @@ yaml_emitter_analyze_scalar(yaml_emitter_t *emitter,
 
     while (string.pointer != string.end)
     {
+        if (!WIDTH(string) || string.pointer + WIDTH(string) > string.end) {
+            return yaml_emitter_set_emitter_error(emitter,
+                    "scalar value must be valid UTF-8");
+        }
         if (string.start == string.pointer)
         {
             if (CHECK(string, '#') || CHECK(string, ',')
