@@ -1,3 +1,8 @@
+0.2.7 2026-11-23
+
+- Fix incorrect POSIX libtool ABI versioning.
+
+
 0.2.6 2026-11-10
 
 - Add configurable collection recursion depth limit, default ~ 1000 - fixes CVE-2026-44842.
