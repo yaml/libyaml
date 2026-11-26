@@ -17,6 +17,7 @@ foreach(name IN ITEMS
   run-parser-test-suite
   run-scanner
   test-nesting
+  test-emitter-nesting
   test-reader
   test-version
   )
@@ -26,4 +27,5 @@ endforeach()
 add_test(NAME version COMMAND test-version)
 add_test(NAME reader COMMAND test-reader)
 add_test(NAME nesting COMMAND test-nesting)
+add_test(NAME emitter-nesting COMMAND test-emitter-nesting)
 
