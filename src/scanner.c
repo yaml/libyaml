@@ -479,10 +479,26 @@
 #include "yaml_private.h"
 
 /*
- * Maximum nesting level (defined in parser.c).
+ * Maximum nesting level.
  */
 
-extern int MAX_NESTING_LEVEL;
+static int MAX_NESTING_LEVEL = 1000;
+
+/*
+ * Recursion limit controls.
+ */
+
+YAML_DECLARE(int)
+yaml_get_max_nest_level(void)
+{
+    return MAX_NESTING_LEVEL;
+}
+
+YAML_DECLARE(void)
+yaml_set_max_nest_level(int max)
+{
+    MAX_NESTING_LEVEL = max;
+}
 
 /*
  * Ensure that the buffer contains the required number of characters.
