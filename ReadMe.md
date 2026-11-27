@@ -1,4 +1,4 @@
-## LibYAML - A C library for parsing and emitting YAML.
+## LibYAML - A C library for parsing and emitting YAML 1.1
 
 To build and install the library, run:
 
