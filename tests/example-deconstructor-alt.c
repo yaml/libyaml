@@ -415,7 +415,7 @@ main(int argc, char *argv[])
                 if (!key) goto document_error;
                 value = yaml_document_add_scalar(&output_document, NULL,
                         input_event.data.scalar.value,
-                        input_event.data.scalar.length,
+                        (int) input_event.data.scalar.length,
                         YAML_DOUBLE_QUOTED_SCALAR_STYLE);
                 if (!value) goto document_error;
                 if (!yaml_document_append_mapping_pair(&output_document,

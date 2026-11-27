@@ -845,7 +845,7 @@ yaml_scalar_event_initialize(yaml_event_t *event,
     }
 
     if (length < 0) {
-        length = strlen((char *)value);
+        length = (int) strlen((char *)value);
     }
 
     if (!yaml_check_utf8(value, length)) goto error;
@@ -1216,7 +1216,7 @@ yaml_document_add_scalar(yaml_document_t *document,
     if (!tag_copy) goto error;
 
     if (length < 0) {
-        length = strlen((char *)value);
+        length = (int) strlen((char *)value);
     }
 
     if (!yaml_check_utf8(value, length)) goto error;

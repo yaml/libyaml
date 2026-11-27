@@ -104,8 +104,8 @@ yaml_emitter_flush(yaml_emitter_t *emitter)
 
         if (value < 0x10000)
         {
-            emitter->raw_buffer.last[high] = value >> 8;
-            emitter->raw_buffer.last[low] = value & 0xFF;
+            emitter->raw_buffer.last[high] = (unsigned char) (value >> 8);
+            emitter->raw_buffer.last[low] = (unsigned char) (value & 0xFF);
 
             emitter->raw_buffer.last += 2;
         }
@@ -114,10 +114,10 @@ yaml_emitter_flush(yaml_emitter_t *emitter)
             /* Write the character using a surrogate pair (check "reader.c"). */
 
             value -= 0x10000;
-            emitter->raw_buffer.last[high] = 0xD8 + (value >> 18);
-            emitter->raw_buffer.last[low] = (value >> 10) & 0xFF;
-            emitter->raw_buffer.last[high+2] = 0xDC + ((value >> 8) & 0xFF);
-            emitter->raw_buffer.last[low+2] = value & 0xFF;
+            emitter->raw_buffer.last[high] = (unsigned char) (0xD8 + (value >> 18));
+            emitter->raw_buffer.last[low] = (unsigned char) ((value >> 10) & 0xFF);
+            emitter->raw_buffer.last[high+2] = (unsigned char) (0xDC + ((value >> 8) & 0xFF));
+            emitter->raw_buffer.last[low+2] = (unsigned char) (value & 0xFF);
 
             emitter->raw_buffer.last += 4;
         }
