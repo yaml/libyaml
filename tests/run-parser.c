@@ -25,6 +25,10 @@ main(int argc, char *argv[])
     }
     for (i = 1; i < argc; i++) {
         if (strncmp(argv[i], "--max-level", 11) == 0) {
+            if (i+1 == argc) {
+                fprintf(stderr, "Usage: %s file1.yaml ...\n", argv[0]);
+                return 1;
+            }
             i++;
             max_level = strtol(argv[i], &output, 10);
             yaml_set_max_nest_level(max_level);
