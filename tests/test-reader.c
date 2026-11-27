@@ -114,6 +114,11 @@ test_case boms[] = {
 
 char *bom_original = "Hi is \xd0\x9f\xd1\x80\xd0\xb8\xd0\xb2\xd0\xb5\xd1\x82";
 
+int check_utf8_sequences(void);
+int check_boms(void);
+int check_long_utf8(void);
+int check_long_utf16(void);
+
 int check_utf8_sequences(void)
 {
     yaml_parser_t parser;
@@ -184,7 +189,7 @@ int check_boms(void)
             failed++;
         }
         else {
-            if (parser.unread != check) {
+            if (check >= 0 && (size_t)check != parser.unread) {
                 printf("- (length=%ld while expected length=%d)\n", (long)parser.unread, check);
                 failed++;
             }

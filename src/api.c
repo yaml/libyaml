@@ -63,7 +63,11 @@ yaml_strdup(const yaml_char_t *str)
     if (!str)
         return NULL;
 
+#if defined (_WIN32)
+    return (yaml_char_t *)_strdup((char *)str);
+#else
     return (yaml_char_t *)strdup((char *)str);
+#endif
 }
 
 /*
@@ -120,8 +124,7 @@ yaml_stack_extend(void **start, void **top, void **end)
 {
     void *new_start;
 
-    if ((char *)*end - (char *)*start >= INT_MAX / 2)
-	return 0;
+    if ((char *)*end - (char *)*start >= INT_MAX / 2) return 0;
 
     new_start = yaml_realloc(*start, ((char *)*end - (char *)*start)*2);
 
@@ -762,9 +765,9 @@ yaml_document_start_event_initialize(yaml_event_t *event,
 error:
     yaml_free(version_directive_copy);
     while (!STACK_EMPTY(context, tag_directives_copy)) {
-        yaml_tag_directive_t value = POP(context, tag_directives_copy);
-        yaml_free(value.handle);
-        yaml_free(value.prefix);
+        yaml_tag_directive_t value_inner = POP(context, tag_directives_copy);
+        yaml_free(value_inner.handle);
+        yaml_free(value_inner.prefix);
     }
     STACK_DEL(context, tag_directives_copy);
     yaml_free(value.handle);
@@ -1104,9 +1107,9 @@ error:
     STACK_DEL(&context, nodes);
     yaml_free(version_directive_copy);
     while (!STACK_EMPTY(&context, tag_directives_copy)) {
-        yaml_tag_directive_t value = POP(&context, tag_directives_copy);
-        yaml_free(value.handle);
-        yaml_free(value.prefix);
+        yaml_tag_directive_t value_inner = POP(&context, tag_directives_copy);
+        yaml_free(value_inner.handle);
+        yaml_free(value_inner.prefix);
     }
     STACK_DEL(&context, tag_directives_copy);
     yaml_free(value.handle);
@@ -1389,5 +1392,3 @@ yaml_document_append_mapping_pair(yaml_document_t *document,
 
     return 1;
 }
-
-
