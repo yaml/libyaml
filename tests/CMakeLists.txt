@@ -18,12 +18,15 @@ foreach(name IN ITEMS
   run-scanner
   test-nesting
   test-reader
+  test-realloc
   test-version
   )
   add_yaml_executable(${name})
 endforeach()
 
+target_include_directories(test-realloc PRIVATE ${PROJECT_SOURCE_DIR}/src)
+
 add_test(NAME version COMMAND test-version)
 add_test(NAME reader COMMAND test-reader)
 add_test(NAME nesting COMMAND test-nesting)
-
+add_test(NAME realloc COMMAND test-realloc)
