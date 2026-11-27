@@ -654,6 +654,7 @@ yaml_check_utf8(const yaml_char_t *start, size_t length)
             (width == 2 && value >= 0x80) ||
             (width == 3 && value >= 0x800) ||
             (width == 4 && value >= 0x10000))) return 0;
+        if ((value >= 0xD800 && value <= 0xDFFF) || value > 0x10FFFF) return 0;
 
         pointer += width;
     }
