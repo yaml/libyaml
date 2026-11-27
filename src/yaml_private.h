@@ -274,7 +274,13 @@ yaml_string_join(
              && (string).pointer[offset+2] == 0xBF)                             \
          && !((string).pointer[offset+1] == 0xBF                                \
              && ((string).pointer[offset+2] == 0xBE                             \
-                 || (string).pointer[offset+2] == 0xBF))))
+                 || (string).pointer[offset+2] == 0xBF)))                       \
+     || ((string).pointer[offset] == 0xF0      /* #x10000 <= . <= #x10FFFF */   \
+         && (string).pointer[offset+1] >= 0x90)                                 \
+     || ((string).pointer[offset] > 0xF0                                        \
+         && (string).pointer[offset] < 0xF4)                                    \
+     || ((string).pointer[offset] == 0xF4                                       \
+         && (string).pointer[offset+1] < 0x90))
 
 #define IS_PRINTABLE(string)    IS_PRINTABLE_AT((string),0)
 
