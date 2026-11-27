@@ -2622,7 +2622,7 @@ yaml_parser_scan_tag_uri(yaml_parser_t *parser, int uri_char, int directive,
      * The set of characters that may appear in URI is as follows:
      *
      *      '0'-'9', 'A'-'Z', 'a'-'z', '_', '-', ';', '/', '?', ':', '@', '&',
-     *      '=', '+', '$', '.', '!', '~', '*', '\'', '(', ')', '%'.
+     *      '=', '+', '$', '.', '!', '~', '*', '\'', '(', ')', '%', '#'.
      *
      * If we are inside a verbatim tag <...> (parameter uri_char is true)
      * then also the following flow indicators are allowed:
@@ -2638,6 +2638,7 @@ yaml_parser_scan_tag_uri(yaml_parser_t *parser, int uri_char, int directive,
             || CHECK(parser->buffer, '!') || CHECK(parser->buffer, '~')
             || CHECK(parser->buffer, '*') || CHECK(parser->buffer, '\'')
             || CHECK(parser->buffer, '(') || CHECK(parser->buffer, ')')
+            || CHECK(parser->buffer, '#')
             || (uri_char && (
                 CHECK(parser->buffer, ',')
                 || CHECK(parser->buffer, '[') || CHECK(parser->buffer, ']')
