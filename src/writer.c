@@ -33,9 +33,9 @@ yaml_emitter_flush(yaml_emitter_t *emitter)
 {
     int low, high;
 
-    assert(emitter);    /* Non-NULL emitter object is expected. */
-    assert(emitter->write_handler); /* Write handler must be set. */
-    assert(emitter->encoding);  /* Output encoding must be set. */
+    assert(emitter && "Non-NULL emitter object is expected.");
+    assert(emitter->write_handler && "Write handler must be set.");
+    assert(emitter->encoding && "Output encoding must be set.");
 
     emitter->buffer.last = emitter->buffer.pointer;
     emitter->buffer.pointer = emitter->buffer.start;
