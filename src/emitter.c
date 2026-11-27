@@ -234,7 +234,8 @@ yaml_emitter_write_tag_handle(yaml_emitter_t *emitter,
 
 static int
 yaml_emitter_write_tag_content(yaml_emitter_t *emitter,
-        yaml_char_t *value, size_t length, int need_whitespace);
+        yaml_char_t *value, size_t length,
+        int need_whitespace, int uri_char);
 
 static int
 yaml_emitter_write_plain_scalar(yaml_emitter_t *emitter,
@@ -628,7 +629,7 @@ yaml_emitter_emit_document_start(yaml_emitter_t *emitter,
                             strlen((char *)tag_directive->handle)))
                     return 0;
                 if (!yaml_emitter_write_tag_content(emitter, tag_directive->prefix,
-                            strlen((char *)tag_directive->prefix), 1))
+                            strlen((char *)tag_directive->prefix), 1, 1))
                     return 0;
                 if (!yaml_emitter_write_indent(emitter))
                     return 0;
@@ -1287,7 +1288,7 @@ yaml_emitter_process_tag(yaml_emitter_t *emitter)
             return 0;
         if (emitter->tag_data.suffix) {
             if (!yaml_emitter_write_tag_content(emitter, emitter->tag_data.suffix,
-                        emitter->tag_data.suffix_length, 0))
+                        emitter->tag_data.suffix_length, 0, 0))
                 return 0;
         }
     }
@@ -1296,7 +1297,7 @@ yaml_emitter_process_tag(yaml_emitter_t *emitter)
         if (!yaml_emitter_write_indicator(emitter, "!<", 1, 0, 0))
             return 0;
         if (!yaml_emitter_write_tag_content(emitter, emitter->tag_data.suffix,
-                    emitter->tag_data.suffix_length, 0))
+                    emitter->tag_data.suffix_length, 0, 1))
             return 0;
         if (!yaml_emitter_write_indicator(emitter, ">", 0, 0, 0))
             return 0;
@@ -1870,7 +1871,7 @@ yaml_emitter_write_tag_handle(yaml_emitter_t *emitter,
 static int
 yaml_emitter_write_tag_content(yaml_emitter_t *emitter,
         yaml_char_t *value, size_t length,
-        int need_whitespace)
+        int need_whitespace, int uri_char)
 {
     yaml_string_t string;
     STRING_ASSIGN(string, value, length);
@@ -1885,12 +1886,14 @@ yaml_emitter_write_tag_content(yaml_emitter_t *emitter,
                 || CHECK(string, '?') || CHECK(string, ':')
                 || CHECK(string, '@') || CHECK(string, '&')
                 || CHECK(string, '=') || CHECK(string, '+')
-                || CHECK(string, '$') || CHECK(string, ',')
+                || CHECK(string, '$') || CHECK(string, '\'')
                 || CHECK(string, '_') || CHECK(string, '.')
                 || CHECK(string, '~') || CHECK(string, '*')
-                || CHECK(string, '\'') || CHECK(string, '(')
-                || CHECK(string, ')') || CHECK(string, '[')
-                || CHECK(string, ']')) {
+                || CHECK(string, '(') || CHECK(string, ')')
+                || (uri_char && (
+                    CHECK(string, ',')
+                    || CHECK(string, '[') || CHECK(string, ']')
+                ))) {
             if (!WRITE(emitter, string)) return 0;
         }
         else {
